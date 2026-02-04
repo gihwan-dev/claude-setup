@@ -11,13 +11,17 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 ## 1단계: 컨텍스트 로드
 
-프로젝트 루트에서 다음 3개 파일을 읽습니다:
+프로젝트 루트에서 다음 4개 파일을 읽습니다:
 
-1. `milestone.md` — 작업 목록 및 진행 상태
-2. `plan.md` — 구현 상세 (아키텍처, 디렉토리 구조, 데이터 흐름 등)
-3. `survey.md` — 요구사항 및 아키텍처 결정 사항
+1. `SPEC.md` — 요구사항 (기능/비기능 요구사항, 제약조건, 사용자 시나리오)
+2. `milestone.md` — 작업 목록 및 진행 상태
+3. `plan.md` — 구현 상세 (아키텍처, 디렉토리 구조, 데이터 흐름 등)
+4. `survey.md` — 아키텍처 결정 사항
 
-- 파일이 없으면 사용자에게 알리고 해당 스킬(`/milestone`, `/planner`, `/survey`)로 먼저 생성하도록 안내합니다.
+- SPEC.md가 없으면 `/spec`을 먼저 실행하도록 안내합니다.
+- milestone.md가 없으면 `/milestone`을 먼저 실행하도록 안내합니다.
+- plan.md가 없으면 `/planner`를 먼저 실행하도록 안내합니다.
+- survey.md가 없으면 `/survey`를 먼저 실행하도록 안내합니다.
 
 ## 2단계: 대상 Phase 판별
 
@@ -45,13 +49,13 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 1. `TaskUpdate`로 상태를 `in_progress`로 변경합니다.
 2. `plan.md`의 해당 Phase 구현 상세를 참고하여 코드를 작성합니다.
-3. `survey.md`의 아키텍처 결정 사항을 준수합니다.
+3. `SPEC.md`의 요구사항과 `survey.md`의 아키텍처 결정 사항을 준수합니다.
 4. 구현 완료 후 `TaskUpdate`로 상태를 `completed`로 변경합니다.
 
 ### 구현 시 준수 사항
 
 - `CLAUDE.md`의 아키텍처 패턴 및 디렉토리 구조를 따릅니다.
-- FSD(Feature-Sliced Design) 원칙을 준수합니다.
+- FSD 원칙을 준수합니다.
 - 기존 코드베이스의 패턴과 컨벤션을 따릅니다.
 - 보안 취약점을 도입하지 않습니다.
 
@@ -59,8 +63,8 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 각 작업 항목의 "검증" 기준에 따라 검증을 수행합니다.
 
-- `pnpm run typecheck` — TypeScript 타입 검사
-- `pnpm run lint` — ESLint + Stylelint 검사
+- `pnpm run typecheck` — 타입 검사
+- `pnpm run lint` — 린트 검사
 - `pnpm run test:unit` — 관련 단위 테스트 실행 (테스트가 있는 경우)
 
 검증 실패 시:
@@ -81,5 +85,5 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 - 완료된 Phase 번호 및 제목
 - 구현된 작업 항목 목록
-- 검증 결과 (typecheck, lint, test)
+- 검증 결과
 - 다음 미완료 Phase 안내 (있는 경우)
