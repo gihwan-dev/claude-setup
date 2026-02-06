@@ -9,9 +9,63 @@ disable-model-invocation: false
    - Run `git diff --name-only` (or `git diff --cached --name-only` if changes are staged) to get the list of modified files.
    - Focus on React components and logic files (`.tsx`, `.ts`, `.jsx`, `.js`).
 
-2. **Analyze Code**:
-   - For each modified file, use `view_file` or `run_command` with `git diff` to inspect the changes.
-   - **CRITICAL**: You must evaluate the code strictly based on the **"React Clean Code Scorecard"** framework provided below. Do not use generic "clean code" advice; use these specific metrics.
+2. **Analyze Code** (adaptive parallelism):
+
+   **변경 파일 수에 따른 분석 전략:**
+
+   #### 3개 이하: 순차 분석 (기존 방식)
+
+   각 파일을 직접 `git diff`로 검사하고 Scorecard 프레임워크에 따라 평가합니다.
+
+   #### 4개 이상: 병렬 분석
+
+   **2-A: 파일 그룹화**
+   변경된 파일들을 디렉토리/기능 영역별로 그룹화합니다:
+   - 같은 디렉토리의 파일들 → 하나의 그룹
+   - 관련 컴포넌트 + 훅 + 타입 → 하나의 그룹
+   - 독립적인 파일 → 개별 그룹
+
+   **2-B: 병렬 분석**
+   각 그룹을 Task sub-agent로 동시 분석합니다:
+
+   ```
+   Task call:
+     subagent_type: "general-purpose"
+     model: "sonnet"
+     description: "Analyze code quality for [그룹명]"
+     run_in_background: true
+     prompt: |
+       You are a React Clean Code Inspector. Analyze the following files
+       for code quality using the React Clean Code Scorecard framework.
+
+       Files to analyze: [파일 목록]
+
+       Run `git diff -- [파일]` for each file to see the changes.
+
+       Evaluate strictly based on these metrics:
+       - Cyclomatic Complexity (CC): branch count in JSX, nested ternaries
+       - Component Responsibility Score (CRS): LoC + CC + State Count + Dependency Count
+       - Cohesion (LCOM4): hook and state connectivity
+       - Interface Quality: props count, boolean props, naming conventions
+       - State Architecture: colocation, global state density
+
+       For each file, provide:
+       1. Per-metric scores with measured values
+       2. Status (양호/주의/위험) for each metric
+       3. Specific recommendations
+
+       Output as structured markdown with the Scorecard table format.
+   ```
+
+   모든 그룹 분석 Task가 완료될 때까지 대기한 후 결과를 수집합니다.
+
+   **2-C: 결과 통합**
+   오케스트레이터가 모든 그룹의 분석 결과를 통합하여 전체 Scorecard를 생성합니다:
+   - 그룹별 결과를 병합
+   - 크로스-파일 이슈 식별 (그룹 간 결합도, 공통 패턴 위반 등)
+   - 전체 종합 점수 산출
+
+   **CRITICAL**: You must evaluate the code strictly based on the **"React Clean Code Scorecard"** framework provided below. Do not use generic "clean code" advice; use these specific metrics.
 
    <FRAMEWORK_START>
    # 리액트 애플리케이션의 아키텍처 건전성 및 클린 코드 품질 평가를 위한 정량적 지표 프레임워크
@@ -77,5 +131,6 @@ disable-model-invocation: false
    - Content:
      - **Summary**: High-level assessment of the changes.
      - **Detailed Analysis**: For each modified component, provide the CRS breakdown, complexity analysis, and specific metric violations.
-     - **Scorecard**: The table defined in Section 10 of the framework.
+     - **Scorecard**: The table defined in Section 9 of the framework.
      - **Recommendations**: Specific refactoring actions based on the "Quality Impact" guidance.
+     - (병렬 분석 시) **분석 방식**: 그룹 구성과 병렬 분석 결과 요약 포함.

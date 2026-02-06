@@ -41,16 +41,65 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 이미 완료(`[x]`)된 항목은 건너뜁니다.
 
-## 4단계: 구현 실행
+## 4단계: 구현 실행 (병렬+순차 하이브리드)
 
-태스크 리스트의 각 항목을 **순차적으로** 실행합니다.
+### 4-A: 의존성 분석
 
-각 작업 항목에 대해:
+Phase의 모든 미완료 태스크를 검토하여 실행 그래프(Layer)를 생성합니다.
 
-1. `TaskUpdate`로 상태를 `in_progress`로 변경합니다.
-2. `plan.md`의 해당 Phase 구현 상세를 참고하여 코드를 작성합니다.
-3. `SPEC.md`의 요구사항과 `survey.md`의 아키텍처 결정 사항을 준수합니다.
-4. 구현 완료 후 `TaskUpdate`로 상태를 `completed`로 변경합니다.
+**의존 관계 판정 기준:**
+
+| 관계 | 판정 | 근거 |
+|------|------|------|
+| 같은 파일 수정 | 순차 | 동시 수정 시 충돌 |
+| export → import 관계 | 순차 | 선행 타입/함수가 있어야 후행 구현 가능 |
+| 다른 디렉토리, 독립 기능 | 병렬 | 충돌 없음 |
+| 공통 컨텍스트만 참조 (읽기 전용) | 병렬 | 충돌 없음 |
+
+**Layer 생성 예시:**
+```
+Layer 1: [Task A, Task B]  ← 독립적, 병렬 실행
+Layer 2: [Task C]           ← Task A의 export를 import
+Layer 3: [Task D, Task E]  ← Task C 완료 후 독립적, 병렬 실행
+```
+
+`TaskUpdate`로 의존 관계를 `addBlockedBy`/`addBlocks`에 등록합니다.
+
+### 4-B: 에이전트 타입 매핑
+
+각 태스크의 성격에 따라 최적의 에이전트를 선택합니다:
+
+| 태스크 성격 | subagent_type | model | 판단 기준 |
+|------------|---------------|-------|----------|
+| React 컴포넌트 UI 구현 | frontend-developer | sonnet | JSX, 스타일, 이벤트 핸들링 |
+| 타입 정의, 제네릭, 유틸리티 타입 | typescript-pro | sonnet | type, interface, 제네릭 제약 |
+| API 로직, 비즈니스 로직, 훅 | general-purpose | sonnet | 데이터 처리, 상태 관리 |
+| 복잡한 아키텍처 결정 포함 | general-purpose | opus | 설계 판단이 필요한 경우 |
+| 보일러플레이트, 설정 파일 | general-purpose | haiku | 단순 반복 작업 |
+
+### 4-C: 병렬+순차 하이브리드 실행
+
+Layer별로 실행합니다:
+
+**Layer 내 (병렬):**
+- 독립 태스크들은 Task tool로 동시 실행 (`run_in_background: true`)
+- 각 Task sub-agent에게 전달할 정보:
+  - 해당 태스크의 description (목표, 구현 상세, 검증 기준)
+  - `SPEC.md`, `plan.md`, `survey.md`의 관련 섹션 요약
+  - 준수 사항 (CLAUDE.md 패턴, FSD 원칙, 기존 코드 컨벤션)
+
+**Layer 간 (순차):**
+- 선행 Layer의 모든 태스크 완료 확인 후 다음 Layer 실행
+- 각 Layer 완료 시 중간 검증 실행:
+  ```bash
+  pnpm typecheck
+  ```
+- typecheck 실패 시: 오류를 분석하고 수정한 후 다음 Layer로 진행
+
+**단일 태스크 또는 순차 의존만 있는 경우:**
+- sub-agent 없이 오케스트레이터가 직접 순차 구현 (기존 방식 유지)
+
+각 태스크 완료 시 `TaskUpdate`로 상태를 `completed`로 변경합니다.
 
 ### 구현 시 준수 사항
 
@@ -85,5 +134,6 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 - 완료된 Phase 번호 및 제목
 - 구현된 작업 항목 목록
+- 실행 방식 요약 (병렬 Layer 수, 사용된 에이전트 타입)
 - 검증 결과
 - 다음 미완료 Phase 안내 (있는 경우)

@@ -34,9 +34,69 @@ git diff --name-only <base>..<target>
 - `.d.ts` 파일 (타입 선언)
 - 설정 파일 (`*.config.ts`, `*.config.js`)
 
-### 3. 파일별 분석 및 수정
+### 3. 파일별 분석 및 수정 (적응형 병렬화)
 
-각 파일을 읽고 다음 패턴을 찾아 제거:
+**변경 파일 수에 따른 분석 전략:**
+
+#### 2개 이하: 순차 분석 (기존 방식)
+
+각 파일을 직접 읽고 아래 패턴을 찾아 제거합니다.
+
+#### 3개 이상: 병렬 분석 → 순차 수정
+
+**3-A: 병렬 분석**
+
+각 파일의 unused 코드를 Task sub-agent로 동시 탐지합니다:
+
+```
+Task call:
+  subagent_type: "general-purpose"
+  model: "haiku"
+  description: "Detect unused code in [파일명]"
+  run_in_background: true
+  prompt: |
+    Analyze the following file for unused code. DO NOT modify any files.
+    Only report what you find.
+
+    File to analyze: [파일 경로]
+
+    Check for these patterns:
+    1. Unused exports: Run `git diff HEAD -- [파일]` to find newly added exports,
+       then search the project for imports of each export name.
+    2. Unused functions: Functions defined but never called within the file or project.
+    3. Unused types/interfaces: Type declarations not referenced anywhere.
+    4. Commented code blocks: Code blocks that are commented out (preserve TODO/FIXME/NOTE comments).
+    5. Orphan console.log: Debugging console.log statements.
+
+    For unused exports, verify by searching the project:
+    - Check for dynamic imports: import() patterns
+    - Check barrel files (index.ts) for re-exports
+    - Check if used in test files
+
+    Output a JSON-like report:
+    {
+      "file": "[파일 경로]",
+      "findings": [
+        {"type": "unused_export", "name": "...", "line": N, "confidence": "high/medium"},
+        {"type": "unused_function", "name": "...", "line": N, "confidence": "high/medium"},
+        ...
+      ]
+    }
+
+    Only report findings with medium or high confidence.
+```
+
+모든 파일의 분석 Task가 완료될 때까지 대기합니다.
+
+**3-B: 순차 수정**
+
+오케스트레이터가 모든 분석 결과를 수집한 후:
+
+1. 각 finding을 검토하여 false positive 제거 (특히 cross-file 의존성 확인)
+2. confidence가 "high"인 것부터 순차적으로 파일을 수정
+3. confidence가 "medium"인 것은 한번 더 확인 후 수정
+
+**수정은 반드시 오케스트레이터가 직접 수행합니다** (sub-agent의 동시 파일 수정 방지).
 
 #### 제거 대상 (lint/TS로 못 잡는 것들)
 
@@ -75,6 +135,7 @@ grep -r --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" "{
 - 제거된 import 수
 - 제거된 변수/함수 수
 - 제거된 코드 라인 수
+- (병렬 분석 시) 분석 방식 요약: 파일 수, 병렬 에이전트 수
 
 ## 사용 예시
 
