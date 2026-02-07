@@ -1,8 +1,8 @@
 {
-  "includeCoAuthoredBy": false,
   "env": {
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
+  "includeCoAuthoredBy": false,
   "permissions": {
     "allow": [
       "Bash(git mv:*)",
@@ -24,9 +24,13 @@
       "Bash(npx tsx:*)",
       "Bash(ls:*)",
       "mcp__figma-desktop__get_variable_defs",
-      "Bash(pnpm exec tsx:*)"
+      "Bash(pnpm exec tsx:*)",
+      "Bash(pnpm test:run:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "/Users/choegihwan/Documents/Projects/Obsidian-frontend-journey"
+    ]
   }
 }
