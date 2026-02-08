@@ -3,6 +3,10 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "includeCoAuthoredBy": false,
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
   "permissions": {
     "allow": [
       "Bash(git mv:*)",
