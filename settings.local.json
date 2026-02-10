@@ -3,10 +3,6 @@
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "includeCoAuthoredBy": false,
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true
-  },
   "permissions": {
     "allow": [
       "Bash(git mv:*)",
@@ -29,12 +25,21 @@
       "Bash(ls:*)",
       "mcp__figma-desktop__get_variable_defs",
       "Bash(pnpm exec tsx:*)",
-      "Bash(pnpm test:run:*)"
+      "Bash(pnpm test:run:*)",
+      "WebFetch(domain:telemetry.vercel.com)",
+      "Bash(pnpm biome check:*)",
+      "Bash(pnpm test:browser:*)",
+      "WebSearch",
+      "WebFetch(domain:atlassian.design)"
     ],
     "deny": [],
     "ask": [],
     "additionalDirectories": [
       "/Users/choegihwan/Documents/Projects/Obsidian-frontend-journey"
     ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
   }
 }
