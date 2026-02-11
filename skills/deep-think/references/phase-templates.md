@@ -1,319 +1,441 @@
-# Phase Templates
+# Phase Templates v2
 
-Templates for Deep Think workflow phases.
+Templates for Deep Think v2 workflow phases.
+
+---
+
+## Phase 0: Triage & Frame (`00-triage/frame.md`)
+
+Written by team lead. Determines tier and persona assignments.
+
+```markdown
+# Problem Frame
+
+## Question
+[Restate with ALL nuances. Don't simplify.]
+
+## Type
+[architecture / optimization / design / debugging / knowledge]
+
+## Complexity Dimensions
+
+| Dimension | Score (0-2) | Justification |
+|-----------|-------------|---------------|
+| Solution Space Breadth | | |
+| Stakeholder Tension | | |
+| Uncertainty Level | | |
+| Impact Scope | | |
+
+**Total: X/8 → Tier [1/2/3]**
+
+## Key Constraints
+- [constraint 1 — source]
+- [constraint 2 — source]
+
+## Success Criteria
+[What a good answer looks like — be specific]
+
+## Persona Assignments
+
+| Persona | Focus Question |
+|---------|---------------|
+| Pragmatist | [specific angle to explore] |
+| [other persona] | [specific angle to explore] |
+```
+
+---
+
+## Phase 0 Extension: Pre-Mortem (Tier 3 only)
+
+Appended to frame.md for Tier 3 problems.
+
+```markdown
+## Pre-Mortem
+
+Imagine 3 months from now, our chosen approach has failed badly.
+
+### Failure Scenario 1: [Name]
+- What went wrong:
+- Early warning signs:
+- Probability: [LOW / MEDIUM / HIGH]
+
+### Failure Scenario 2: [Name]
+- What went wrong:
+- Early warning signs:
+- Probability: [LOW / MEDIUM / HIGH]
+
+### Failure Scenario 3: [Name]
+- What went wrong:
+- Early warning signs:
+- Probability: [LOW / MEDIUM / HIGH]
+
+### Critical Assumptions
+If any of these are wrong, the entire approach is invalidated:
+1. [assumption]
+2. [assumption]
+```
+
+---
 
 ## Phase 1: Analysis (`01-analysis/analysis.md`)
 
-Written by team-lead. **Minimum 500 words.**
+Written by team lead after framing.
 
-```
+```markdown
 # Problem Analysis
 
 ## Original Question
 [Restate with ALL nuances. Don't simplify.]
 
 ## Why This Is Hard
-[Explain the complexity. What makes this non-trivial?]
-
-## Problem Type
-[coding | debugging | math | analysis | creative | hybrid]
-[Explain why this classification]
+[What makes this non-trivial?]
 
 ## Constraints (Explicit)
 - [constraint 1 — source]
-- [constraint 2 — source]
 
 ## Constraints (Implicit/Assumed)
-- [assumption 1 — is this actually true? what if it's not?]
-- [assumption 2 — where did this come from?]
+- [assumption 1 — what if it's wrong?]
 
 ## What "Perfect" Looks Like
-[Describe the ideal output in detail]
+[Ideal output]
 
-## What "Good Enough" Looks Like  
-[Minimum viable answer that still solves the problem]
+## What "Good Enough" Looks Like
+[Minimum viable answer]
 
 ## Known Unknowns
-[What we don't know that we need to find out]
-
-## Risks
-[What could go wrong with this entire endeavor?]
+[What we don't know]
 ```
 
-## Phase 2: Decomposition (`02-decomposition/decomposition.md`)
+---
 
-Written by team-lead. **Minimum 500 words.**
+## Phase 1: Decomposition (`02-decomposition/decomposition.md`)
 
-```
+Written by team lead.
+
+```markdown
 # Problem Decomposition
 
 ## Sub-Problems
 
 ### 1. [Sub-problem A]
-- Why it matters: [...]
+- Why it matters:
 - Difficulty: [low/medium/high]
 - Dependencies: [what must be solved first]
 
 ### 2. [Sub-problem B]
 [same structure]
 
-### 3. [Sub-problem C]
-[same structure]
-
 ## Dependency Graph
-[Which sub-problems depend on others? Draw it out.]
-
 A → B → D
     ↘ C ↗
 
 ## Hardest Parts
 [Which sub-problems are trickiest and why?]
 
-## Knowledge Gaps
-[What do we need to research or test?]
-
 ## Attack Plan
 1. First: [X] because [reason]
 2. Then: [Y] because [reason]
-3. Finally: [Z] because [reason]
-
-## What Could Go Wrong
-[Risks at each stage]
 ```
 
-## Phase 3: Path (`03-paths/path-{persona}.md`)
+---
 
-Each teammate writes their solution. **Minimum 2000 words.**
+## Phase 1: Path (`03-paths/path-{persona}.md`)
 
-```
-# Approach: [Descriptive Name]
+Each persona writes their solution. **No word count minimum — structural sections required.**
 
-## Core Idea (1 paragraph)
-[High-level summary of approach]
+```markdown
+# Path: [Descriptive Name]
 
-## Why This Approach
-[Justify why this is worth exploring. What's the thesis?]
+## Core Thesis
+[1-2 sentences: the fundamental approach and why]
 
-## Detailed Reasoning (1000+ words)
+## Evidence Chain
 
-### Step 1: [First major step]
-[Detailed explanation with rationale]
+### Recommendation 1: [Title]
+1. Claim: "[specific recommendation]"
+2. Evidence: [CODE] reference to specific code/pattern
+   — OR [BENCH] benchmark data
+   — OR [PATTERN] established industry pattern
+   — OR [REASON] logical derivation (show reasoning)
+   — OR [ASSUME] unverified assumption (will be flagged in final answer)
+3. Confidence: HIGH / MEDIUM / LOW
 
-### Step 2: [Second major step]
-[Detailed explanation with rationale]
+### Recommendation 2: [Title]
+[same structure]
 
-### Step 3: [Third major step]
-[Detailed explanation with rationale]
+### Recommendation 3: [Title]
+[same structure]
 
 [Continue as needed...]
 
-## Concrete Solution
+## Implementation Sequence
+Steps in dependency order:
 
-### Implementation
-[Specific code, architecture, or recommendations]
-[Include actual code snippets if relevant]
+1. **[Step]** (depends on: nothing)
+   - What: [specific action]
+   - Why: [rationale]
 
-### Example Walkthrough
-[Walk through a concrete example end-to-end]
+2. **[Step]** (depends on: Step 1)
+   - What: [specific action]
+   - Why: [rationale]
 
-## Edge Cases Considered
-- [Edge case 1]: handled by [X]
-- [Edge case 2]: handled by [Y]
-- [Edge case 3]: NOT handled — would need [Z]
+[Continue...]
 
-## Alternatives Rejected
-- [Alternative A]: rejected because [reason]
-- [Alternative B]: rejected because [reason]
+## Risk Register
 
-## Weaknesses of This Approach
-[Be honest. Where does this fall short?]
-- [Weakness 1]
-- [Weakness 2]
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| [risk 1] | LOW/MED/HIGH | LOW/MED/HIGH | [mitigation] |
+| [risk 2] | LOW/MED/HIGH | LOW/MED/HIGH | [mitigation] |
 
-## Confidence: [LOW / MEDIUM / HIGH]
+## What This Path Uniquely Offers
+1. [Thing that other approaches won't surface]
+2. [Another unique contribution]
 
-Justification: [Why this confidence level? What would change it?]
+## Self-Assessment: [SOUND / HAS-GAPS]
+[If HAS-GAPS, identify what's missing]
 ```
 
-## Phase 3.5: Challenge (`03.5-challenges/challenge-{from}-vs-{to}.md`)
+---
 
-Each teammate critiques one other path. **Be harsh.**
+## Phase 3a: Targeted Critique (`03.5-challenges/critique-{from}-vs-{to}.md`)
 
-```
-# Challenge: {from} vs {to}
+Each critic evaluates one path. **Specific scenarios required.**
 
-## Their Approach Summary
-[1-2 sentences summarizing what they proposed]
+```markdown
+# Critique: {from} → {to}
 
-## Strongest Version of Their Argument (Steelman)
-[Present their approach in its best light before attacking]
+## Their Core Thesis
+[1-2 sentences summarizing their approach]
 
-## Critical Problems
+## Focused Question
+[The specific question assigned by team lead for this pairing]
 
-### Problem 1: [Title]
-**Severity: [CRITICAL / MAJOR / MINOR]**
+## Findings
 
-[Detailed explanation of the flaw]
+### Finding 1: [Title]
+**Severity: [SOUND / HAS-GAPS / FUNDAMENTALLY-FLAWED]**
 
-Specific scenario where this fails:
-> [Concrete example]
+Specific scenario:
+> [Concrete example with numbers/specifics]
+> Example: "With 1,650 cells + 30 columns, the O(n*m²) algorithm
+>  executes 49,500 array traversals per render, causing ~110ms delay"
 
-### Problem 2: [Title]
+Impact: [what happens if this is not addressed]
+Suggested fix: [concrete alternative]
+
+### Finding 2: [Title]
 [same structure]
 
-## Logical Flaws
-- [Unstated assumption that may be false]
-- [Reasoning gap]
+## Evidence Audit
+- Claims tagged [CODE]: [verified / not checked]
+- Claims tagged [ASSUME]: [how many, which are risky]
+- Missing evidence for: [any untagged claims]
 
-## What They Missed
-- [Blind spot 1]
-- [Blind spot 2]
+## Blind Spots
+- [What they didn't consider]
 
-## Overall Rating
+## Overall Rating: [SOUND / HAS-GAPS / FUNDAMENTALLY-FLAWED]
 
-**[CRITICAL FLAW / MAJOR WEAKNESS / MINOR ISSUES / SOLID]**
-
-Recommendation: [Should they revise? What specifically?]
+Recommendation: [specific action — "No revision needed" / "Address findings 1,2" / "Rethink core approach"]
 ```
 
-## Phase 4: Verification (`04-verification/verification.md`)
+---
 
-Written by verifier after reading all paths and challenges.
+## Phase 3b: Author Reflection (Tier 3 only) (`03-paths/path-{name}-reflected.md`)
 
-```
-# Verification Report
+Each path author responds to their critique.
 
-## Path Scores
+```markdown
+# Reflection: [Persona] responding to [Critic]
 
-| Path | Correctness | Completeness | Practicality | Originality | Total |
-|------|-------------|--------------|--------------|-------------|-------|
-| first-principles | X/10 | X/10 | X/10 | X/10 | X/40 |
-| pragmatist | X/10 | X/10 | X/10 | X/10 | X/40 |
-| adversarial | X/10 | X/10 | X/10 | X/10 | X/40 |
-| innovator | X/10 | X/10 | X/10 | X/10 | X/40 |
-| optimizer | X/10 | X/10 | X/10 | X/10 | X/40 |
+## Accepted Points
+### [Finding title from critique]
+- Original approach: [what I said]
+- Revised approach: [how I'm changing it]
+- Evidence for revision: [why the critic was right]
 
-## Challenge Analysis
+## Rejected Points
+### [Finding title from critique]
+- Critic's claim: [what they said]
+- Counter-argument: [why I disagree]
+- Supporting evidence: [CODE/BENCH/PATTERN/REASON]
 
-### Valid Critiques
-- [Challenge X]: This is a real problem because [...]
-- [Challenge Y]: This is a real problem because [...]
+## Updated Self-Assessment: [SOUND / HAS-GAPS]
+[If changed from original, explain why]
 
-### Nitpicks (Ignore)
-- [Challenge Z]: This is overblown because [...]
-
-## Contradictions Between Paths
-
-| Issue | Path A Says | Path B Says | Resolution |
-|-------|-------------|-------------|------------|
-| [Issue 1] | [...] | [...] | [Who's right and why] |
-
-## Blind Spots (All Paths Missed)
-- [Thing everyone missed]
-
-## Devil's Advocate
-[Strongest argument against the current best approach]
-
-## Iteration Decisions
-
-**Paths requiring revision:**
-- [ ] first-principles: [reason or "OK"]
-- [ ] pragmatist: [reason or "OK"]  
-- [ ] adversarial: [reason or "OK"]
-- [ ] innovator: [reason or "OK"]
-- [ ] optimizer: [reason or "OK"]
-
-[If any marked for revision, message that teammate with specific feedback]
+## Revised Core Thesis (if changed)
+[Updated 1-2 sentences, or "No change to core thesis"]
 ```
 
-## Phase 5: Synthesis (`05-synthesis/synthesis.md`)
+---
 
-Written by verifier after all iterations complete.
+## Phase 4: 3-Pass Synthesis
 
-```
-# Synthesis
+### Pass 1: Extract (`04-synthesis/pass1-extract.md`)
 
-## Weights Applied
-Based on verification scores:
-- first-principles: [X]% weight
-- pragmatist: [X]% weight
-- adversarial: [X]% weight
-- innovator: [X]% weight
-- optimizer: [X]% weight
+```markdown
+# Synthesis Pass 1: Extraction
 
-## Best Elements from Each
+## Path Summaries
 
-### From first-principles (weight: X%)
-[What we're taking and why]
+### [Persona 1]
+- Core Thesis: [1-2 sentences]
+- Unique Contributions: [what only this path surfaced]
+- HIGH-confidence recommendations:
+  1. [recommendation] — evidence: [tag]
+  2. [recommendation] — evidence: [tag]
+- Discarded: [what was LOW-confidence or redundant]
 
-### From pragmatist (weight: X%)
-[What we're taking and why]
+### [Persona 2]
+[same structure]
 
-[...continue for each...]
-
-## Integrated Solution
-[The combined answer, clearly structured]
-
-## How Challenges Were Addressed
-- [Challenge 1]: Addressed by [...]
-- [Challenge 2]: Addressed by [...]
-
-## Remaining Contradictions
-[Any unresolved disagreements — be honest]
-
-## Remaining Uncertainty
-[What we still don't know]
-
-## Confidence: [X/10]
-[Justification]
+[Continue for each path...]
 ```
 
-## Phase 6: Final Answer (`06-answer/answer.md`)
+### Pass 2: Reconcile (`04-synthesis/pass2-reconcile.md`)
 
-The deliverable. **Minimum 1000 words for detailed answer.**
+```markdown
+# Synthesis Pass 2: Reconciliation
 
+## Disagreement Map
+
+### Factual Disagreements
+| Topic | Path A says | Path B says | Resolution | Basis |
+|-------|-------------|-------------|------------|-------|
+| [topic] | [claim] | [claim] | [resolved to...] | [evidence that decided it] |
+
+### Preference Disagreements
+| Topic | Path A prefers | Path B prefers | Trade-off |
+|-------|---------------|---------------|-----------|
+| [topic] | [option] | [option] | [Recommended: X, because Y. Choose Z if condition.] |
+
+### Scope Disagreements
+| Topic | Path A scope | Path B scope | Context Guide |
+|-------|-------------|-------------|---------------|
+| [topic] | [narrow] | [broad] | [When to use narrow: ..., When to use broad: ...] |
+
+## Blind Spot Check
+What question did NO path address that a domain expert would ask?
+- [question 1]: [brief answer or "needs investigation"]
+- [question 2]: [brief answer or "needs investigation"]
 ```
+
+### Pass 3: Compose (`04-synthesis/pass3-compose.md`)
+
+Written fresh — no copy-paste from original paths.
+
+```markdown
+# Synthesis Pass 3: Integrated Solution
+
+[Write the complete integrated solution here.
+This must be composed from scratch using the reconciled materials.
+Do NOT copy text from any original path.]
+```
+
+---
+
+## Phase 5: Final Answer (`05-answer/answer.md`)
+
+### Track A (Agent Teams) Format
+
+```markdown
 # Final Answer
 
 ## TL;DR
-[One paragraph executive summary. The answer in a nutshell.]
+[One paragraph executive summary]
 
 ## Detailed Answer
 
 ### [Section 1]
 [Thorough explanation]
 
-### [Section 2]  
+### [Section 2]
 [Thorough explanation]
 
-### [Section 3]
-[Thorough explanation]
-
-[...continue as needed...]
+[Continue as needed...]
 
 ## Implementation Notes
 [Concrete next steps, code if relevant]
 
-## Thought Process Summary
+## Confidence Assessment
 
-This answer emerged from [N] independent analyses:
+### Convergence: [Y of N paths recommended this approach]
+### Evidence Quality: [HIGH (code-based) / MEDIUM (pattern-based) / LOW (reasoning only)]
+### Risk Level: [from adversarial analysis — LOW/MEDIUM/HIGH]
 
-[Paragraph 1: What different perspectives contributed]
+### High-Confidence Recommendations (all paths agree, evidence-backed)
+- [recommendation 1]
+- [recommendation 2]
 
-[Paragraph 2: Key disagreements and how they were resolved]
+### Medium-Confidence Recommendations (majority agree, some caveats)
+- [recommendation 1] — caveat: [what to watch for]
 
-[Paragraph 3: What the challenge round revealed]
+### Low-Confidence Recommendations (exploratory, needs validation)
+- [recommendation 1] — validate by: [how to test this]
 
-[Paragraph 4: Why this synthesis is better than any single path]
-
-## Confidence: [X/10]
-
-[Detailed justification — what makes us confident, what makes us uncertain]
+## Unverified Assumptions
+[All [ASSUME]-tagged claims that survived into the final answer]
+- [assumption 1]: impact if wrong — [consequence]
+- [assumption 2]: impact if wrong — [consequence]
 
 ## Dissenting Views
+[Minority opinions that weren't adopted but remain valid]
+- [Persona X] argued [alternative] because [reason].
+  Not adopted because [reason], but valid if [conditions].
 
-[If any path strongly disagreed with this synthesis, note it here.
-Users deserve to know about unresolved disagreements.]
-
-- [Persona X] argued [alternative] because [reason]. We didn't adopt this because [reason], but it remains a valid consideration if [conditions].
+## Thought Process Summary
+[2-3 paragraphs:
+ - Which perspectives contributed what
+ - Key disagreements and how they were resolved
+ - Why this synthesis beats any individual path]
 ```
+
+### Track B (Plan Mode) Format
+
+Written to plan file:
+
+```markdown
+# [Topic] Implementation Plan
+
+## Context
+[Deep-think analysis summary: why this change is needed]
+[How many personas participated, convergence/divergence status]
+
+## Approach
+[Recommended approach from synthesis]
+[Which persona's perspective was adopted and why]
+
+## Changes
+| # | Change | Files |
+|---|--------|-------|
+| 1 | [change description] | [file paths] |
+
+[Detailed implementation steps for each change]
+
+## Confidence Assessment
+
+### Convergence: [Y of N]
+### Evidence Quality: [HIGH/MEDIUM/LOW]
+
+### High-Confidence Changes
+- [change]
+
+### Medium-Confidence Changes
+- [change] — caveat: [note]
+
+### Low-Confidence Changes
+- [change] — validate by: [test]
+
+## Unverified Assumptions
+- [assumption]: impact if wrong — [consequence]
+
+## Dissenting Views
+- [persona] argued [alternative] because [reason]
+
+## Verification
+- [test/validation method 1]
+- [test/validation method 2]
+```
+
+→ Then `ExitPlanMode` for user approval.

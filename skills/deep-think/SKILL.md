@@ -1,298 +1,408 @@
 ---
 name: deep-think
 description: >
-  Deep reasoning skill using Claude Code's Agent Teams.
-  Spawns multiple personas with enforced minimum depth, includes a challenge round
-  where teammates critique each other, and iterates on low-confidence answers.
+  Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth.
+  Uses tiered complexity (2-5 agents), targeted critique→reflect cycles,
+  convergence shortcuts, and 3-pass PENCIL-inspired synthesis.
+  Detects execution environment to choose between Agent Teams (normal mode)
+  and Task Orchestration (plan mode).
   Use when the user prefixes with "deep think", "딥씽크", "깊게 생각해", or requests
   thorough analysis. Best for complex architecture, debugging, algorithmic, or
   multi-domain problems. NOT for simple lookups.
-  Requires: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
+  Requires: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (Track A only)
 ---
 
-# Deep Think
+# Deep Think v2
 
-Multi-phase reasoning with **forced depth**, **challenge rounds**, and **confidence-based iteration**. Each reasoning path is explored by a separate teammate, then teammates **attack each other's solutions** before synthesis.
+Adaptive multi-phase reasoning with **evidence-based depth**, **targeted critique→reflect cycles**, **convergence shortcuts**, and **3-pass synthesis**. Agent count scales with problem complexity (2-5).
 
 ## Prerequisites
 
 ```bash
+# Track A (Agent Teams) only — Track B works without this
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
+
+## Execution Track Detection
+
+Before starting, detect which track to use:
+
+```
+System prompt contains "Plan mode is active"?
+  → Yes: Track B (Task Orchestration) — output to plan file
+  → No:  Track A (Agent Teams) — output to .deep-think/06-answer/answer.md
+```
+
+---
+
+## Personas
+
+### Core Personas (always available)
+
+**Pragmatist**
+Focus: What works in production at 3am when things break.
+Hard Constraint: Must include a concrete implementation sequence with time estimates.
+Consider: maintenance burden, onboarding, debugging at scale.
+Favor battle-tested over novel. Ask: "Will this still make sense in 2 years?"
+
+**First-Principles**
+Focus: Derive from fundamentals. Question every assumption.
+Hard Constraint: Must question at least one widely-accepted assumption.
+Don't accept "best practices" — ask WHY they're best. Maybe they're not.
+Focus on correctness and logical soundness above all else.
+
+**Adversarial**
+Focus: Everything will fail. Find out how.
+Hard Constraint: Must provide at least one specific failure scenario (no abstract concerns).
+Consider: malicious input, race conditions, resource exhaustion, cascading failures.
+Your job is to BREAK every approach. Be paranoid. Be concrete.
+
+**Optimizer**
+Focus: Think in O(n), cache lines, memory bandwidth, network round-trips.
+Hard Constraint: Must include a quantitative cost model (even if estimated).
+Quantify EVERYTHING. Don't say "faster" — say "3x faster because..."
+Profile before you optimize. Know your bottlenecks.
+
+### Dynamic Persona
+
+**Domain Specialist** (replaces fixed Innovator)
+Assigned by team lead in Phase 0 based on problem type:
+- Performance → "Performance Engineer"
+- Architecture → "Systems Architect"
+- UX decisions → "UX Researcher"
+- DB design → "Data Engineer"
+- Security → "Security Engineer"
+Hard Constraint: Must reference at least 2 established best practices or anti-patterns from the domain.
+
+### Tier-based Persona Assignment
+
+| Tier | Personas |
+|------|----------|
+| Tier 1 (집중) | Pragmatist + Domain Specialist |
+| Tier 2 (표준) | Pragmatist + First-Principles + Adversarial |
+| Tier 3 (복합) | Pragmatist + First-Principles + Adversarial + Optimizer + Domain Specialist |
+
+---
 
 ## Architecture
 
 ```
 You (Team Lead)
-├── Phase 1-2: Analysis & Decomposition (you, detailed)
-├── Phase 3: Parallel Paths (4-5 teammates, MINIMUM 2000 words each)
-│   ├── 🧠 first-principles
-│   ├── 🔧 pragmatist  
-│   ├── 😈 adversarial
-│   ├── 💡 innovator
-│   └── ⚡ optimizer
-├── Phase 3.5: Challenge Round (teammates attack each other)
-│   └── Each teammate critiques one other teammate's path
-├── Phase 4: Verification + Iteration
-│   └── If critical flaws found → request revision (max 2 rounds)
-├── Phase 5: Weighted Synthesis
-└── Phase 6: Final Answer with Confidence
+├── Phase 0: Triage & Frame (you — classify, assign tier)
+├── Phase 1: Parallel Paths (2-5 agents, evidence-based depth)
+│   └── Personas assigned per tier
+├── Phase 2: Convergence Check (you — shortcut if aligned)
+├── Phase 3a: Targeted Critique (max-disagreement pairs)
+├── Phase 3b: Author Reflection (Tier 3 only)
+├── Phase 4: 3-Pass Synthesis (Extract → Reconcile → Compose)
+└── Phase 5: Final Answer (structured confidence)
 ```
+
+---
 
 ## Workflow
 
-### Phase 1-2: Analysis & Decomposition (You)
+### Phase 0: Triage & Frame (Team Lead)
 
-**Spend real time here.** This is the foundation. Use `/effort max`.
+**Evaluate the problem on 4 dimensions (0-2 each):**
+
+| Dimension | 0 | 1 | 2 |
+|-----------|---|---|---|
+| Solution Space Breadth | One correct answer | Few approaches | Many paradigms |
+| Stakeholder Tension | None | Some trade-offs | Fundamental tensions |
+| Uncertainty Level | Known problem | Some unknowns | Exploratory/uncharted |
+| Impact Scope | Local | Module-level | System-wide |
+
+**Tier assignment:**
+
+| Tier | Score | Agents | Challenge |
+|------|-------|--------|-----------|
+| Tier 1 (집중) | 0-2 | 2 | Mutual critique ×1 |
+| Tier 2 (표준) | 3-5 | 3 | Targeted critique |
+| Tier 3 (복합) | 6-8 | 4-5 | Critique → Reflect |
+
+**Phase 0 Output:**
+
+```markdown
+## Problem Frame
+- Question: [one sentence]
+- Type: [architecture / optimization / design / debugging / knowledge]
+- Dimensions: Space=[X] Tension=[X] Uncertainty=[X] Scope=[X]
+- Tier: [1/2/3] (score: X/8)
+- Key Constraints: [list]
+- Success Criteria: [what a good answer looks like]
+- Persona Assignments: [who gets which focus question]
+- Domain Specialist Role: [specific role name, if Tier 1 or 3]
+```
+
+**Pre-Mortem (Tier 3 only):**
+
+After framing, add:
+
+```markdown
+## Pre-Mortem
+Imagine 3 months from now, our chosen approach has failed badly.
+- What went wrong? (3 scenarios)
+- What early warning signs should we watch for?
+- Which assumptions, if wrong, would invalidate the entire approach?
+```
+
+Pre-mortem scenarios become mandatory evaluation criteria for all paths.
+
+**Initialize workspace (Track A only):**
 
 ```bash
-python scripts/deep_think.py init "your question" -c extreme -w .deep-think
+python scripts/deep_think.py init "your question" -c tier2 -w .deep-think
 ```
 
-Write `.deep-think/01-analysis/analysis.md` (aim for 500+ words):
-- Precise problem restatement with all nuances
-- Problem type and why it's complex
-- ALL constraints (explicit and implicit)
-- Hidden assumptions that might be wrong
-- What "perfect" looks like
-- What "good enough" looks like
-- Known unknowns
+### Phase 1: Parallel Paths
 
-Write `.deep-think/02-decomposition/decomposition.md` (aim for 500+ words):
-- Sub-problems with dependency graph
-- Which sub-problems are hardest and why
-- Knowledge gaps that need research
-- Risks and what could go wrong
-- Attack plan with rationale
-
-### Phase 3: Parallel Paths (Agent Team)
-
-**Critical: Enforce minimum depth.** Each teammate must write extensively.
-
+**Track A (Agent Teams):**
 ```
-Create an agent team called "deep-think" with /effort max.
+Create agent team "deep-think".
 
-IMPORTANT RULES FOR ALL TEAMMATES:
-1. Use /effort max
-2. Each path MUST be at least 2000 words
-3. Do NOT submit a short answer. If your first draft is under 2000 words, expand with:
-   - More edge cases and corner cases
-   - Alternative sub-approaches you considered and rejected
-   - Step-by-step implementation details
-   - Failure modes and mitigations
-   - Real-world examples or analogies
-4. Take your time. Speed is not valued. Depth is.
-
-The problem: [paste from analysis.md]
-
-Spawn these teammates:
-
-1. "first-principles"
-   You derive everything from fundamentals. Question every assumption.
-   Don't accept "best practices" — ask WHY they're best. Maybe they're not.
-   Focus on correctness and logical soundness above all else.
-   If the conventional approach is wrong, say so and prove it.
-
-2. "pragmatist"
-   You care about what actually works in production at 3am when things break.
-   Consider: maintenance burden, onboarding new devs, debugging at scale.
-   Favor battle-tested over novel. Ask: "Will this still make sense in 2 years?"
-   Include specific examples from real-world systems.
-
-3. "adversarial"
-   You are a pessimist. Everything will fail. Find out how.
-   Consider: malicious input, network failures, race conditions, resource exhaustion,
-   edge cases that happen once per million, cascading failures.
-   Your job is to BREAK every other approach. Be paranoid.
-
-4. "innovator"
-   Look for unconventional solutions everyone else missed.
-   Draw analogies from completely different domains.
-   Ask "What if we did the opposite?" or "What would this look like in 10 years?"
-   Propose at least one approach that seems crazy but might work.
-
-5. "optimizer"
-   Think in O(n), cache lines, memory bandwidth, network round-trips.
-   Quantify EVERYTHING. Don't say "faster" — say "3x faster because..."
-   Consider the full system: CPU, memory, I/O, network, cold starts.
-   Profile before you optimize. Know your bottlenecks.
-
-Each teammate:
-- Read .deep-think/01-analysis/analysis.md and .deep-think/02-decomposition/decomposition.md
+Each assigned persona:
+- Read .deep-think/00-triage/frame.md
 - Write solution to .deep-think/03-paths/path-{name}.md
-- MUST include: approach, detailed reasoning (1000+ words), concrete solution,
-  weaknesses you see in your OWN approach, confidence level with justification
-- When done, message team-lead with a 3-sentence summary
+- Follow the structured path template (see phase-templates.md)
+- When done, message team-lead with Core Thesis + key differentiator
 ```
 
-### Phase 3.5: Challenge Round
-
-**This is the key differentiator.** Teammates attack each other's solutions.
-
+**Track B (Task Orchestration):**
 ```
-CHALLENGE ROUND - Each teammate reads and critiques ONE other path:
-
-- first-principles: Read path-pragmatist.md and write a critique
-- pragmatist: Read path-adversarial.md and write a critique  
-- adversarial: Read path-optimizer.md and write a critique
-- optimizer: Read path-innovator.md and write a critique
-- innovator: Read path-first-principles.md and write a critique
-
-For your critique, write to .deep-think/03.5-challenges/challenge-{you}-vs-{them}.md
-
-Your critique MUST include:
-1. The STRONGEST argument against their approach (steelman, then attack)
-2. Specific scenarios where their approach fails
-3. Logical flaws or unstated assumptions
-4. What they missed that you caught
-5. Rating: [CRITICAL FLAW / MAJOR WEAKNESS / MINOR ISSUE / SOLID]
-
-Be harsh. Be specific. Find the holes.
+For each assigned persona, launch a Task agent:
+- Task(name="{persona}", prompt="[problem frame] + [persona instructions] + [path template]")
+- Collect returned text from each Task
 ```
 
-### Phase 4: Verification + Iteration
+**Path Structure (replaces word count minimum):**
 
-After challenges complete, spawn a verifier who triggers iteration if needed:
+Each path MUST include these sections:
+1. Core Thesis (1-2 sentences)
+2. Evidence Chain (each claim tagged: [CODE] [BENCH] [PATTERN] [REASON] [ASSUME])
+3. Implementation Sequence (dependency-ordered steps)
+4. Risk Register (table: risk / likelihood / impact / mitigation)
+5. What This Path Uniquely Offers (1-2 things other paths won't surface)
 
-```
-Spawn "verifier" teammate with /effort max.
+`[ASSUME]`-tagged claims are treated as hypotheses in synthesis. They appear as unverified assumptions in the final answer.
 
-You are a senior reviewer seeing all this work for the first time.
+### Phase 2: Convergence Check (Team Lead)
 
-1. Read ALL files in .deep-think/03-paths/
-2. Read ALL files in .deep-think/03.5-challenges/
-3. Write .deep-think/04-verification/verification.md with:
-   - Score each path (1-10) on: Correctness, Completeness, Practicality, Originality
-   - Which challenges revealed real problems vs nitpicks
-   - Contradictions between paths — who is RIGHT?
-   - Blind spots that ALL paths missed
-   - Your devil's advocate argument against the best approach
-
-4. ITERATION CHECK:
-   If ANY path was rated CRITICAL FLAW in challenges, OR
-   If ANY path scored below 5 in correctness:
-   → Message that teammate: "Revise your path addressing: [specific issues]"
-   → They must write path-{name}-revised.md
-   → You re-evaluate after revision
-
-5. After iteration (or if none needed), proceed to synthesis.
-```
-
-### Phase 5: Weighted Synthesis
+After all paths complete, read each path's Core Thesis.
 
 ```
-Continue as verifier:
-
-Write .deep-think/05-synthesis/synthesis.md with:
-
-1. WEIGHTED COMBINATION
-   - Assign weight to each path based on verification scores
-   - Best elements from each, weighted by reliability
-   - Explicit attribution: "From first-principles: X, From pragmatist: Y"
-
-2. RESOLVED CONTRADICTIONS
-   - Where paths disagreed, state the resolution and WHY
-
-3. ADDRESSED CHALLENGES  
-   - How the synthesis handles each valid critique
-
-4. REMAINING UNCERTAINTY
-   - What we STILL don't know (epistemic humility)
-   
-5. CONFIDENCE CALIBRATION
-   - Overall confidence: [LOW / MEDIUM / HIGH / VERY HIGH]
-   - If LOW or MEDIUM, explain what would increase it
+If (N-1) or more of N paths converge on the same core recommendation:
+  → Skip challenge round
+  → Proceed to synthesis with note: "Strong convergence detected — high confidence in common recommendation"
+  → Record minority opinion in "Dissenting Views"
+Otherwise:
+  → Proceed to Phase 3a
 ```
 
-### Phase 6: Final Answer
+**Expected effect:** 40-50% time savings on strong models (Opus 4.6) for convergent problems.
+
+### Phase 3a: Targeted Critique
+
+**Assignment: max-disagreement pairs** (NOT round-robin).
+Team lead assigns each critic to the path they most disagree with.
+
+**Critique quality rules:**
+All critiques MUST include specific scenarios. Critiques without concrete scenarios are ignored in synthesis.
 
 ```
-Continue as verifier:
+Weak: "This approach may have performance issues at scale"
+Strong: "With 1,650 cells + 30 columns, the O(n*m²) algorithm executes
+        49,500 array traversals per render, causing ~110ms interaction delay"
+```
 
-Write .deep-think/06-answer/answer.md with:
+**Critique rating scale (3-level):**
+- **SOUND**: No significant gaps found
+- **HAS-GAPS**: Specific issues identified but approach is viable with fixes
+- **FUNDAMENTALLY-FLAWED**: Core thesis is broken
 
-# Final Answer
+**Targeted critique question examples:**
+- First-Principles → Pragmatist: "What practical constraints does this path underestimate?"
+- Adversarial → Optimizer: "In what specific production scenario does this optimization fail?"
+- Pragmatist → Adversarial: "Which of these risk assessments confuse actual probability with worst-case?"
 
-## TL;DR (1 paragraph)
-[Executive summary]
+**Track A:** Each critic reads the target path file and writes to `.deep-think/03.5-challenges/`.
+**Track B:** Team lead passes the target path's full text into the critic Task's prompt.
 
-## Detailed Answer (1000+ words)
-[Complete solution with all necessary detail]
+### Phase 3b: Author Reflection (Tier 3 only)
 
-## Implementation Notes
-[Concrete next steps, code snippets if relevant]
+After receiving critique, each path author:
+- Accepted points → revised approach
+- Rejected points → counter-argument with evidence
+- Updated self-assessment: SOUND / HAS-GAPS
 
-## Thought Process Summary
-[3-4 paragraphs explaining:
- - Which perspectives contributed what
- - What challenges revealed and how they were addressed
- - Why this synthesis beats any individual path
- - What we're still uncertain about]
+**Track A:** Send critique via message, author writes `path-{name}-reflected.md`.
+**Track B:** Launch new Task with original path + critique in prompt, collect reflected version.
 
-## Confidence: [X/10]
-[Detailed justification]
+### Phase 4: 3-Pass Synthesis
 
-## Dissenting Views
-[If any path strongly disagreed with the synthesis, note it here.
- The user deserves to know about unresolved disagreements.]
+Replaces weighted accumulation with distillation-based synthesis (PENCIL-inspired):
+
+**Pass 1: Extract**
+From each path, extract ONLY:
+- (a) Core thesis
+- (b) Unique contributions
+- (c) HIGH-confidence recommendations
+Discard everything else.
+
+**Pass 2: Reconcile**
+Using the disagreement map:
+- Factual disagreements → resolve by evidence
+- Preference disagreements → present as explicit trade-offs (with recommended choice)
+- Scope disagreements → "depends on context" + context guide for each
+
+**Pass 3: Compose**
+Write the final answer fresh from reconciled materials. **No text copying from original paths.** This forces genuine integration.
+
+**Blind Spot Check (all tiers):**
+Before finalizing, ask: "What question did NO path address that a domain expert would ask?"
+
+### Phase 5: Final Answer
+
+Write the final answer with structured confidence (see phase-templates.md for full template).
+
+**Structured Confidence (replaces X/10):**
+
+```markdown
+## Confidence Assessment
+
+### Convergence: [Y of N paths recommended this approach]
+### Evidence Quality: HIGH (code-based) / MEDIUM (pattern-based) / LOW (reasoning only)
+### Risk Level: [from adversarial analysis]
+
+### High-Confidence Recommendations (all paths agree, evidence-backed)
+- ...
+
+### Medium-Confidence Recommendations (majority agree, some caveats)
+- ...
+
+### Low-Confidence Recommendations (exploratory, needs validation)
+- ...
 ```
 
 ### Shutdown
 
+**Track A:**
 ```
-Shutdown the deep-think team. Wait for all teammates to finish current work.
+Shutdown the deep-think team. Wait for all teammates to finish.
 ```
-
 Then generate report:
 ```bash
 python scripts/deep_think.py report -w .deep-think
 ```
 
-## Time Budget Guidelines
+**Track B:**
+Write final plan to plan file → `ExitPlanMode` for user approval.
 
-| Complexity | Teammates | Expected Wall Time | Min Words/Path |
-|------------|-----------|-------------------|----------------|
-| medium     | 3         | 10-15 min         | 1500           |
-| high       | 4         | 15-25 min         | 2000           |
-| extreme    | 5         | 25-40 min         | 2500           |
+---
 
-**Do NOT rush.** If teammates finish too fast, their output is probably shallow.
+## Tier Workflows Summary
+
+### Tier 1 (집중, ~60% of use)
+```
+Phase 0: Triage & Frame → Tier 1
+Phase 1: 2 agents parallel paths
+Phase 2: Convergence check → if aligned, skip to synthesis
+Phase 3a: Mutual critique ×1 (if not converged)
+Phase 4: 3-pass synthesis
+Phase 5: Final answer
+Agents: 2 (+ team lead)
+```
+
+### Tier 2 (표준, ~30% of use)
+```
+Phase 0: Triage & Frame → Tier 2, focus questions assigned
+Phase 1: 3 agents parallel paths (structured requirements)
+Phase 2: Convergence check
+Phase 3a: Targeted critique (specific scenarios required)
+Phase 4: 3-pass synthesis + blind spot check
+Phase 5: Final answer (structured confidence)
+Agents: 3 (+ team lead)
+```
+
+### Tier 3 (복합, ~10% of use)
+```
+Phase 0: Triage & Frame + Pre-Mortem → Tier 3
+Phase 1: 4-5 agents parallel paths (evidence anchoring)
+Phase 2: Convergence check
+Phase 3a: Targeted critique (specific scenarios required)
+Phase 3b: Author reflection (accept/rebut critique)
+Phase 4: 3-pass synthesis + blind spot check
+Phase 5: Final answer (structured confidence + disagreement tracking)
+Agents: 4-5 (+ team lead)
+```
+
+---
 
 ## Output Structure
 
+### Track A (Agent Teams)
 ```
 .deep-think/
-├── 00-question.md
-├── 01-analysis/analysis.md           # Your detailed analysis (500+ words)
-├── 02-decomposition/decomposition.md # Your sub-problems (500+ words)
+├── 00-triage/frame.md                  # Problem frame + tier assignment
+├── 01-analysis/analysis.md             # Detailed analysis
+├── 02-decomposition/decomposition.md   # Sub-problems
 ├── 03-paths/
-│   ├── path-first-principles.md      # Each: 2000+ words
-│   ├── path-pragmatist.md
-│   ├── path-adversarial.md
-│   ├── path-innovator.md
-│   ├── path-optimizer.md
-│   └── path-{name}-revised.md             # Revisions if needed
+│   ├── path-pragmatist.md              # Structured evidence-based paths
+│   ├── path-first-principles.md
+│   ├── path-{persona}.md
+│   └── path-{name}-reflected.md        # Tier 3: post-critique reflection
 ├── 03.5-challenges/
-│   ├── challenge-first-principles-vs-pragmatist.md
-│   ├── challenge-pragmatist-vs-adversarial.md
+│   ├── critique-{from}-vs-{to}.md      # Targeted critiques
 │   └── ...
-├── 04-verification/verification.md   # Scores + iteration decisions
-├── 05-synthesis/synthesis.md         # Weighted combination
-├── 06-answer/answer.md               # Final polished answer
-└── REPORT.md                         # Generated summary
+├── 04-synthesis/
+│   ├── pass1-extract.md                # Extracted elements
+│   ├── pass2-reconcile.md              # Disagreement resolution
+│   └── pass3-compose.md                # Fresh composition
+├── 05-answer/answer.md                 # Final polished answer
+├── session.json
+└── REPORT.md
 ```
+
+### Track B (Plan Mode)
+Output goes to plan file:
+```markdown
+# [Topic] Implementation Plan
+
+## Context
+[Deep-think analysis summary: why this change is needed]
+[How many personas participated, convergence/divergence status]
+
+## Approach
+[Recommended approach from synthesis]
+[Which persona's perspective was adopted and why]
+
+## Changes
+| # | Change | Files |
+[Concrete implementation steps]
+
+## Confidence Assessment
+[Structured confidence]
+
+## Dissenting Views
+[Minority opinions]
+
+## Verification
+[Test/validation methods]
+```
+→ Then `ExitPlanMode` for user approval.
+
+---
 
 ## Troubleshooting
 
-**Teammates finishing too fast?**
-→ Message them: "Your output is too short. Expand with more edge cases, alternatives, and implementation details."
+**Paths lacking evidence tags?**
+→ Message: "Tag each claim with [CODE], [BENCH], [PATTERN], [REASON], or [ASSUME]."
 
-**Challenge round too soft?**
-→ Message challengers: "Find REAL problems. I want to see specific scenarios where this fails."
+**Critiques too vague?**
+→ Message: "Provide a specific scenario with numbers. Vague critiques are ignored in synthesis."
 
-**Verifier not iterating?**
-→ Explicitly ask: "Did any path have critical flaws? If so, request a revision."
+**Convergence check unclear?**
+→ Compare Core Thesis sentences. If they recommend the same fundamental approach (even with different details), that's convergence.
 
-## Effort Settings
-
-Always use `/effort max` for deep think sessions. The extra thinking time is the point.
+**Tier seems wrong?**
+→ Re-evaluate dimensions. When in doubt, tier up (Tier 2 → Tier 3) rather than down.
