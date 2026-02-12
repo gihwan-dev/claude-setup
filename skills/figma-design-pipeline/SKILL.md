@@ -1,22 +1,19 @@
 ---
 name: figma-design-pipeline
 description: Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. "/figma-pipeline", "피그마 파이프라인" 등의 요청 시 사용
-disable-model-invocation: false
-argument-hint: <Figma URL> <컴포넌트 파일 경로>
 ---
 
-argument: $ARGUMENTS
 
-# Claude Command: Figma Design Pipeline
+# Figma Design Pipeline
 
-이 커맨드는 Figma 디자인을 코드로 구현한 뒤 디자인 검증까지 자동으로 수행하는 파이프라인입니다.
+이 스킬은 Figma 디자인을 코드로 구현한 뒤 디자인 검증까지 자동으로 수행하는 파이프라인입니다.
 `figma-to-code` → `design-check` 순서로 실행됩니다.
 
 ## 워크플로우 (3단계)
 
 ### Step 1. 입력 파싱 + 사전 검증
 
-`$ARGUMENTS`에서 Figma URL과 컴포넌트 파일 경로를 파싱합니다.
+사용자 요청에서 Figma URL과 컴포넌트 파일 경로를 파싱합니다.
 
 **파싱:**
 
@@ -31,7 +28,7 @@ argument: $ARGUMENTS
 
 ### Step 2. figma-to-code 실행
 
-`.claude/skills/figma-to-code/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~6)를 실행합니다.
+`${CODEX_HOME:-$HOME/.codex}/skills/figma-to-code/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~6)를 실행합니다.
 
 동일한 Figma URL과 컴포넌트 경로를 인자로 전달합니다.
 
@@ -42,7 +39,7 @@ argument: $ARGUMENTS
 
 ### Step 3. design-check 실행
 
-`.claude/skills/design-check/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~7)를 실행합니다.
+`${CODEX_HOME:-$HOME/.codex}/skills/design-check/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~7)를 실행합니다.
 
 동일한 Figma URL과 컴포넌트 경로를 인자로 전달하여 디자인 검증을 수행합니다.
 

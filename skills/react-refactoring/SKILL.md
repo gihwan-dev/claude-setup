@@ -34,7 +34,7 @@ description: |
 | 조건 | 모드 | 설명 |
 |------|------|------|
 | 1-2개 단순 문제점 | Standard Mode | 기존 sequential-thinking 3회 방식 |
-| 3개 이상 또는 복잡한 문제점 | Multi-Perspective Mode | 병렬 sub-agent 3관점 분석 |
+| 3개 이상 또는 복잡한 문제점 | Multi-Perspective Mode | 병렬 다중 관점 분석 |
 
 ---
 
@@ -82,19 +82,19 @@ sequential-thinking으로 다음을 분석:
 
 #### Multi-Perspective Mode (3개 이상 또는 복잡한 문제점)
 
-각 문제점에 대해 3개 관점의 Task sub-agent를 **병렬 실행**한다.
+각 문제점에 대해 3개 관점의 분석 작업을 **병렬 실행**한다.
 
 ##### 에이전트 구성
 
-| Agent | subagent_type | model | 관점 |
-|-------|---------------|-------|------|
-| Readability Advocate | general-purpose | sonnet | 가독성, 의도의 명확성 |
-| Architecture Purist | typescript-pro | sonnet | 타입 안전성, 패턴 일관성, 구조적 정합성 |
-| Pragmatic Developer | frontend-developer | sonnet | 유지보수성, 실용성, 개발 경험 |
+| 관점 | 역할 | 중점 |
+|------|------|------|
+| Readability Advocate | 가독성 중심 리뷰어 | 가독성, 의도의 명확성 |
+| Architecture Purist | 구조/타입 중심 리뷰어 | 타입 안전성, 패턴 일관성, 구조적 정합성 |
+| Pragmatic Developer | 실용성 중심 리뷰어 | 유지보수성, 실용성, 개발 경험 |
 
 ##### 실행 방법
 
-3개의 Task sub-agent를 **단일 메시지에서 동시 실행** (`run_in_background: true`):
+3개의 관점 분석을 **단일 단계에서 동시 실행** (`병렬 실행`):
 
 **Agent: Readability Advocate**
 ```
@@ -155,13 +155,13 @@ Write your analysis. Focus on whether each change is WORTH THE EFFORT and improv
 |-----------|------|
 | 3개 일치 (수용/수정/기각) | 높은 확신으로 해당 판단 채택 |
 | 2:1 (다수:소수) | 소수 의견의 근거를 검토 후 오케스트레이터가 최종 결정 |
-| 3개 상이 | `AskUserQuestion`으로 사용자에게 선택지와 근거를 제시하여 판단 요청 |
+| 3개 상이 | 사용자 확인 질문으로 사용자에게 선택지와 근거를 제시하여 판단 요청 |
 
 ---
 
 #### Step 2.4: 불명확한 점 질문 (공통)
 
-분석 중 다음 상황이면 **반드시** `AskUserQuestion` 도구로 질문:
+분석 중 다음 상황이면 **반드시** 사용자 확인 질문을 수행:
 
 - 비즈니스 컨텍스트가 필요한 경우 (예: "이 컴포넌트가 여러 곳에서 재사용되나요?")
 - 기존 코드의 의도가 불명확한 경우 (예: "이 훅이 이렇게 설계된 이유가 있나요?")
@@ -183,7 +183,7 @@ Write your analysis. Focus on whether each change is WORTH THE EFFORT and improv
 
 ### Phase 4: 사용자 승인
 
-계획서를 제시하고 `AskUserQuestion`으로 승인 요청:
+계획서를 제시하고 사용자 확인 질문으로 승인 요청:
 
 ```
 리팩토링 계획을 검토해주세요.

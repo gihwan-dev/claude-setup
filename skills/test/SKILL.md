@@ -1,7 +1,6 @@
 ---
 name: test
 description: 테스트 코드 작성 스킬. "테스트 작성", "브라우저 테스트", "유닛 테스트", "테이블 테스트" 등의 요청 시 사용
-argument-hint: 테스트 대상 (예: RowOrdering 브라우저 테스트, cellMergingUtils 유닛 테스트)
 ---
 
 # Role

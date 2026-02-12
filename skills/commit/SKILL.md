@@ -1,12 +1,11 @@
 ---
 name: commit
 description: 컨벤셔널 커밋 메시지 생성. "커밋해줘", "커밋", "변경사항 저장" 등의 요청 시 사용
-disable-model-invocation: false
 ---
 
-# Claude Command: Commit
+# Commit
 
-이 커맨드는 컨벤셔널 커밋 메시지를 사용하여 체계적인 커밋을 생성하도록 도와줍니다. 커밋시 husky 훅이 실행되므로, lint, typecheck 등의 검증을 필요하지 않습니다.
+이 스킬은 컨벤셔널 커밋 메시지를 사용하여 체계적인 커밋을 생성하도록 도와줍니다. 커밋시 husky 훅이 실행되므로, lint, typecheck 등의 검증을 필요하지 않습니다.
 
 1. `--no-verify`로 지정되면 --no-verify로 실행해 훅 실행을 건너 뜁니다.
 2. `git status`로 스테이징된 파일을 확인합니다

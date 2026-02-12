@@ -1,7 +1,6 @@
 ---
 name: milestone
 description: 프로젝트 마일스톤 생성. SPEC.md와 plan.md를 기반으로 작업 목록 생성. "마일스톤 만들어", "작업 목록" 등의 요청 시 사용
-disable-model-invocation: false
 ---
 
 # 워크플로우: 프로젝트 마일스톤 생성
@@ -15,8 +14,8 @@ disable-model-invocation: false
 1. `SPEC.md` — 요구사항 (기능/비기능 요구사항, 제약조건, 사용자 시나리오)
 2. `plan.md` — 구현 상세 (아키텍처, 디렉토리 구조, 데이터 흐름 등)
 
-- SPEC.md가 없으면 `/spec`을 먼저 실행하도록 안내합니다.
-- plan.md가 없으면 `/planner`를 먼저 실행하도록 안내합니다.
+- SPEC.md가 없으면 `spec` 스킬을 먼저 실행하도록 안내합니다.
+- plan.md가 없으면 `planner` 스킬을 먼저 실행하도록 안내합니다.
 
 분석 항목:
 1.  **핵심 목표 식별**: 프로젝트가 달성해야 할 비즈니스 목표와 주요 기능을 파악하십시오.

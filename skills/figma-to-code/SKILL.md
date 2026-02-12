@@ -1,21 +1,18 @@
 ---
 name: figma-to-code
 description: Figma 디자인을 코드로 변환. Figma URL과 빈 컴포넌트 파일 경로를 받아 UI 구현. "/figma-to-code", "피그마 구현" 등의 요청 시 사용
-disable-model-invocation: false
-argument-hint: <Figma URL> <컴포넌트 파일 경로> (예: https://figma.com/design/...?node-id=1-2 src/features/widget-builder/ui/MyComponent.tsx)
 ---
 
-argument: $ARGUMENTS
 
-# Claude Command: Figma to Code
+# Figma to Code
 
-이 커맨드는 Figma 디자인 데이터를 기반으로 React 컴포넌트 코드를 생성합니다.
+이 스킬은 Figma 디자인 데이터를 기반으로 React 컴포넌트 코드를 생성합니다.
 
 ## 워크플로우 (6단계)
 
 ### Phase 1. 입력 파싱
 
-`$ARGUMENTS`에서 Figma URL과 컴포넌트 파일 경로를 추출합니다.
+사용자 요청에서 Figma URL과 컴포넌트 파일 경로를 추출합니다.
 
 **Figma URL 처리:**
 

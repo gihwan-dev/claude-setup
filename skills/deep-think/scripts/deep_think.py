@@ -75,14 +75,14 @@ def init_session(workspace: str, question: str, complexity: str = "tier2") -> di
     with open(ws / "00-question.md", "w") as f:
         f.write("# Deep Think v2 Session\n\n")
         f.write(f"**Question/Task:**\n\n{question}\n\n")
-        f.write(f"**Tier:** {tier}\n")
+        f.write(f"**Tier:** {complexity}\n")
         f.write(f"**Teammates:** {config['teammates']}\n")
         f.write(f"**Personas:** {', '.join(config['personas'])}\n")
         f.write(f"**Expected time:** {config['expected_time']}\n")
         f.write(f"**Created:** {session['created_at']}\n")
 
     print(f"✅ Deep Think v2 workspace initialized: {ws}")
-    print(f"   Tier: {tier}")
+    print(f"   Tier: {complexity}")
     print(f"   Teammates: {config['teammates']}")
     print(f"   Personas: {', '.join(config['personas'])}")
     print(f"   Expected time: {config['expected_time']}")

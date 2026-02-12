@@ -1,15 +1,12 @@
 ---
 name: design-check
 description: 디자인 검증 자동화. Figma vs 구현 비교 리포트 생성. "/design-check", "디자인 검증" 등의 요청 시 사용
-disable-model-invocation: false
-argument-hint: <Figma URL> <컴포넌트 경로> (예: https://figma.com/design/...?node-id=1-2 src/shared/ui/card/Card.tsx)
 ---
 
-argument: $ARGUMENTS
 
-# Claude Command: Design Check
+# Design Check
 
-이 커맨드는 Figma 디자인과 구현된 컴포넌트를 자동 비교하여 Markdown 보고서를 생성합니다.
+이 스킬은 Figma 디자인과 구현된 컴포넌트를 자동 비교하여 Markdown 보고서를 생성합니다.
 
 ## 워크플로우 (병렬화 아키텍처)
 
@@ -46,7 +43,7 @@ Phase 5 → Phase 6 → Phase 7 (순차 실행)
 
 ### Phase 1. 입력 파싱
 
-사용자 인자에서 Figma URL과 컴포넌트 경로를 추출합니다.
+사용자 요청에서 Figma URL과 컴포넌트 경로를 추출합니다.
 
 **Figma URL → fileKey, node ID 변환:**
 
@@ -69,14 +66,12 @@ Phase 5 → Phase 6 → Phase 7 (순차 실행)
 
 다음 작업을 **동시에** 실행합니다.
 
-#### Task A: Figma 스크린샷 캡처 (run_in_background: true)
-
-**Agent:** Task tool with `subagent_type: Bash`
+#### Task A: Figma 스크린샷 캡처 (병렬 실행)
 
 Figma REST API를 통해 노드 스크린샷을 PNG 파일로 저장합니다.
 
 ```bash
-pnpm exec tsx .claude/skills/design-check/scripts/capture-figma-screenshot.ts \
+pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/design-check/scripts/capture-figma-screenshot.ts \
   --url "{figmaUrl}" \
   --output "artifacts/screenshots/figma/{Name}.png" \
   --scale 2
@@ -107,9 +102,7 @@ pnpm exec tsx .claude/skills/design-check/scripts/capture-figma-screenshot.ts \
 - `imageSize`: 실제 PNG 픽셀 크기
 - 4096px 이상일 경우 경고 출력 (Figma 하드 리미트)
 
-#### Task B: 디자인 데이터 수집 (run_in_background: true)
-
-**Agent:** Task tool with `subagent_type: general-purpose`
+#### Task B: 디자인 데이터 수집 (병렬 실행)
 
 MCP Figma Desktop 도구를 사용하여 디자인 데이터를 수집합니다.
 
@@ -137,7 +130,7 @@ mcp__figma-desktop__get_variable_defs(nodeId: "{nodeId}")
 
 #### Main Agent: Story 준비 (동시 진행)
 
-Task A, B가 백그라운드에서 실행되는 동안 Main Agent가 직접 수행합니다.
+Task A, B가 병렬로 실행되는 동안 메인 분석 흐름이 직접 수행합니다.
 
 **3-1. 컴포넌트 분석:**
 
@@ -199,7 +192,7 @@ export const Default: Story = {
 
 #### Stage 1 완료 게이트
 
-**Task A의 bbox 정보 수집** (TaskOutput tool로 대기)
+**Task A의 bbox 정보 수집** (작업 완료까지 대기)
 
 Task A가 완료되면 stdout에서 `nodeWidth` 값을 추출합니다. 이 값이 Stage 2의 핵심 입력입니다.
 
@@ -258,7 +251,7 @@ PascalCase → kebab-case 변환:
 Task A에서 얻은 Figma bbox width를 `--container-width`로 전달하여, Storybook 컨테이너 크기를 Figma 디자인에 맞춥니다:
 
 ```bash
-pnpm exec tsx .claude/skills/component-screenshot/scripts/capture-screenshot.ts \
+pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/capture-screenshot.ts \
   --story-id "{story-id}" \
   --output "artifacts/screenshots/impl/{Name}.png" \
   --width {width} --height {height} \
@@ -306,7 +299,7 @@ pnpm exec tsx .claude/skills/component-screenshot/scripts/capture-screenshot.ts 
 두 스크린샷의 픽셀 단위 차이를 비교합니다.
 
 ```bash
-pnpm exec tsx .claude/skills/design-check/scripts/compare-screenshots.ts \
+pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/design-check/scripts/compare-screenshots.ts \
   --base "artifacts/screenshots/figma/{Name}.png" \
   --current "artifacts/screenshots/impl/{Name}.png" \
   --output "artifacts/screenshots/diff/{Name}.png"
@@ -325,7 +318,7 @@ pnpm exec tsx .claude/skills/design-check/scripts/compare-screenshots.ts \
 
 ### Phase 6. 정성 비교 (시각 분석)
 
-Claude의 시각 분석 능력을 활용하여 디자인 차이를 정성적으로 평가합니다.
+Codex의 시각 분석 능력을 활용하여 디자인 차이를 정성적으로 평가합니다.
 
 **6-1. 이미지 로드:**
 

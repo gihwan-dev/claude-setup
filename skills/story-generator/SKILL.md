@@ -1,15 +1,12 @@
 ---
 name: story-generator
 description: 스크린샷 비교용 Story 파일 자동 생성. "/story-gen", "스토리 생성" 등의 요청 시 사용
-disable-model-invocation: false
-argument-hint: 컴포넌트 파일 경로 (예: src/shared/ui/card/Card.tsx)
 ---
 
-argument: $1
 
-# Claude Command: Story Generator
+# Story Generator
 
-이 커맨드는 컴포넌트의 스크린샷 캡처용 Storybook Story 파일을 자동 생성합니다.
+이 스킬은 컴포넌트의 스크린샷 캡처용 Storybook Story 파일을 자동 생성합니다.
 
 ## 워크플로우
 

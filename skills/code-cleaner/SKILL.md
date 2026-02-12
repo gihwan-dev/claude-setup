@@ -46,47 +46,41 @@ git diff --name-only <base>..<target>
 
 **3-A: 병렬 분석**
 
-각 파일의 unused 코드를 Task sub-agent로 동시 탐지합니다:
+각 파일의 unused 코드를 독립 분석 작업으로 병렬 탐지합니다.
 
-```
-Task call:
-  subagent_type: "general-purpose"
-  model: "haiku"
-  description: "Detect unused code in [파일명]"
-  run_in_background: true
-  prompt: |
-    Analyze the following file for unused code. DO NOT modify any files.
-    Only report what you find.
+```text
+Analyze the following file for unused code. DO NOT modify any files.
+Only report what you find.
 
-    File to analyze: [파일 경로]
+File to analyze: [파일 경로]
 
-    Check for these patterns:
-    1. Unused exports: Run `git diff HEAD -- [파일]` to find newly added exports,
-       then search the project for imports of each export name.
-    2. Unused functions: Functions defined but never called within the file or project.
-    3. Unused types/interfaces: Type declarations not referenced anywhere.
-    4. Commented code blocks: Code blocks that are commented out (preserve TODO/FIXME/NOTE comments).
-    5. Orphan console.log: Debugging console.log statements.
+Check for these patterns:
+1. Unused exports: Run `git diff HEAD -- [파일]` to find newly added exports,
+   then search the project for imports of each export name.
+2. Unused functions: Functions defined but never called within the file or project.
+3. Unused types/interfaces: Type declarations not referenced anywhere.
+4. Commented code blocks: Code blocks that are commented out (preserve TODO/FIXME/NOTE comments).
+5. Orphan console.log: Debugging console.log statements.
 
-    For unused exports, verify by searching the project:
-    - Check for dynamic imports: import() patterns
-    - Check barrel files (index.ts) for re-exports
-    - Check if used in test files
+For unused exports, verify by searching the project:
+- Check for dynamic imports: import() patterns
+- Check barrel files (index.ts) for re-exports
+- Check if used in test files
 
-    Output a JSON-like report:
-    {
-      "file": "[파일 경로]",
-      "findings": [
-        {"type": "unused_export", "name": "...", "line": N, "confidence": "high/medium"},
-        {"type": "unused_function", "name": "...", "line": N, "confidence": "high/medium"},
-        ...
-      ]
-    }
+Output a JSON-like report:
+{
+  "file": "[파일 경로]",
+  "findings": [
+    {"type": "unused_export", "name": "...", "line": N, "confidence": "high/medium"},
+    {"type": "unused_function", "name": "...", "line": N, "confidence": "high/medium"},
+    ...
+  ]
+}
 
-    Only report findings with medium or high confidence.
+Only report findings with medium or high confidence.
 ```
 
-모든 파일의 분석 Task가 완료될 때까지 대기합니다.
+모든 파일의 분석이 완료될 때까지 대기합니다.
 
 **3-B: 순차 수정**
 
@@ -96,7 +90,7 @@ Task call:
 2. confidence가 "high"인 것부터 순차적으로 파일을 수정
 3. confidence가 "medium"인 것은 한번 더 확인 후 수정
 
-**수정은 반드시 오케스트레이터가 직접 수행합니다** (sub-agent의 동시 파일 수정 방지).
+**수정은 반드시 오케스트레이터가 직접 수행합니다** (동시 파일 수정 충돌 방지).
 
 #### 제거 대상 (lint/TS로 못 잡는 것들)
 

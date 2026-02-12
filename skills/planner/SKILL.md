@@ -1,15 +1,14 @@
 ---
 name: planner
 description: FSD 기반 구현 계획 생성. SPEC.md와 survey.md를 읽고 plan.md 작성. "계획 세워", "구현 계획" 등의 요청 시 사용
-disable-model-invocation: false
 ---
 
 1.  **요청 분석**: 사용자의 아키텍처 계획 의도를 파악합니다.
 2.  **컨텍스트 읽기**: 프로젝트 루트에서 다음 2개 파일을 읽습니다:
     *   `SPEC.md` — 요구사항 (기능/비기능 요구사항, 제약조건, 사용자 시나리오)
     *   `survey.md` — 아키텍처 결정 사항
-    *   SPEC.md가 없으면 `/spec`을 먼저 실행하도록 안내합니다.
-    *   survey.md가 없으면 `/survey`를 먼저 실행하도록 안내합니다.
+    *   SPEC.md가 없으면 `spec` 스킬을 먼저 실행하도록 안내합니다.
+    *   survey.md가 없으면 `survey` 스킬을 먼저 실행하도록 안내합니다.
 3.  **계획 생성**: `SPEC.md`와 `survey.md`를 기반으로 포괄적인 구현 계획(`plan.md`)을 **한국어**로 작성합니다.
     *   **컨텍스트**: `SPEC.md`와 `survey.md`의 정보를 기반으로 합니다.
     *   **요구사항 매핑**: SPEC.md의 기능 요구사항(F1, F2...)을 plan.md 구현 항목에 매핑합니다.

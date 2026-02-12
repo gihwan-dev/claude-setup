@@ -4,8 +4,6 @@ description: |
   React/TypeScript 코드 품질 분석. 다양한 소스(git diff, 브랜치 비교, PR, 커밋 범위, 파일 경로)의
   변경 코드를 전문 관점별 에이전트가 다각도로 분석하여 클린 코드 스코어카드를 생성한다.
   트리거: "코드 리뷰", "품질 검사", "클린 코드", "인스펙션", "코드 분석" 등
-disable-model-invocation: false
-argument-hint: "[대상] (생략: working diff, staged: 스테이징, main: 브랜치 비교, #123: PR, abc..def: 커밋 범위, 파일경로)"
 ---
 
 ## Phase 1: 입력 해석 및 파일 수집
@@ -26,7 +24,7 @@ argument-hint: "[대상] (생략: working diff, staged: 스테이징, main: 브�
 - **포함**: `.ts`, `.tsx`, `.js`, `.jsx`
 - **제외**: `node_modules/`, `.d.ts`, `*.config.ts`, `*.config.js`, `*.stories.tsx`, `design-system/token/src/generated/`, `design-system/icon/src/components/`
 - 결과 0개 → "분석 가능한 변경 파일이 없습니다." 출력 후 종료.
-- 결과 25개 초과 → AskUserQuestion: "N개 파일이 변경되었습니다. 전체 분석은 시간이 소요됩니다. 전체 진행 / 범위 축소?"
+- 결과 25개 초과 → 사용자 확인 질문: "N개 파일이 변경되었습니다. 전체 분석은 시간이 소요됩니다. 전체 진행 / 범위 축소?"
 
 ## Phase 2: 전문가 에이전트 병렬 분석
 
@@ -42,7 +40,7 @@ Task:
   prompt: |
     분석 대상 파일: {file_list}
     각 파일 변경 확인: `{diff_command} -- {file}` 실행 후, 전체 파일도 Read로 읽으세요.
-    평가 기준: `.claude/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
+    평가 기준: `${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
 ```
 
 **Agent 2: Interface Inspector**
@@ -55,7 +53,7 @@ Task:
   prompt: |
     분석 대상 파일: {file_list}
     각 파일 변경 확인: `{diff_command} -- {file}` 실행 후, 전체 파일도 Read로 읽으세요.
-    평가 기준: `.claude/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
+    평가 기준: `${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
 ```
 
 **Agent 3: Architecture Reviewer**
@@ -69,7 +67,7 @@ Task:
     분석 대상 파일: {file_list}
     각 파일 변경 확인: `{diff_command} -- {file}` 실행 후, 전체 파일도 Read로 읽으세요.
     관련 파일(import된 훅, Context, 상위 컴포넌트)도 Grep/Glob으로 추적하여 읽으세요.
-    평가 기준: `.claude/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
+    평가 기준: `${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/references/scorecard-framework.md` 읽기.
 
     **React 특화 측정 메트릭 (이것만 측정)**:
     1. LCOM4 추정: 상태 변수와 Effect/Callback/핸들러의 연결 그래프. 비연결 부분그래프 수 = LCOM4.
@@ -125,7 +123,7 @@ Task:
 
 **스킵 조건**: 모든 메트릭이 양호 + 자동 수정 0건 + 설계 판단 0건 → "전체 메트릭이 양호합니다." 출력 후 종료.
 
-그 외 AskUserQuestion:
+그 외 사용자 확인 질문:
 ```
 분석이 완료되었습니다. 어떻게 진행할까요?
 1. 전체 수정 + 보고서 — 자동 수정 {n}건 + 설계 리팩토링 {m}건 선택 적용 + 보고서 생성
@@ -141,7 +139,7 @@ Task:
 
 ### Phase 5A: 자동 수정 (선택 1, 2)
 
-수정 대상을 유형별로 그룹화하여 보여준 뒤 AskUserQuestion으로 승인:
+수정 대상을 유형별로 그룹화하여 보여준 뒤 사용자 확인 질문으로 승인:
 ```
 다음 수정을 적용합니다:
 [명명 규칙] {파일}: {수정 내용}
@@ -152,7 +150,7 @@ Task:
 
 ### Phase 5B: 설계 리팩토링 (선택 1)
 
-Phase 3에서 분류한 "설계 판단 필요" 이슈 목록을 AskUserQuestion의 multiSelect로 제시:
+Phase 3에서 분류한 "설계 판단 필요" 이슈 목록을 사용자 확인 질문의 multiSelect로 제시:
 ```
 설계 리팩토링이 필요한 이슈입니다. 수정할 항목을 선택하세요:
 □ {파일}: CC {값} → 함수/컴포넌트 분할

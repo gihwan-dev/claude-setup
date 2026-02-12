@@ -1,8 +1,6 @@
 ---
 name: milestone-execute
 description: 마일스톤 다음 단계 실행. milestone.md의 미완료 Phase를 plan.md 기반으로 구현. "다음 작업", "마일스톤 실행", "Phase 진행" 등의 요청 시 사용
-disable-model-invocation: false
-argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)"
 ---
 
 # 워크플로우: 마일스톤 Phase 실행
@@ -18,10 +16,10 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 3. `plan.md` — 구현 상세 (아키텍처, 디렉토리 구조, 데이터 흐름 등)
 4. `survey.md` — 아키텍처 결정 사항
 
-- SPEC.md가 없으면 `/spec`을 먼저 실행하도록 안내합니다.
-- milestone.md가 없으면 `/milestone`을 먼저 실행하도록 안내합니다.
-- plan.md가 없으면 `/planner`를 먼저 실행하도록 안내합니다.
-- survey.md가 없으면 `/survey`를 먼저 실행하도록 안내합니다.
+- SPEC.md가 없으면 `spec` 스킬을 먼저 실행하도록 안내합니다.
+- milestone.md가 없으면 `milestone` 스킬을 먼저 실행하도록 안내합니다.
+- plan.md가 없으면 `planner` 스킬을 먼저 실행하도록 안내합니다.
+- survey.md가 없으면 `survey` 스킬을 먼저 실행하도록 안내합니다.
 
 ## 2단계: 대상 Phase 판별
 
@@ -33,7 +31,7 @@ argument-hint: "[Phase 번호] (생략 시 다음 미완료 Phase 자동 선택)
 
 ## 3단계: 태스크 리스트 생성
 
-해당 Phase의 미완료 체크박스 항목들을 `TaskCreate`로 태스크 리스트에 등록합니다.
+해당 Phase의 미완료 체크박스 항목들을 내부 태스크 리스트로 등록합니다.
 
 - **subject**: 체크박스의 볼드 텍스트 (작업 제목)
 - **description**: 해당 항목의 목표, 포함 내용, 검증 기준 + `plan.md`에서 관련 구현 상세
@@ -63,30 +61,30 @@ Layer 2: [Task C]           ← Task A의 export를 import
 Layer 3: [Task D, Task E]  ← Task C 완료 후 독립적, 병렬 실행
 ```
 
-`TaskUpdate`로 의존 관계를 `addBlockedBy`/`addBlocks`에 등록합니다.
+각 태스크에 선행/후행 관계를 명시하여 의존성을 기록합니다.
 
-### 4-B: 에이전트 타입 매핑
+### 4-B: 작업 성격별 전문성 매핑
 
-각 태스크의 성격에 따라 최적의 에이전트를 선택합니다:
+각 태스크의 성격에 따라 적절한 관점으로 실행합니다:
 
-| 태스크 성격 | subagent_type | model | 판단 기준 |
-|------------|---------------|-------|----------|
-| React 컴포넌트 UI 구현 | frontend-developer | sonnet | JSX, 스타일, 이벤트 핸들링 |
-| 타입 정의, 제네릭, 유틸리티 타입 | typescript-pro | sonnet | type, interface, 제네릭 제약 |
-| API 로직, 비즈니스 로직, 훅 | general-purpose | sonnet | 데이터 처리, 상태 관리 |
-| 복잡한 아키텍처 결정 포함 | general-purpose | opus | 설계 판단이 필요한 경우 |
-| 보일러플레이트, 설정 파일 | general-purpose | haiku | 단순 반복 작업 |
+| 태스크 성격 | 권장 전문성 | 판단 기준 |
+|------------|------------|----------|
+| React 컴포넌트 UI 구현 | 프런트엔드 구현 관점 | JSX, 스타일, 이벤트 핸들링 |
+| 타입 정의, 제네릭, 유틸리티 타입 | TypeScript 설계 관점 | type, interface, 제네릭 제약 |
+| API 로직, 비즈니스 로직, 훅 | 애플리케이션 로직 관점 | 데이터 처리, 상태 관리 |
+| 복잡한 아키텍처 결정 포함 | 아키텍처 리뷰 관점 | 설계 판단이 필요한 경우 |
+| 보일러플레이트, 설정 파일 | 실용적 구현 관점 | 단순 반복 작업 |
 
 ### 4-C: 병렬+순차 하이브리드 실행
 
 Layer별로 실행합니다:
 
 **Layer 내 (병렬):**
-- 독립 태스크들은 Task tool로 동시 실행 (`run_in_background: true`)
-- 각 Task sub-agent에게 전달할 정보:
+- 독립 태스크들은 병렬로 동시 실행합니다.
+- 각 태스크에 전달할 정보:
   - 해당 태스크의 description (목표, 구현 상세, 검증 기준)
   - `SPEC.md`, `plan.md`, `survey.md`의 관련 섹션 요약
-  - 준수 사항 (CLAUDE.md 패턴, FSD 원칙, 기존 코드 컨벤션)
+  - 준수 사항 (`AGENTS.md` 패턴, FSD 원칙, 기존 코드 컨벤션)
 
 **Layer 간 (순차):**
 - 선행 Layer의 모든 태스크 완료 확인 후 다음 Layer 실행
@@ -97,13 +95,13 @@ Layer별로 실행합니다:
 - typecheck 실패 시: 오류를 분석하고 수정한 후 다음 Layer로 진행
 
 **단일 태스크 또는 순차 의존만 있는 경우:**
-- sub-agent 없이 오케스트레이터가 직접 순차 구현 (기존 방식 유지)
+- 오케스트레이터가 직접 순차 구현 (기존 방식 유지)
 
-각 태스크 완료 시 `TaskUpdate`로 상태를 `completed`로 변경합니다.
+각 태스크 완료 시 내부 태스크 리스트에서 상태를 `completed`로 갱신합니다.
 
 ### 구현 시 준수 사항
 
-- `CLAUDE.md`의 아키텍처 패턴 및 디렉토리 구조를 따릅니다.
+- `AGENTS.md`의 아키텍처 패턴 및 디렉토리 구조를 따릅니다.
 - FSD 원칙을 준수합니다.
 - 기존 코드베이스의 패턴과 컨벤션을 따릅니다.
 - 보안 취약점을 도입하지 않습니다.
@@ -123,7 +121,7 @@ Layer별로 실행합니다:
 
 ## 6단계: 마일스톤 업데이트
 
-모든 작업이 완료되면 `/milestone-update` 스킬을 호출하여:
+모든 작업이 완료되면 `milestone-update` 스킬을 호출하여:
 
 - 완료된 체크박스를 `[x]`로 업데이트합니다.
 - 세션 노트에 구현 요약을 추가합니다.
@@ -134,6 +132,6 @@ Layer별로 실행합니다:
 
 - 완료된 Phase 번호 및 제목
 - 구현된 작업 항목 목록
-- 실행 방식 요약 (병렬 Layer 수, 사용된 에이전트 타입)
+- 실행 방식 요약 (병렬 Layer 수, 적용한 전문성 관점)
 - 검증 결과
 - 다음 미완료 Phase 안내 (있는 경우)
