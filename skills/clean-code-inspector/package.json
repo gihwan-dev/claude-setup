@@ -1,0 +1,21 @@
+{
+  "name": "clean-code-inspector-toolchain",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "collect": "node ./scripts/collect-quantitative-metrics.mjs",
+    "ensure": "node ./scripts/ensure-toolchain.mjs"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "8.56.0",
+    "@typescript-eslint/typescript-estree": "8.56.0",
+    "dependency-cruiser": "17.3.8",
+    "eslint": "9.39.1",
+    "eslint-plugin-sonarjs": "3.0.7",
+    "fast-glob": "3.3.3",
+    "istanbul-lib-coverage": "3.2.2",
+    "typhonjs-escomplex": "0.1.0",
+    "typescript": "5.9.3"
+  }
+}
