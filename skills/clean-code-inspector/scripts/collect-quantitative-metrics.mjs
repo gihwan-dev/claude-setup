@@ -178,6 +178,25 @@ function splitTargetFiles(rawTarget) {
     .filter(Boolean);
 }
 
+function filterExistingFiles(projectRoot, files) {
+  const existingFiles = [];
+  const warnings = [];
+
+  for (const relativePath of files) {
+    const absolutePath = path.resolve(projectRoot, relativePath);
+    if (fs.existsSync(absolutePath)) {
+      existingFiles.push(relativePath);
+      continue;
+    }
+    warnings.push(`target-file-missing:${relativePath}`);
+  }
+
+  return {
+    files: [...new Set(existingFiles)].sort((a, b) => a.localeCompare(b)),
+    warnings,
+  };
+}
+
 function isCandidateFile(filePath) {
   const normalized = normalizePath(filePath);
 
@@ -187,7 +206,11 @@ function isCandidateFile(filePath) {
     normalized.endsWith('.stories.tsx') ||
     normalized.endsWith('.stories.ts') ||
     normalized.endsWith('.stories.jsx') ||
-    normalized.endsWith('.stories.js')
+    normalized.endsWith('.stories.js') ||
+    normalized.endsWith('.stories.mts') ||
+    normalized.endsWith('.stories.mjs') ||
+    normalized.endsWith('.stories.cts') ||
+    normalized.endsWith('.stories.cjs')
   ) {
     return false;
   }
@@ -538,7 +561,9 @@ async function main() {
     );
   }
 
-  const targetFiles = targets.targetFiles;
+  const existingTargets = filterExistingFiles(options.projectRoot, targets.targetFiles);
+  const targetFiles = existingTargets.files;
+  unavailableMetrics.push(...existingTargets.warnings);
 
   const astResult = { byFile: new Map(), unavailableMetrics: ['ast.skipped:toolchain-not-ready'] };
   const eslintResult = { byFile: new Map(), unavailableMetrics: ['eslint.skipped:toolchain-not-ready'] };

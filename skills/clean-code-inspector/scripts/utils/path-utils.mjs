@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import path from 'node:path';
 
 const JS_TS_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'];
@@ -10,6 +11,10 @@ const EXCLUDE_PATTERNS = [
   '.stories.ts',
   '.stories.jsx',
   '.stories.js',
+  '.stories.mts',
+  '.stories.mjs',
+  '.stories.cts',
+  '.stories.cjs',
   'dist/',
   '/dist/',
   'build/',
@@ -99,6 +104,10 @@ export function resolveImportPath(projectRoot, importerRelativePath, importSourc
   ];
 
   for (const candidateAbsolute of candidates) {
+    if (!fileExistsSafe(fs, candidateAbsolute)) {
+      continue;
+    }
+
     const relative = normalizeSlashes(path.relative(projectRoot, candidateAbsolute));
     if (!relative || relative.startsWith('..')) {
       continue;

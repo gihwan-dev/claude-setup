@@ -156,6 +156,7 @@ function collectImportsFromSource(sourceCode, filePath) {
 function buildImportClosure({ projectRoot, seedFiles, maxFiles = DEFAULT_CLOSURE_LIMIT }) {
   const queue = [...seedFiles];
   const visited = new Set();
+  const included = new Set();
   const warnings = [];
   let truncated = false;
 
@@ -167,16 +168,19 @@ function buildImportClosure({ projectRoot, seedFiles, maxFiles = DEFAULT_CLOSURE
 
     visited.add(relative);
 
-    if (visited.size >= maxFiles) {
+    const absolute = path.resolve(projectRoot, relative);
+    if (!fs.existsSync(absolute)) {
+      warnings.push(`target-file-missing:${relative}`);
+      continue;
+    }
+
+    included.add(relative);
+
+    if (included.size >= maxFiles) {
       if (queue.length > 0) {
         truncated = true;
       }
       break;
-    }
-
-    const absolute = path.resolve(projectRoot, relative);
-    if (!fs.existsSync(absolute)) {
-      continue;
     }
 
     let sourceCode;
@@ -198,7 +202,7 @@ function buildImportClosure({ projectRoot, seedFiles, maxFiles = DEFAULT_CLOSURE
   }
 
   return {
-    files: dedupeSorted([...visited]),
+    files: dedupeSorted([...included]),
     truncated,
     warnings,
   };
@@ -215,14 +219,19 @@ export function resolveAnalysisTargets({
     .map((file) => normalizeSlashes(file))
     .filter((file) => isCandidateFile(file));
 
-  const seedFiles = dedupeSorted(normalizedChanged);
+  const seedFiles = dedupeSorted(
+    normalizedChanged.filter((file) => fs.existsSync(path.resolve(projectRoot, file))),
+  );
+  const missingSeeds = normalizedChanged
+    .filter((file) => !fs.existsSync(path.resolve(projectRoot, file)))
+    .map((file) => `seed-file-missing:${file}`);
 
   if (seedFiles.length === 0) {
     return {
       seedFiles: [],
       targetFiles: [],
       truncated: false,
-      warnings: changed.warnings,
+      warnings: [...changed.warnings, ...missingSeeds],
     };
   }
 
@@ -236,6 +245,6 @@ export function resolveAnalysisTargets({
     seedFiles,
     targetFiles: closure.files,
     truncated: closure.truncated,
-    warnings: [...changed.warnings, ...closure.warnings],
+    warnings: [...changed.warnings, ...missingSeeds, ...closure.warnings],
   };
 }

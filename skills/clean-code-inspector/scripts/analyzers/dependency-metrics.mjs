@@ -44,16 +44,31 @@ export function collectDependencyMetrics({ projectRoot, skillRoot, files }) {
     '--metrics',
     '--output-type',
     'json',
+    '--exclude',
+    '^node_modules',
+    '--do-not-follow',
+    '^node_modules',
   ];
 
   const runResult = spawnSync(depCruiseBin, commandArgs, {
     cwd: projectRoot,
     encoding: 'utf8',
+    maxBuffer: 20 * 1024 * 1024,
   });
 
-  if (runResult.status !== 0) {
+  if (runResult.error) {
     unavailableMetrics.push(
-      `dependency-cruiser.failed:${(runResult.stderr || runResult.stdout || '').trim()}`,
+      `dependency-cruiser.exec-failed:${runResult.error.code ?? runResult.error.message}`,
+    );
+    return { byFile, unavailableMetrics };
+  }
+
+  if (runResult.status !== 0) {
+    const failureMessage = (runResult.stderr || runResult.stdout || '')
+      .trim()
+      .slice(0, 2000);
+    unavailableMetrics.push(
+      `dependency-cruiser.failed:${failureMessage}`,
     );
     return { byFile, unavailableMetrics };
   }
