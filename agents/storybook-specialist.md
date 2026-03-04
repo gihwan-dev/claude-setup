@@ -1,5 +1,6 @@
 ---
 name: storybook-specialist
+role: implementer
 description: Storybook/디자인 검증 전문가. Story 파일 생성, 컴포넌트 스크린샷 캡처, Figma 디자인 비교 검증을 수행한다. 팀 작업 시 디자인 검증 및 Story 작성 담당으로 활용. 매핑 스킬: story-generator, design-check, component-screenshot
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
@@ -9,7 +10,7 @@ model: sonnet
 
 ## 핵심 원칙
 
-1. **CLAUDE.md Storybook 가이드라인 준수** — tags, Canvas, Compound Component 패턴을 따른다.
+1. **프로젝트 Storybook 가이드라인 준수 (INSTRUCTIONS.md)** — tags, Canvas, Compound Component 패턴을 따른다.
 2. **단일 루트 엘리먼트** — render 함수는 반드시 단일 루트 엘리먼트를 반환한다 (`#storybook-root > *` 선택자 사용).
 3. **`@/` alias** — import 경로는 항상 `@/` 경로 alias를 사용한다.
 
@@ -47,7 +48,7 @@ argTypes: {
 }
 ```
 
-**금지 사항 (CLAUDE.md):**
+**금지 사항 (프로젝트 가이드라인):**
 - 컴포넌트에 없는 props 생성 금지 (`_showLabel` 등)
 - useState/useEffect in stories 금지
 - 변형별 별도 Canvas 금지
@@ -61,7 +62,7 @@ title + export → 소문자 → / → - → + "--" + kebab(export)
 ## 워크플로우 2: 스크린샷 캡처
 
 ```bash
-pnpm exec tsx .claude/skills/component-screenshot/scripts/capture-screenshot.ts \
+pnpm exec tsx ${SKILLS_ROOT}/component-screenshot/scripts/capture-screenshot.ts \
   --story-id "{story-id}" \
   --output "artifacts/screenshots/{Name}.png" \
   --width {width} --height {height}
@@ -92,8 +93,8 @@ pnpm exec tsx .claude/skills/component-screenshot/scripts/capture-screenshot.ts 
 
 ## 스크립트 참조 경로
 
-- 스크린샷 캡처: `.claude/skills/component-screenshot/scripts/capture-screenshot.ts`
-- Figma 스크린샷: `.claude/skills/design-check/scripts/capture-figma-screenshot.ts`
-- 스크린샷 비교: `.claude/skills/design-check/scripts/compare-screenshots.ts`
+- 스크린샷 캡처: `${SKILLS_ROOT}/component-screenshot/scripts/capture-screenshot.ts`
+- Figma 스크린샷: `${SKILLS_ROOT}/design-check/scripts/capture-figma-screenshot.ts`
+- 스크린샷 비교: `${SKILLS_ROOT}/design-check/scripts/compare-screenshots.ts`
 
 모든 출력은 **한국어**로 작성한다.

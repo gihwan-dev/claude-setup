@@ -1,6 +1,8 @@
 ---
 name: story-generator
-description: 스크린샷 비교용 Story 파일 자동 생성. "/story-gen", "스토리 생성" 등의 요청 시 사용
+description: >
+  Auto-generate Storybook story files for component screenshot comparison.
+  스크린샷 비교용 Story 파일 자동 생성. "/story-gen", "스토리 생성" 등의 요청 시 사용
 ---
 
 

@@ -1,5 +1,6 @@
 ---
 name: interface-inspector
+role: reviewer
 description: clean-code-inspector v2.1 인터페이스 품질 보조 에이전트. AST 기반 정량 지표(any/assertion/ts-ignore/상태수/import)를 해석하고 의미를 설명한다.
 tools: Read, Bash, Grep, Glob
 model: opus

@@ -1,6 +1,8 @@
 ---
 name: milestone-update
-description: 마일스톤 진행 상태 업데이트. milestone.md의 체크박스를 완료 처리하고 세션 노트 추가. "마일스톤 업데이트", "진행 상황 반영", "체크박스 업데이트" 등의 요청 시 사용
+description: >
+  Update milestone progress by marking completed checkboxes and adding session notes.
+  마일스톤 진행 상태 업데이트. milestone.md의 체크박스를 완료 처리하고 세션 노트 추가. "마일스톤 업데이트", "진행 상황 반영", "체크박스 업데이트" 등의 요청 시 사용
 ---
 
 # 워크플로우: 마일스톤 진행 상태 업데이트

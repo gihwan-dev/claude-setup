@@ -1,6 +1,8 @@
 ---
 name: milestone
-description: 프로젝트 마일스톤 생성. 사용자가 전달한 문서(스펙/요구사항/기획/이슈)를 기반으로 실행 가능한 작업 목록을 생성한다. "마일스톤 만들어", "작업 목록" 등의 요청 시 사용
+description: >
+  Generate actionable project milestones from spec/requirements documents with parallel execution planning.
+  프로젝트 마일스톤 생성. 사용자가 전달한 문서(스펙/요구사항/기획/이슈)를 기반으로 실행 가능한 작업 목록을 생성한다. "마일스톤 만들어", "작업 목록" 등의 요청 시 사용
 ---
 
 # 워크플로우: 프로젝트 마일스톤 생성

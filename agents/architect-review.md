@@ -1,5 +1,6 @@
 ---
 name: architect-reviewer
+role: reviewer
 description: clean-code-inspector v2의 Qualitative Overlay 전용 에이전트. 정량 Hotspot 상위 20% 파일에 대해 5개 정성 루브릭을 근거 기반으로 점수화하고 critical flag를 생성한다.
 color: gray
 model: opus

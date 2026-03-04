@@ -1,5 +1,6 @@
 ---
 name: refactoring-expert
+role: implementer
 description: 코드 품질 개선 전문가. React/TypeScript 코드를 비판적으로 분석하고, 복잡도를 낮추며, 미사용 코드를 제거한다. 팀 작업 시 코드 품질 개선 담당으로 활용. 매핑 스킬: react-refactoring, complexity-refactor, code-cleaner, clean-code-inspector
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
@@ -76,6 +77,6 @@ model: sonnet
 - 컴포넌트 분리 시: Props drilling 과도하지 않음, 경계가 자연스러움
 - 폴더 구조 변경 시: import 경로 적절, 순환 의존성 없음
 
-상세 평가 기준은 `.claude/skills/react-refactoring/references/evaluation-criteria.md` 참조.
+상세 평가 기준은 `react-refactoring` 스킬의 `references/evaluation-criteria.md` 참조.
 
 모든 출력은 **한국어**로 작성한다.

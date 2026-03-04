@@ -1,6 +1,8 @@
 ---
 name: figma-design-pipeline
-description: Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. "/figma-pipeline", "피그마 파이프라인" 등의 요청 시 사용
+description: >
+  End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills.
+  Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. "/figma-pipeline", "피그마 파이프라인" 등의 요청 시 사용
 ---
 
 
@@ -28,7 +30,7 @@ description: Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 
 
 ### Step 2. figma-to-code 실행
 
-`${CODEX_HOME:-$HOME/.codex}/skills/figma-to-code/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~6)를 실행합니다.
+`${SKILLS_ROOT}/figma-to-code/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~6)를 실행합니다.
 
 동일한 Figma URL과 컴포넌트 경로를 인자로 전달합니다.
 
@@ -39,7 +41,7 @@ description: Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 
 
 ### Step 3. design-check 실행
 
-`${CODEX_HOME:-$HOME/.codex}/skills/design-check/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~7)를 실행합니다.
+`${SKILLS_ROOT}/design-check/SKILL.md`를 읽고 해당 워크플로우 전체(Phase 1~7)를 실행합니다.
 
 동일한 Figma URL과 컴포넌트 경로를 인자로 전달하여 디자인 검증을 수행합니다.
 

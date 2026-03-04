@@ -1,6 +1,7 @@
 ---
 name: clean-code-inspector
-description: |
+description: >
+  AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%).
   TS/JS 특화 코드 품질 분석 스킬. AST/정적분석 기반 정량 메트릭과 정성 오버레이(근거 기반 루브릭)를
   결합해 clean-code-inspect-result.json / .md를 생성한다.
   트리거: "코드 리뷰", "품질 검사", "클린 코드", "인스펙션", "코드 분석" 등
@@ -41,8 +42,8 @@ description: |
 먼저 다음 명령으로 의존성 상태를 확인한다.
 
 ```bash
-node "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/scripts/ensure-toolchain.mjs" \
-  --skill-dir "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector" \
+node "${SKILL_DIR}/scripts/ensure-toolchain.mjs" \
+  --skill-dir "${SKILL_DIR}" \
   --auto-install true
 ```
 
@@ -54,7 +55,7 @@ node "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/scripts/ensure-too
 ### 2-2) 정량 JSON 생성
 
 ```bash
-node "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/scripts/collect-quantitative-metrics.mjs" \
+node "${SKILL_DIR}/scripts/collect-quantitative-metrics.mjs" \
   --project-root "{project_root}" \
   --mode "{working|staged|branch|range|files}" \
   --target "{target_if_needed}" \
@@ -98,7 +99,7 @@ node "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/scripts/collect-qu
 ## Phase 5: 스코어카드 생성
 
 ```bash
-node "${CODEX_HOME:-$HOME/.codex}/skills/clean-code-inspector/scripts/build-scorecard.mjs" \
+node "${SKILL_DIR}/scripts/build-scorecard.mjs" \
   --quant ".clean-code-inspector/quantitative-metrics.json" \
   --qual ".clean-code-inspector/qualitative-overlay.json" \
   --out-json "clean-code-inspect-result.json" \

@@ -1,5 +1,6 @@
 ---
 name: qa-engineer
+role: implementer
 description: 테스트 전문가 에이전트. 가성비 높고 신뢰할 수 있는 테스트 스위트를 작성한다. 팀 작업 시 구현 완료 후 테스트 작성 담당으로 활용. 매핑 스킬: test
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
@@ -19,9 +20,9 @@ model: sonnet
 
 | 파일 패턴 | 테스트 유형 | 레퍼런스 |
 |-----------|-----------|----------|
-| `*.browser.test.tsx` | 브라우저 통합 테스트 | `.claude/skills/test/references/browser-testing.md` |
-| `*.spec.ts` | 기능/유틸리티 유닛 테스트 | `.claude/skills/test/references/testing-principles.md` |
-| `*.test.ts(x)` | jsdom 유닛 테스트 | `.claude/skills/test/references/testing-principles.md` |
+| `*.browser.test.tsx` | 브라우저 통합 테스트 | `test` 스킬의 `references/browser-testing.md` |
+| `*.spec.ts` | 기능/유틸리티 유닛 테스트 | `test` 스킬의 `references/testing-principles.md` |
+| `*.test.ts(x)` | jsdom 유닛 테스트 | `test` 스킬의 `references/testing-principles.md` |
 
 **유형 선택 기준:**
 - DOM 조작, 시각적 상호작용 → browser test
@@ -30,7 +31,7 @@ model: sonnet
 
 ### 2. 레퍼런스 참조
 
-테스트 유형에 따라 `.claude/skills/test/references/` 내 해당 문서를 반드시 읽고 패턴을 따른다.
+테스트 유형에 따라 `test` 스킬의 `references/` 내 해당 문서를 반드시 읽고 패턴을 따른다.
 - 브라우저 테스트 → `browser-testing.md` 필수
 - Table 컴포넌트 → `table-testing.md` 추가 참조
 
