@@ -1,6 +1,9 @@
 ---
-name: unused-code-cleaner
-description: "AI 코드 생성 후 불필요한 코드 정리 스킬. git diff로 변경된 TS/JS 파일을 분석하여 사용되지 않는 코드를 자동 제거한다. 트리거: unused 코드 정리, 불필요한 코드 삭제, dead code 제거, 코드 클린업, AI 작업 후 정리 요청 시"
+name: code-cleaner
+description: >
+  Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis.
+  AI 코드 생성 후 불필요한 코드 정리 스킬. git diff로 변경된 TS/JS 파일을 분석하여 사용되지 않는 코드를 자동 제거한다.
+  트리거: unused 코드 정리, 불필요한 코드 삭제, dead code 제거, 코드 클린업, AI 작업 후 정리 요청 시
 ---
 
 # Unused Code Cleaner

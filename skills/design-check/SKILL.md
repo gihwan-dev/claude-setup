@@ -1,6 +1,8 @@
 ---
 name: design-check
-description: 디자인 검증 자동화. Figma vs 구현 비교 리포트 생성. "/design-check", "디자인 검증" 등의 요청 시 사용
+description: >
+  Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill.
+  디자인 검증 자동화. Figma vs 구현 비교 리포트 생성. "/design-check", "디자인 검증" 등의 요청 시 사용
 ---
 
 
@@ -71,7 +73,7 @@ Phase 5 → Phase 6 → Phase 7 (순차 실행)
 Figma REST API를 통해 노드 스크린샷을 PNG 파일로 저장합니다.
 
 ```bash
-pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/design-check/scripts/capture-figma-screenshot.ts \
+pnpm exec tsx ${SKILL_DIR}/scripts/capture-figma-screenshot.ts \
   --url "{figmaUrl}" \
   --output "artifacts/screenshots/figma/{Name}.png" \
   --scale 2
@@ -251,7 +253,7 @@ PascalCase → kebab-case 변환:
 Task A에서 얻은 Figma bbox width를 `--container-width`로 전달하여, Storybook 컨테이너 크기를 Figma 디자인에 맞춥니다:
 
 ```bash
-pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/capture-screenshot.ts \
+pnpm exec tsx ${SKILLS_ROOT}/component-screenshot/scripts/capture-screenshot.ts \
   --story-id "{story-id}" \
   --output "artifacts/screenshots/impl/{Name}.png" \
   --width {width} --height {height} \
@@ -299,7 +301,7 @@ pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/ca
 두 스크린샷의 픽셀 단위 차이를 비교합니다.
 
 ```bash
-pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/design-check/scripts/compare-screenshots.ts \
+pnpm exec tsx ${SKILL_DIR}/scripts/compare-screenshots.ts \
   --base "artifacts/screenshots/figma/{Name}.png" \
   --current "artifacts/screenshots/impl/{Name}.png" \
   --output "artifacts/screenshots/diff/{Name}.png"
@@ -318,7 +320,7 @@ pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/design-check/scripts/compare-sc
 
 ### Phase 6. 정성 비교 (시각 분석)
 
-Codex의 시각 분석 능력을 활용하여 디자인 차이를 정성적으로 평가합니다.
+AI 에이전트의 시각 분석 능력을 활용하여 디자인 차이를 정성적으로 평가합니다.
 
 **6-1. 이미지 로드:**
 

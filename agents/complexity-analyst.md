@@ -1,5 +1,6 @@
 ---
 name: complexity-analyst
+role: reviewer
 description: clean-code-inspector v2.1 정량 분석 보조 에이전트. 수동 계수보다 quantitative-metrics.json을 우선 사용해 복잡도 축을 해석·검증한다.
 tools: Read, Bash, Grep, Glob
 model: opus

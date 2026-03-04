@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Claude Code history.jsonl에서 특정 날짜의 활동을 추출하고,
+"""AI 에이전트 history.jsonl에서 특정 날짜의 활동을 추출하고,
 각 프로젝트 디렉토리의 git log를 수집하여 구조화된 텍스트로 출력한다."""
 
 import argparse
@@ -12,14 +12,14 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 KST = timezone(timedelta(hours=9))
-HISTORY_FILE = Path.home() / ".claude" / "history.jsonl"
+HISTORY_FILE = Path(os.environ.get("AGENT_HISTORY_FILE", str(Path.home() / ".claude" / "history.jsonl")))
 SKIP_PREFIXES = ("/clear", "/compact")
 MIN_DISPLAY_LENGTH = 10
 MAX_ITEMS_PER_PROJECT = 15
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Extract Claude Code daily activity")
+    parser = argparse.ArgumentParser(description="Extract AI agent daily activity")
     parser.add_argument(
         "--date",
         type=str,

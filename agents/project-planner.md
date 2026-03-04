@@ -1,5 +1,6 @@
 ---
 name: project-planner
+role: orchestrator
 description: 프로젝트 계획 전문가. SPEC.md에서 milestone.md까지 문서 체인을 관리하고, FSD 기반 구현 계획을 수립하며, 마일스톤을 실행/업데이트한다. 팀 작업 시 계획 수립 및 진행 관리 담당으로 활용. 매핑 스킬: planner, milestone, milestone-execute, milestone-update
 tools: Read, Write, Edit, Grep, Glob
 model: sonnet

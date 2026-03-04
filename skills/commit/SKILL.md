@@ -1,6 +1,8 @@
 ---
 name: commit
-description: 컨벤셔널 커밋 메시지 생성. "커밋해줘", "커밋", "변경사항 저장" 등의 요청 시 사용
+description: >
+  Generate conventional commit messages with logical diff splitting.
+  컨벤셔널 커밋 메시지 생성. "커밋해줘", "커밋", "변경사항 저장" 등의 요청 시 사용
 ---
 
 # Commit

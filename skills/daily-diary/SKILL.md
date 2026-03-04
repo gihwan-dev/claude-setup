@@ -1,21 +1,22 @@
 ---
 name: daily-diary
 description: >
-  매일 하루가 끝날 때 Claude Code 채팅 히스토리와 Obsidian 볼트 변경사항을 기반으로
+  Auto-generate daily diary from AI agent activity logs and Obsidian vault changes.
+  매일 하루가 끝날 때 AI 에이전트 활동 히스토리와 Obsidian 볼트 변경사항을 기반으로
   자동 일기를 생성한다. "일기 써줘", "daily diary", "오늘 일기", "어제 일기" 등의 요청 시 사용.
 ---
 
 # Daily Diary
 
-Claude Code 활동 로그와 Obsidian 볼트 변경사항을 종합하여 Daily Notes에 일기를 자동 생성한다.
+AI 에이전트 활동 로그와 Obsidian 볼트 변경사항을 종합하여 Daily Notes에 일기를 자동 생성한다.
 
 ## 설정
 
 ```
 VAULT_PATH=/Users/choegihwan/Documents/Projects/Obsidian-frontend-journey
 DAILY_NOTES_DIR={VAULT_PATH}/Daily Notes
-HISTORY_FILE=~/.claude/history.jsonl
-SCRIPT_PATH=.claude/skills/daily-diary/scripts/extract_history.py
+HISTORY_FILE=${AGENT_HISTORY_FILE:-~/.claude/history.jsonl}
+SCRIPT_PATH=${SKILL_DIR}/scripts/extract_history.py
 ```
 
 ## 워크플로우
@@ -26,21 +27,21 @@ SCRIPT_PATH=.claude/skills/daily-diary/scripts/extract_history.py
 - 사용자가 "어제 일기", "2026-02-10 일기" 등 지정 시 해당 날짜 사용
 - `DATE` 변수에 `YYYY-MM-DD` 형식으로 저장
 
-### 2단계: Claude Code 활동 추출
+### 2단계: 에이전트 활동 추출
 
-Python 스크립트를 실행하여 해당 날짜의 Claude Code 활동을 추출한다.
+Python 스크립트를 실행하여 해당 날짜의 에이전트 활동을 추출한다.
 
 ```bash
-python3 .claude/skills/daily-diary/scripts/extract_history.py --date {DATE}
+python3 ${SKILL_DIR}/scripts/extract_history.py --date {DATE}
 ```
 
 이 스크립트는 다음을 수행한다:
-- `~/.claude/history.jsonl`에서 해당 날짜의 사용자 요청을 필터링
+- `${AGENT_HISTORY_FILE}`에서 해당 날짜의 사용자 요청을 필터링
 - 프로젝트별로 그룹화하여 시간순 정렬
 - 각 프로젝트 디렉토리에서 해당 날짜의 `git log`를 수집
 - 결과를 구조화된 텍스트로 stdout에 출력
 
-스크립트 출력이 비어있거나 "활동 없음"이면 → "오늘은 Claude Code 작업이 없었습니다"로 처리.
+스크립트 출력이 비어있거나 "활동 없음"이면 → "오늘은 에이전트 작업이 없었습니다"로 처리.
 
 ### 3단계: Obsidian 볼트 변경사항 추출
 
@@ -99,8 +100,8 @@ fi
 ```
 
 **엣지 케이스:**
-- Claude Code 활동만 있고 Obsidian 변경 없음 → `### 📓 기록 활동` 섹션 생략
-- Obsidian 변경만 있고 Claude Code 활동 없음 → `### 🖥️ 개발 활동` 대신 "오늘은 Claude Code 작업이 없었습니다" 한 줄
+- 에이전트 활동만 있고 Obsidian 변경 없음 → `### 📓 기록 활동` 섹션 생략
+- Obsidian 변경만 있고 에이전트 활동 없음 → `### 🖥️ 개발 활동` 대신 "오늘은 에이전트 작업이 없었습니다" 한 줄
 - 둘 다 없음 → 최소한의 일기: "조용한 하루였다. 특별한 개발이나 기록 활동이 없었다."
 
 ### 5단계: 파일 저장

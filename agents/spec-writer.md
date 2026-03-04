@@ -1,5 +1,6 @@
 ---
 name: spec-writer
+role: implementer
 description: 요구사항 분석가. 질의응답으로 요구사항을 구체화하여 SPEC.md와 survey.md를 생성한다. 팀 작업 시 요구사항 정의 및 아키텍처 결정 담당으로 활용. 매핑 스킬: spec, survey
 tools: Read, Write, Edit, Grep, Glob
 model: sonnet

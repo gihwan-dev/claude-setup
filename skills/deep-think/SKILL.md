@@ -1,6 +1,7 @@
 ---
 name: deep-think
 description: >
+  Adaptive multi-persona deep reasoning with tiered complexity (2-5 agents) and convergence-based synthesis.
   Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth.
   Uses tiered complexity (2-5 agents), targeted critique→reflect cycles,
   convergence shortcuts, and 3-pass PENCIL-inspired synthesis.
@@ -9,7 +10,7 @@ description: >
   Use when the user prefixes with "deep think", "딥씽크", "깊게 생각해", or requests
   thorough analysis. Best for complex architecture, debugging, algorithmic, or
   multi-domain problems. NOT for simple lookups.
-  Requires: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 (Track A only)
+  Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.
 ---
 
 # Deep Think v2
@@ -19,7 +20,8 @@ Adaptive multi-phase reasoning with **evidence-based depth**, **targeted critiqu
 ## Prerequisites
 
 ```bash
-# Track A (Agent Teams) only — Track B works without this
+# Track A (Agent Teams) only — Track B works on any platform without this
+# Claude Code 전용 설정:
 export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 ```
 

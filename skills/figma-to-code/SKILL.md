@@ -1,6 +1,8 @@
 ---
 name: figma-to-code
-description: Figma 디자인을 코드로 변환. Figma URL과 빈 컴포넌트 파일 경로를 받아 UI 구현. "/figma-to-code", "피그마 구현" 등의 요청 시 사용
+description: >
+  Convert Figma designs to React component code using Figma REST API data.
+  Figma 디자인을 코드로 변환. Figma URL과 빈 컴포넌트 파일 경로를 받아 UI 구현. "/figma-to-code", "피그마 구현" 등의 요청 시 사용
 ---
 
 

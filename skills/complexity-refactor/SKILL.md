@@ -1,6 +1,10 @@
 ---
 name: complexity-refactor
-description: 순환 복잡도(Cyclomatic Complexity)가 높은 함수를 인간의 논리적 사고 흐름에 맞게 재구성하는 스킬. "복잡한 함수 정리해줘", "이 함수 읽기 어려워", "순환 복잡도 낮춰줘", "리팩토링 해줘" 등의 요청에 사용. 단순 코드 추출이 아닌 논리적 재구성을 수행하며, 성능보다 가독성과 수정 용이성을 우선시함.
+description: >
+  Refactor high cyclomatic complexity functions into human-readable, maintainable code.
+  순환 복잡도(Cyclomatic Complexity)가 높은 함수를 인간의 논리적 사고 흐름에 맞게 재구성하는 스킬.
+  "복잡한 함수 정리해줘", "이 함수 읽기 어려워", "순환 복잡도 낮춰줘", "리팩토링 해줘" 등의 요청에 사용.
+  단순 코드 추출이 아닌 논리적 재구성을 수행하며, 성능보다 가독성과 수정 용이성을 우선시함.
 ---
 
 # Complexity Refactor

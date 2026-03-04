@@ -1,6 +1,8 @@
 ---
 name: component-screenshot
-description: Story 파일에서 컴포넌트 스크린샷 캡처. "/screenshot", "스크린샷 캡처" 등의 요청 시 사용
+description: >
+  Capture component screenshots from Storybook stories.
+  Story 파일에서 컴포넌트 스크린샷 캡처. "/screenshot", "스크린샷 캡처" 등의 요청 시 사용
 ---
 
 
@@ -59,12 +61,12 @@ PascalCase export를 kebab-case로 변환:
 
 ### 4. 캡처 실행
 
-`${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/capture-screenshot.ts` 스크립트를 실행하여 스크린샷을 캡처합니다.
+`${SKILL_DIR}/scripts/capture-screenshot.ts` 스크립트를 실행하여 스크린샷을 캡처합니다.
 
 스크립트는 정적 빌드된 Storybook(`.dist/`)을 Express로 서빙하여 캡처합니다. 정적 파일에는 HMR 웹소켓이 없으므로 `networkidle`이 정상 동작합니다.
 
 ```bash
-pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/capture-screenshot.ts \
+pnpm exec tsx ${SKILL_DIR}/scripts/capture-screenshot.ts \
   --story-id "{story-id}" \
   --output "artifacts/screenshots/{ComponentName}.png" \
   --width {width} --height {height}
@@ -120,7 +122,7 @@ pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/ca
 4. 뷰포트: wrapper div에서 width=384 추출, height=800 기본값
 5. 실행:
    ```bash
-   pnpm exec tsx ${CODEX_HOME:-$HOME/.codex}/skills/component-screenshot/scripts/capture-screenshot.ts \
+   pnpm exec tsx ${SKILL_DIR}/scripts/capture-screenshot.ts \
      --story-id "screenshots-shared-card--default" \
      --output "artifacts/screenshots/Card.png" \
      --width 384 --height 800

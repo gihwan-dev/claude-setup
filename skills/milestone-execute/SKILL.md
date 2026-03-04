@@ -1,6 +1,8 @@
 ---
 name: milestone-execute
-description: 마일스톤 다음 단계 실행. milestone.md의 미완료 Phase를 기준 문서와 코드베이스 컨텍스트 기반으로 구현한다. "다음 작업", "마일스톤 실행", "Phase 진행" 등의 요청 시 사용
+description: >
+  Execute the next incomplete milestone phase with context from reference docs and codebase.
+  마일스톤 다음 단계 실행. milestone.md의 미완료 Phase를 기준 문서와 코드베이스 컨텍스트 기반으로 구현한다. "다음 작업", "마일스톤 실행", "Phase 진행" 등의 요청 시 사용
 ---
 
 # 워크플로우: 마일스톤 Phase 실행
@@ -83,7 +85,7 @@ Layer별로 실행합니다:
 - 각 태스크에 전달할 정보:
   - 해당 태스크의 description (목표, 구현 상세, 검증 기준)
   - 기준 문서의 관련 섹션 요약
-  - 준수 사항 (`AGENTS.md` 패턴, FSD 원칙, 기존 코드 컨벤션)
+  - 준수 사항 (프로젝트 가이드라인 패턴, FSD 원칙, 기존 코드 컨벤션)
 
 **Layer 간 (순차):**
 - 선행 Layer의 모든 태스크 완료 확인 후 다음 Layer 실행
@@ -106,7 +108,7 @@ Layer별로 실행합니다:
 
 ### 구현 시 준수 사항
 
-- `AGENTS.md`의 아키텍처 패턴 및 디렉토리 구조를 따릅니다.
+- 프로젝트 가이드라인(INSTRUCTIONS.md)의 아키텍처 패턴 및 디렉토리 구조를 따릅니다.
 - FSD 원칙을 준수합니다.
 - 기존 코드베이스의 패턴과 컨벤션을 따릅니다.
 - 보안 취약점을 도입하지 않습니다.
