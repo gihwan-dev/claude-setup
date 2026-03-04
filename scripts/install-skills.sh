@@ -2,7 +2,7 @@
 set -euo pipefail
 
 MODE="link"
-FORCE=0
+DRY_RUN=0
 TARGETS=()
 CUSTOM_DEST=""
 
@@ -10,14 +10,15 @@ usage() {
   cat <<'USAGE'
 Usage: scripts/install-skills.sh [options]
 
-Install skills into AI agent tool directories.
+Install skills and agents into AI agent tool directories.
+By default, existing entries are overwritten (re-linked).
 
 Options:
   --target <claude|codex|all>  Target platform (default: auto-detect)
-  --copy         Copy skill folders instead of symlinking
-  --link         Symlink skill folders (default)
+  --copy         Copy instead of symlinking
+  --link         Symlink (default)
   --dest <path>  Override destination directory (ignores --target)
-  --force        Overwrite existing destination skill folders
+  --dry-run      Show what would happen without making changes
   -h, --help     Show help
 USAGE
 }
@@ -36,26 +37,11 @@ while [[ $# -gt 0 ]]; do
       esac
       shift 2
       ;;
-    --copy)
-      MODE="copy"
-      shift
-      ;;
-    --link)
-      MODE="link"
-      shift
-      ;;
-    --dest)
-      CUSTOM_DEST="$2"
-      shift 2
-      ;;
-    --force)
-      FORCE=1
-      shift
-      ;;
-    -h|--help)
-      usage
-      exit 0
-      ;;
+    --copy)    MODE="copy"; shift ;;
+    --link)    MODE="link"; shift ;;
+    --dest)    CUSTOM_DEST="$2"; shift 2 ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    -h|--help) usage; exit 0 ;;
     *)
       echo "Unknown option: $1" >&2
       usage
@@ -66,81 +52,130 @@ done
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SOURCE_DIR="$REPO_ROOT/skills"
+SKILLS_SRC="$REPO_ROOT/skills"
+AGENTS_SRC="$REPO_ROOT/agents"
 
-if [[ ! -d "$SOURCE_DIR" ]]; then
-  echo "Skills directory not found: $SOURCE_DIR" >&2
+if [[ ! -d "$SKILLS_SRC" ]]; then
+  echo "Skills directory not found: $SKILLS_SRC" >&2
   exit 1
 fi
 
+# ── helpers ──────────────────────────────────────────────
+
 resolve_dest() {
-  local target="$1"
+  local target="$1" kind="$2"
   case "$target" in
-    claude) echo "${CLAUDE_HOME:-$HOME/.claude}/skills" ;;
-    codex)  echo "${CODEX_HOME:-$HOME/.codex}/skills" ;;
+    claude) echo "${CLAUDE_HOME:-$HOME/.claude}/$kind" ;;
+    codex)  echo "${CODEX_HOME:-$HOME/.codex}/$kind" ;;
   esac
 }
 
-install_to() {
-  local dest_dir="$1"
-  local label="$2"
+# Install source entries into dest directory.
+# Usage: install_entries <source_dir> <dest_dir> <label> <glob_pattern>
+#   glob_pattern: "*" for directories (skills), "*.md" for files (agents)
+install_entries() {
+  local src_dir="$1" dest_dir="$2" label="$3" pattern="$4"
 
   mkdir -p "$dest_dir"
 
   echo ""
   echo "[$label]"
-  echo "  Source:      $SOURCE_DIR"
+  echo "  Source:      $src_dir"
   echo "  Destination: $dest_dir"
   echo "  Mode:        $MODE"
 
-  local installed=0
-  local skipped=0
+  local installed=0 updated=0 unchanged=0
 
-  for skill_dir in "$SOURCE_DIR"/*; do
-    [[ -d "$skill_dir" ]] || continue
+  for entry in "$src_dir"/$pattern; do
+    # skills: match directories only / agents: match files
+    if [[ "$pattern" == "*" ]]; then
+      [[ -d "$entry" ]] || continue
+    else
+      [[ -f "$entry" ]] || continue
+    fi
 
-    local skill_name
-    skill_name="$(basename "$skill_dir")"
-    local target="$dest_dir/$skill_name"
+    local name
+    name="$(basename "$entry")"
+    local target="$dest_dir/$name"
+    local action="new"
 
-    if [[ -e "$target" || -L "$target" ]]; then
-      if [[ "$FORCE" -eq 1 ]]; then
-        rm -rf "$target"
-      else
-        echo "  skip  $skill_name (already exists)"
-        skipped=$((skipped + 1))
+    # Check if already exists and whether update is needed
+    if [[ -L "$target" ]]; then
+      local current
+      current="$(readlink "$target")"
+      if [[ "$current" == "$entry" ]]; then
+        unchanged=$((unchanged + 1))
         continue
       fi
+      action="update"
+    elif [[ -e "$target" ]]; then
+      action="update"
     fi
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "  [dry-run] $action  $name"
+      installed=$((installed + 1))
+      continue
+    fi
+
+    rm -rf "$target"
 
     if [[ "$MODE" == "copy" ]]; then
-      cp -R "$skill_dir" "$target"
+      cp -R "$entry" "$target"
     else
-      ln -s "$skill_dir" "$target"
+      ln -s "$entry" "$target"
     fi
 
-    echo "  ok    $skill_name"
-    installed=$((installed + 1))
+    if [[ "$action" == "update" ]]; then
+      echo "  update  $name"
+      updated=$((updated + 1))
+    else
+      echo "  new     $name"
+      installed=$((installed + 1))
+    fi
   done
 
-  echo "  Installed: $installed / Skipped: $skipped"
+  echo "  New: $installed / Updated: $updated / Unchanged: $unchanged"
 }
 
-# Custom destination: install once
+# Remove symlinks in dest that point to missing targets.
+cleanup_broken() {
+  local dest_dir="$1" label="$2"
+  local removed=0
+
+  for entry in "$dest_dir"/*; do
+    [[ -L "$entry" ]] || continue
+    [[ -e "$entry" ]] && continue
+
+    local name
+    name="$(basename "$entry")"
+
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      echo "  [dry-run] remove broken  $name -> $(readlink "$entry")"
+    else
+      rm -f "$entry"
+      echo "  remove broken  $name -> $(readlink "$entry" 2>/dev/null || echo '?')"
+    fi
+    removed=$((removed + 1))
+  done
+
+  if [[ "$removed" -gt 0 ]]; then
+    echo "  Cleaned up $removed broken symlink(s) in $label"
+  fi
+}
+
+# ── main ─────────────────────────────────────────────────
+
 if [[ -n "$CUSTOM_DEST" ]]; then
-  install_to "$CUSTOM_DEST" "custom"
+  install_entries "$SKILLS_SRC" "$CUSTOM_DEST" "custom/skills" "*"
 else
   # Auto-detect if no targets specified
   if [[ ${#TARGETS[@]} -eq 0 ]]; then
     claude_home="${CLAUDE_HOME:-$HOME/.claude}"
     codex_home="${CODEX_HOME:-$HOME/.codex}"
 
-    if [[ -d "$claude_home" ]]; then
-      TARGETS+=("claude")
-    fi
-    if [[ -d "$codex_home" ]]; then
-      TARGETS+=("codex")
-    fi
+    [[ -d "$claude_home" ]] && TARGETS+=("claude")
+    [[ -d "$codex_home" ]]  && TARGETS+=("codex")
 
     if [[ ${#TARGETS[@]} -eq 0 ]]; then
       echo "No AI agent tools detected." >&2
@@ -152,8 +187,17 @@ else
   fi
 
   for t in "${TARGETS[@]}"; do
-    dest="$(resolve_dest "$t")"
-    install_to "$dest" "$t"
+    # Skills
+    skills_dest="$(resolve_dest "$t" "skills")"
+    install_entries "$SKILLS_SRC" "$skills_dest" "$t/skills" "*"
+    cleanup_broken "$skills_dest" "$t/skills"
+
+    # Agents (claude: .md files)
+    if [[ "$t" == "claude" && -d "$AGENTS_SRC" ]]; then
+      agents_dest="$(resolve_dest "$t" "agents")"
+      install_entries "$AGENTS_SRC" "$agents_dest" "$t/agents" "*.md"
+      cleanup_broken "$agents_dest" "$t/agents"
+    fi
   done
 fi
 
@@ -165,4 +209,4 @@ if [[ -x "$SCRIPT_DIR/sync-instructions.sh" ]]; then
 fi
 
 echo ""
-echo "Done. Restart your AI agent to load updated skills."
+echo "Done. Restart your AI agent to load updated configurations."
