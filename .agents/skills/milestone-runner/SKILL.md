@@ -14,8 +14,36 @@ description: >
 - 런타임 진실원(runtime truth)은 `repo/.codex/milestones/<run_id>/run-state.yaml` + `.codex/milestones/<run_id>/phases/<unit_id>/status.json`이다.
 - `phase-manifest.yaml`은 비권위(snapshot)이며 mutable status를 저장하지 않는다.
 - 설계는 instruction-only다. 외부 스크립트 실행, 새 profile 추가, config patch를 요구하지 않는다.
+- 실행 셸은 항상 `bash`를 사용한다(`zsh` 문법 가정 금지).
 - 사람-facing 개념은 `phase`, 실행 단위는 `unit`으로 고정한다.
 - 경로명 `phases/`는 호환성 목적의 디렉터리 이름이며, 내부 상태 파일은 unit 단위로 관리한다.
+
+## 실행 안정성 가드 (필수)
+
+아래 가드는 모든 invocation에서 예외 없이 적용한다.
+
+1. 셸/옵션 고정
+- 멀티라인 로직은 반드시 `bash -lc '<script>'`로 실행한다.
+- 스크립트 시작부에 `set -euo pipefail`를 선언한다.
+- `zsh` 전용 문법(1-based 배열 인덱스 가정 포함) 사용을 금지한다.
+
+2. 문자열 안전 규칙
+- 문서에서 추출한 텍스트(특히 제목)는 raw shell literal로 직접 삽입하지 않는다.
+- 백틱(`` ` ``)이 포함될 수 있는 값은 JSON(`jq -n --arg`) 또는 single-quoted heredoc(`<<'EOF'`)으로만 기록한다.
+- command substitution이 의도된 경우를 제외하고 백틱 표기 자체를 금지한다(항상 `$(...)`만 허용).
+
+3. 파일 생성/갱신 규칙
+- 상태 파일은 `tmp` 파일에 먼저 쓰고 `mv`로 원자적 교체한다.
+- 새 run 디렉터리 생성 시 실패를 대비해 `trap`으로 부분 생성물을 정리한다.
+- `phase-manifest.yaml`에는 status 계열 필드를 절대 쓰지 않는다.
+
+4. 실행 전 사전 점검
+- `milestone_path` 존재, `bash`/`jq`/`shasum` 사용 가능 여부를 먼저 확인한다.
+- 필수 의존성이 없으면 즉시 `blocked`로 종료하고 `reason`에 누락 항목을 기록한다.
+
+5. 에러 처리
+- write/revalidate 실패 시 해당 unit의 `status.json` + `handoff.md`를 같은 invocation 안에서 반드시 갱신한다.
+- 에러 메시지는 "원인 1줄 + 재시도 조건 1줄"로 정규화해 기록한다.
 
 ## 명시 호출 인터페이스
 
@@ -146,6 +174,10 @@ force_revalidate: boolean           # 기본 false
 ## 사용자 출력 형식
 
 출력은 아래 순서를 고정한다.
+
+- 중간 진행 로그(탐색 N건, 목록 탐색 마침, 전체 쉘 스크립트 덤프, 명령 원문 나열)는 출력하지 않는다.
+- 사용자에게는 최종 결과만 1회 보고한다.
+- 명령 실행 근거는 `evidence.md`에 기록하고, 사용자 응답에는 요약만 포함한다.
 
 1. 실행 요약
 - `run_id`, `milestone_path`, `milestone_hash`, `selected_scope(target_unit|target_phase|auto)`, `action(write|revalidate|noop)`
