@@ -1,0 +1,6 @@
+interface:
+  display_name: "Milestone Runner"
+  short_description: "Execute and resume milestone.md with artifact-based state and fresh-per-unit writers"
+  default_prompt: "$milestone-runner milestone.md를 기준으로 현재 ready unit를 실행해"
+policy:
+  allow_implicit_invocation: false

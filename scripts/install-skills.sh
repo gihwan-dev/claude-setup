@@ -53,6 +53,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_SRC="$REPO_ROOT/skills"
+AGENT_SKILLS_SRC="$REPO_ROOT/.agents/skills"
 AGENTS_SRC="$REPO_ROOT/agents"
 
 if [[ ! -d "$SKILLS_SRC" ]]; then
@@ -75,6 +76,13 @@ resolve_dest() {
 #   glob_pattern: "*" for directories (skills), "*.md" for files (agents)
 install_entries() {
   local src_dir="$1" dest_dir="$2" label="$3" pattern="$4"
+
+  if [[ ! -d "$src_dir" ]]; then
+    echo ""
+    echo "[$label]"
+    echo "  Source not found, skipping: $src_dir"
+    return
+  fi
 
   mkdir -p "$dest_dir"
 
@@ -168,6 +176,7 @@ cleanup_broken() {
 
 if [[ -n "$CUSTOM_DEST" ]]; then
   install_entries "$SKILLS_SRC" "$CUSTOM_DEST" "custom/skills" "*"
+  install_entries "$AGENT_SKILLS_SRC" "$CUSTOM_DEST" "custom/skills (.agents overlay)" "*"
 else
   # Auto-detect if no targets specified
   if [[ ${#TARGETS[@]} -eq 0 ]]; then
@@ -190,6 +199,7 @@ else
     # Skills
     skills_dest="$(resolve_dest "$t" "skills")"
     install_entries "$SKILLS_SRC" "$skills_dest" "$t/skills" "*"
+    install_entries "$AGENT_SKILLS_SRC" "$skills_dest" "$t/skills (.agents overlay)" "*"
     cleanup_broken "$skills_dest" "$t/skills"
 
     # Agents (claude: .md files)
