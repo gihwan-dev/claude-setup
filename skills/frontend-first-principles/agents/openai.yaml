@@ -1,0 +1,6 @@
+interface:
+  display_name: "Frontend First Principles"
+  short_description: "프론트엔드 구현 전 요구를 분해하고 해법 트레이드오프를 검증"
+  default_prompt: "$frontend-first-principles 이 프론트엔드 접근이 맞는지 구현 전에 1원칙 기반으로 분석해줘"
+policy:
+  allow_implicit_invocation: false
