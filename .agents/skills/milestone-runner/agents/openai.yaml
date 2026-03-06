@@ -1,6 +1,0 @@
-interface:
-  display_name: "Milestone Runner"
-  short_description: "Continuously execute milestone.md to PASS with fresh-per-attempt writers"
-  default_prompt: "$milestone-runner milestone.md를 기준으로 완료(PASS)될 때까지 연속 실행해"
-policy:
-  allow_implicit_invocation: true

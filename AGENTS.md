@@ -51,7 +51,7 @@
 
 ### Single-writer rule (delegated lane only)
 
-- delegated lane에서만 정확히 하나의 `worker`가 모든 diff를 적용한다.
+- 기본값: delegated lane 한 실행 단위(run)에서 정확히 하나의 `worker`가 code diff를 적용한다.
 - 동일 작업에서 writer 에이전트를 둘 이상 사용하지 않는다.
 
 ## 필수 실행 흐름
@@ -70,6 +70,16 @@
 3. 정확히 하나의 `worker`를 spawn해서 변경을 적용한다.
 4. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
 5. 메인 스레드가 결과를 통합해 최종 응답한다.
+
+### Exception: `project-planner` + `implement-task`
+
+- `project-planner`가 `implement-task`를 실행할 때는 fast lane/deep solo를 적용하지 않고 항상 delegated team lane으로 실행한다.
+- 오케스트레이터는 strategy-only 역할로 제한한다. 직접 코드 수정이나 raw validation log 해석을 수행하지 않는다.
+- single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff는 fresh `worker` 1명이 담당한다.
+- `끝까지` 모드에서 여러 slice에 서로 다른 fresh `worker`가 참여해도 slice당 single-writer를 만족하면 규칙 위반이 아니다.
+- `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
+- 검증 실행은 writer가 담당하고, noisy/multi-step 로그 해석만 `verification-worker`에 위임한다.
+- 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
 
 ## 워크플로우 역할
 
@@ -94,9 +104,8 @@
 | TypeScript 타입 설계 | implementer | typescript-pro |
 | 인터페이스 품질 점검 | reviewer | interface-inspector |
 | 정량 복잡도 분석 | reviewer | complexity-analyst |
-| 스펙 문서 작성 | implementer | spec-writer |
+| 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
 | Storybook/디자인 검증 | implementer | storybook-specialist |
-| 마일스톤 관리 | orchestrator | project-planner |
 | 프롬프트 최적화 | implementer | prompt-engineer |
 | 검증/결과 분석 | verifier | — |
 
