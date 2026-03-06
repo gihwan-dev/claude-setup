@@ -2,6 +2,9 @@
 
 AI 에이전트(Claude Code, Codex 등)를 위한 스킬/에이전트 레지스트리 저장소다.
 
+처음 작업할 때는 [CONTRIBUTING.md](/Users/choegihwan/Documents/Projects/claude-setup/CONTRIBUTING.md)를 먼저 읽는 것을 권장한다.
+이 문서에는 수정해야 할 source of truth, 생성물 재생성, 설치/검증 절차가 정리되어 있다.
+
 ## 구조
 
 ```text
@@ -25,6 +28,22 @@ CLAUDE.md / AGENTS.md                          # generated files
 - 에이전트: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
 - `agents/*.md`, `dist/codex/*`: generated projection
 - 정책 문서: `INSTRUCTIONS.md`
+
+## 작업 시작 전
+
+- generated projection을 직접 수정하지 않는다.
+- 먼저 어떤 파일이 source of truth인지 결정한다.
+- 작업 후에는 `sync`와 `--check`를 실행해 drift가 없는지 확인한다.
+- 실제 홈 디렉터리 설치가 필요하면 마지막에 `install_assets.py`를 실행한다.
+
+빠른 작업 가이드:
+
+| 작업 | 수정 위치 | 후속 명령 |
+|------|-----------|-----------|
+| 에이전트 추가/수정 | `agent-registry/<agent-id>/...` | `python3 scripts/sync_agents.py` |
+| 글로벌 정책 수정 | `INSTRUCTIONS.md` | `python3 scripts/sync_instructions.py` |
+| 스킬 수정 | `skills/<skill-name>/...` | 필요 시 skill 자체 검증 |
+| 로컬 설치 반영 | source 수정 후 | `python3 scripts/install_assets.py --target all --link` |
 
 ## 동기화/검증
 
