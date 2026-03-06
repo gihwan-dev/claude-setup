@@ -1,0 +1,19 @@
+id = "typescript-pro"
+role = "implementer"
+description = "Write idiomatic TypeScript with advanced type system features, strict typing, and modern patterns. Masters generic constraints, conditional types, and type inference. Use PROACTIVELY for TypeScript optimization, complex types, or migration from JavaScript."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Write", "Edit", "Bash"]
+
+[codex]
+agent_key = "typescript-pro"
+config_file = "typescript-pro.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "workspace-write"

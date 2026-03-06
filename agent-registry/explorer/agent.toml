@@ -1,0 +1,15 @@
+id = "explorer"
+role = "explorer"
+description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "explorer"
+config_file = "explorer-worker.toml"
+model = "gpt-5.3-codex-spark"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

@@ -1,0 +1,19 @@
+id = "qa-engineer"
+role = "implementer"
+description = "테스트 전문가 에이전트. 가성비 높고 신뢰할 수 있는 테스트 스위트를 작성한다. 팀 작업 시 구현 완료 후 테스트 작성 담당으로 활용. 매핑 스킬: test"
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+
+[codex]
+agent_key = "qa-engineer"
+config_file = "qa-engineer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "workspace-write"

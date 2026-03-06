@@ -1,0 +1,19 @@
+id = "product-planner"
+role = "orchestrator"
+description = "Structure ambiguous requests into goal, scope, and acceptance criteria."
+source = "planning-role"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "product-planner"
+config_file = "product-planner.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

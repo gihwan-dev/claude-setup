@@ -1,0 +1,15 @@
+id = "worker"
+role = "implementer"
+description = "Non-trivial single writer. Apply the smallest validated diff only after triage and plan are settled. No repo exploration. Never used for fast-lane tasks."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "worker"
+config_file = "implementer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "workspace-write"

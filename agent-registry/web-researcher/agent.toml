@@ -1,0 +1,19 @@
+id = "web-researcher"
+role = "explorer"
+description = "Web research specialist for competitor scans and external solution benchmarking."
+source = "planning-role"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "web-researcher"
+config_file = "web-researcher.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

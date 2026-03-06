@@ -1,6 +1,6 @@
 interface:
   display_name: "Design Task"
-  short_description: "Create PLAN.md with decision-ready execution slices"
-  default_prompt: "$design-task 코드 수정 없이 작업 설계를 만들고 tasks/<task-slug>/PLAN.md를 갱신해"
+  short_description: "Create PLAN.md with research, options, and execution slices"
+  default_prompt: "$design-task 코드 수정 없이 조사/옵션 비교를 포함한 작업 설계를 만들고 tasks/<task-slug>/PLAN.md를 갱신해"
 policy:
   allow_implicit_invocation: true

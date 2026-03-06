@@ -1,0 +1,15 @@
+id = "verification-worker"
+role = "reviewer"
+description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "verification-worker"
+config_file = "verification-worker.toml"
+model = "gpt-5.3-codex-spark"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

@@ -37,20 +37,47 @@ description: >
 
 1. 요청의 목표/제약/성공 기준을 추출한다.
 2. 관련 코드와 문서를 read-only로 조사하고 근거를 수집한다.
-3. 작업 유형을 `feature`, `bugfix`, `refactor`, `prototype` 중 하나로 결정한다.
-4. 변경 경계(유지/변경/금지)와 의사결정 공백을 분리한다.
-5. 한 번의 구현 세션에서 검증 가능한 `Execution slices`를 작성한다.
-6. 검증 전략과 stop/replan 조건을 명시한다.
-7. `tasks/<task-slug>/PLAN.md`를 생성 또는 갱신한다.
+3. `Planning lens`를 분류한다.
+4. lens에 맞춰 planning role fan-out을 수행한다.
+5. 작업 유형을 `feature`, `bugfix`, `refactor`, `prototype` 중 하나로 결정한다.
+6. 변경 경계(유지/변경/금지)와 의사결정 공백을 분리한다.
+7. 한 번의 구현 세션에서 검증 가능한 `Execution slices`를 작성한다.
+8. 검증 전략과 stop/replan 조건을 명시한다.
+9. `tasks/<task-slug>/PLAN.md`를 생성 또는 갱신한다.
 
 ## Multi-Agent Usage (Optional)
 
-필요할 때만 read-only 병렬 에이전트를 사용한다.
-- `explorer`: 코드/문서 증거 수집
+필요할 때만 read-only 병렬 에이전트를 사용한다. 설계 단계에서는 writer를 사용하지 않는다.
+
+### Planning Roles (Priority)
+
+아래 planning role을 우선 사용한다.
+- `web-researcher`
+- `solution-analyst`
+- `product-planner`
+- `ux-journey-critic`
+- `delivery-risk-planner`
+- `prompt-systems-designer`
+
+### Fallback Rules (Runtime Unavailable)
+
+런타임에서 custom planning role이 직접 실행되지 않으면 아래 fallback을 사용한다.
+- `web-researcher`: 메인 스레드에서 직접 웹 조사 수행 (출처 링크 + 날짜 + 사실/추정 구분)
+- 나머지 planning role: `explorer` + role card overlay를 사용한다.
+  - role card source: `${SKILL_DIR}/references/planning-role-cards.md`
 - `architecture-reviewer`: 경계/모듈 영향 점검
 - `type-specialist`: 공개 타입/계약 영향 점검
 - `test-engineer`: 검증 시나리오 도출
-설계 단계에서는 writer를 사용하지 않는다.
+
+### Planning Lens Classification
+
+lens를 하나 이상 선택하고 해당 role을 fan-out한다.
+- `external-benchmark`: 경쟁사/최신 대안 조사 (`web-researcher`)
+- `solution-comparison`: 구현 옵션 비교 (`solution-analyst`)
+- `product-clarification`: 목표/범위/수용 기준 정리 (`product-planner`)
+- `ux-journey`: 사용자 흐름/마찰 점검 (`ux-journey-critic`)
+- `delivery-risk`: 배포/운영 리스크 점검 (`delivery-risk-planner`)
+- `prompt-system`: 프롬프트/도구 경계 설계 (`prompt-systems-designer`)
 
 ## PLAN Template (Fixed Sections)
 
@@ -68,6 +95,17 @@ description: >
 # Stop / Replan conditions
 ```
 
+### Required Subsections
+
+- `# Evidence`에는 아래를 반드시 포함한다.
+  - `Repo evidence`
+  - `External evidence` (오프라인/불필요/제약 시 `없음` 또는 사유를 명시)
+  - `Options considered`
+- `# Decisions / Open questions`에는 아래를 반드시 포함한다.
+  - `Chosen approach`
+  - `Rejected alternatives`
+  - `Need user decision`
+
 ## Task Type Focus
 
 - `feature`: 사용자 흐름, acceptance criteria, out-of-scope를 명확히 정의한다.
@@ -81,3 +119,4 @@ description: >
 - 각 슬라이스에 완료 기준과 검증 항목이 있는가?
 - 공개 경계 변경 여부가 명시되었는가?
 - 즉시 중단 또는 재설계가 필요한 조건이 정의되었는가?
+- 선택한 lens와 role fan-out 근거가 `Evidence`/`Decisions`에 반영되었는가?

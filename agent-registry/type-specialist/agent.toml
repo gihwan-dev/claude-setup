@@ -1,0 +1,15 @@
+id = "type-specialist"
+role = "reviewer"
+description = "Read-only reviewer for shared/public types, interfaces, generics, and contract-safety risks."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "type-specialist"
+config_file = "type-specialist.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

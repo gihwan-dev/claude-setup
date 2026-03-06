@@ -99,7 +99,7 @@
 | React UI 구현 | implementer | frontend-developer |
 | 테스트 작성 | implementer | qa-engineer |
 | 코드 품질 리뷰 | reviewer | code-reviewer |
-| 아키텍처 리뷰 | reviewer | architect-review |
+| 아키텍처 리뷰 | reviewer | architecture-reviewer |
 | 리팩토링 실행 | implementer | refactoring-expert |
 | TypeScript 타입 설계 | implementer | typescript-pro |
 | 인터페이스 품질 점검 | reviewer | interface-inspector |
@@ -107,6 +107,12 @@
 | 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
 | Storybook/디자인 검증 | implementer | storybook-specialist |
 | 프롬프트 최적화 | implementer | prompt-engineer |
+| 외부 리서치/경쟁사 벤치마킹 | explorer | web-researcher |
+| 솔루션 옵션 비교/트레이드오프 분석 | reviewer | solution-analyst |
+| 요구사항/성공 기준 구조화 | orchestrator | product-planner |
+| UX 여정/마찰/엣지 상태 점검 | reviewer | ux-journey-critic |
+| 전달/롤아웃 리스크 설계 | reviewer | delivery-risk-planner |
+| 프롬프트 시스템 계약/평가 설계 | reviewer | prompt-systems-designer |
 | 검증/결과 분석 | verifier | — |
 
 ## 자동 리뷰 트리거
@@ -138,10 +144,11 @@
 
 원문 출력이 필요하면 최소 발췌만 포함하고 소스 경로를 명시한다.
 
-## 에이전트 정의 파일
+## 에이전트 정의 소스
 
-각 에이전트의 상세 정의는 `agents/*.md` 파일을 참조한다.
-에이전트 파일에는 `role` 필드로 워크플로우 역할이 명시되어 있다.
+에이전트의 단일 진실원은 `agent-registry/<agent-id>/agent.toml` + `instructions.md`다.
+`agents/*.md`는 수기 파일이 아니라 registry에서 생성되는 projection이다.
+Codex 런타임용 프로파일은 registry에서 `dist/codex/agents/*.toml`과 `dist/codex/config.managed-agents.toml`로 생성한다.
 
 ## 언어 및 스타일
 

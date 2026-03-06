@@ -1,0 +1,15 @@
+id = "code-quality-reviewer"
+role = "reviewer"
+description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "code-quality-reviewer"
+config_file = "code-quality-reviewer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

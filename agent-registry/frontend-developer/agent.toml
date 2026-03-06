@@ -1,0 +1,19 @@
+id = "frontend-developer"
+role = "implementer"
+description = "Frontend development specialist for React applications and responsive design. Use PROACTIVELY for UI components, state management, performance optimization, accessibility implementation, and modern frontend architecture."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Write", "Edit", "Bash"]
+
+[codex]
+agent_key = "frontend-developer"
+config_file = "frontend-developer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "workspace-write"

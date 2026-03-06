@@ -1,0 +1,19 @@
+id = "delivery-risk-planner"
+role = "reviewer"
+description = "Plan rollout, migration, and operational guardrails before implementation."
+source = "planning-role"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "delivery-risk-planner"
+config_file = "delivery-risk-planner.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

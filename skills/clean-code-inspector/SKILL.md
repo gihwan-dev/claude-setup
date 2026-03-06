@@ -81,7 +81,7 @@ node "${SKILL_DIR}/scripts/collect-quantitative-metrics.mjs" \
 
 ## Phase 4: Qualitative Overlay (정성)
 
-`architect-reviewer`를 Hotspot 파일에만 실행한다.
+`architecture-reviewer`를 Hotspot 파일에만 실행한다.
 
 참조 문서:
 - `references/qualitative-rubric.md`

@@ -1,0 +1,15 @@
+id = "architecture-reviewer"
+role = "reviewer"
+description = "Read-only reviewer for boundaries, layering, public-surface changes, and large refactors."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "architecture-reviewer"
+config_file = "architecture-reviewer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

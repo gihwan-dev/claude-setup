@@ -1,0 +1,15 @@
+id = "test-engineer"
+role = "reviewer"
+description = "Read-only reviewer for regression risk and test-plan/coverage gaps."
+source = "codex-builtin"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "test-engineer"
+config_file = "test-engineer.toml"
+model = "gpt-5.3-codex"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"
