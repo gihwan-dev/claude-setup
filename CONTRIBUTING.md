@@ -36,6 +36,8 @@
 - `id`, `codex.agent_key`, `codex.config_file`는 충돌하면 안 된다.
 - 현재는 `scripts/sync_agents.py --check`가 중복 충돌을 hard fail로 막는다.
 - built-in Codex agent는 registry에 있어도 managed config에는 다시 쓰지 않는다.
+- long-running task public surface는 `design-task`, `implement-task`만 유지한다.
+- planning role은 internal fan-out 전용이며 user-facing install/projection 대상에서 제외한다.
 
 ### 2. 글로벌 정책 수정
 
@@ -63,7 +65,9 @@
 ```bash
 python3 scripts/sync_instructions.py --check
 python3 scripts/sync_agents.py --check
+python3 scripts/validate_workflow_contracts.py
 python3 scripts/install_assets.py --dry-run --target all
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 설치 로직을 건드렸다면 추가로 확인한다.
@@ -98,7 +102,9 @@ python3 scripts/install_assets.py --target all --dry-run
 - `agents/*.md`가 source처럼 보여도 이제는 projection이다.
 - `dist/codex/config.managed-agents.toml`은 `~/.codex/config.toml`의 managed block으로만 들어간다.
 - install 단계에서는 generated marker가 있는 agent 파일만 prune한다.
+- skill은 generated manifest 기반으로 stale 항목만 prune한다(수동 디렉터리 보존).
 - broken symlink도 install 단계에서 정리된다.
+- `codex` 대상 설치는 helper built-in preflight를 통과해야 진행된다.
 - `design-task`는 planning role을 직접 또는 fallback overlay로 사용한다. planning role을 바꾸면 `skills/design-task/SKILL.md`와 `skills/design-task/references/`도 같이 확인한다.
 
 ## When Unsure

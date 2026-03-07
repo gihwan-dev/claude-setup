@@ -17,7 +17,8 @@
 - 결과물은 `tasks/<task-slug>/PLAN.md`다.
 - 설계는 실행 슬라이스와 검증 기준을 반드시 포함한다.
 - 기존 `PLAN.md`가 있으면 히스토리를 반영해 갱신한다.
-- 설계 시 필요하면 planning role fan-out(`web-researcher`, `solution-analyst`, `product-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`)을 사용한다.
+- 설계 시 필요하면 planning role fan-out은 internal-only(`web-researcher`, `solution-analyst`, `product-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`)로 사용한다.
+- planning role은 user-facing install/projection 대상이 아니다.
 - custom planning role이 런타임에서 직접 실행되지 않으면 `design-task`의 overlay fallback 규칙을 따른다.
 
 ### 2) 구현 단계 (`implement-task`)

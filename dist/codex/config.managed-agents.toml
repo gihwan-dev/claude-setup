@@ -9,10 +9,6 @@ config_file = "agents/code-reviewer.toml"
 description = "clean-code-inspector v2.1 정량 분석 보조 에이전트. 수동 계수보다 quantitative-metrics.json을 우선 사용해 복잡도 축을 해석·검증한다."
 config_file = "agents/complexity-analyst.toml"
 
-[agents.delivery-risk-planner]
-description = "Plan rollout, migration, and operational guardrails before implementation."
-config_file = "agents/delivery-risk-planner.toml"
-
 [agents.frontend-developer]
 description = "Frontend development specialist for React applications and responsive design. Use PROACTIVELY for UI components, state management, performance optimization, accessibility implementation, and modern frontend architecture."
 config_file = "agents/frontend-developer.toml"
@@ -20,10 +16,6 @@ config_file = "agents/frontend-developer.toml"
 [agents.interface-inspector]
 description = "clean-code-inspector v2.1 인터페이스 품질 보조 에이전트. AST 기반 정량 지표(any/assertion/ts-ignore/상태수/import)를 해석하고 의미를 설명한다."
 config_file = "agents/interface-inspector.toml"
-
-[agents.product-planner]
-description = "Structure ambiguous requests into goal, scope, and acceptance criteria."
-config_file = "agents/product-planner.toml"
 
 [agents.project-planner]
 description = "장기 작업 오케스트레이터. design-task와 implement-task 두 스킬을 기준으로 설계와 실행을 관리하고, tasks/<task-slug>/PLAN.md 및 STATUS.md를 단일 진실원으로 유지한다."
@@ -33,10 +25,6 @@ config_file = "agents/project-planner.toml"
 description = "Use this agent when you need to design, optimize, test, or evaluate prompts for large language models in production systems. Specifically:\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<example>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nContext: You're building a customer support chatbot and need to create high-quality prompts that balance accuracy, cost, and response speed.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nuser: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"I need to optimize prompts for our support bot. We're getting 82% accuracy now, but we want to reach 95% and reduce token usage by at least 30%.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nassistant: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"I'll help you design and optimize your support prompts. Let me analyze your current setup, test different prompt patterns like chain-of-thought and few-shot learning, measure accuracy improvements, and create a cost-optimized version with monitoring in place.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nUse the prompt-engineer agent when you have concrete prompt optimization goals with measurable targets (accuracy %, token reduction %, cost constraints). This agent excels at designing templates, testing variations, and implementing production-ready prompt systems.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</example>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<example>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nContext: Your data science team has trained a classification model but the LLM-based inference is inconsistent across different input variations and edge cases.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nuser: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"Our model outputs vary significantly on similar inputs. Can you help make the prompts more consistent and robust?\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nassistant: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"I'll design a systematic evaluation framework to test edge cases, implement chain-of-thought reasoning and constitutional AI patterns to improve consistency, A/B test different prompt variations, and provide statistical analysis to validate improvements.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nUse the prompt-engineer when you need to improve prompt reliability, consistency, and edge case handling through structured testing and prompt pattern optimization.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</example>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<example>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nContext: You're managing multiple LLM-based features in production and need to establish best practices, version control, and cost tracking across all prompts.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nuser: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"We have 15 different prompts scattered across our codebase. How do we manage them consistently and track costs?\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nassistant: \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"I'll establish a prompt management system with version control, create a prompt catalog with performance metrics, set up A/B testing frameworks, implement monitoring dashboards, and develop team guidelines for prompt deployment and optimization.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\"\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n<commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\nUse the prompt-engineer when you need to build production-scale prompt infrastructure, documentation, version control, testing frameworks, and team collaboration protocols across multiple prompts.\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</commentary>\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n</example>"
 config_file = "agents/prompt-engineer.toml"
 
-[agents.prompt-systems-designer]
-description = "Design prompt system contracts, evaluation rules, and fallback strategy."
-config_file = "agents/prompt-systems-designer.toml"
-
 [agents.qa-engineer]
 description = "테스트 전문가 에이전트. 가성비 높고 신뢰할 수 있는 테스트 스위트를 작성한다. 팀 작업 시 구현 완료 후 테스트 작성 담당으로 활용. 매핑 스킬: test"
 config_file = "agents/qa-engineer.toml"
@@ -45,10 +33,6 @@ config_file = "agents/qa-engineer.toml"
 description = "코드 품질 개선 전문가. React/TypeScript 코드를 비판적으로 분석하고, 복잡도를 낮추며, 미사용 코드를 제거한다. 팀 작업 시 코드 품질 개선 담당으로 활용. 매핑 스킬: react-refactoring, complexity-refactor, code-cleaner, clean-code-inspector"
 config_file = "agents/refactoring-expert.toml"
 
-[agents.solution-analyst]
-description = "Compare implementation options and tradeoffs with clear decision criteria."
-config_file = "agents/solution-analyst.toml"
-
 [agents.storybook-specialist]
 description = "Storybook/디자인 검증 전문가. Story 파일 생성, 컴포넌트 스크린샷 캡처, Figma 디자인 비교 검증을 수행한다. 팀 작업 시 디자인 검증 및 Story 작성 담당으로 활용. 매핑 스킬: story-generator, design-check, component-screenshot"
 config_file = "agents/storybook-specialist.toml"
@@ -56,11 +40,3 @@ config_file = "agents/storybook-specialist.toml"
 [agents.typescript-pro]
 description = "Write idiomatic TypeScript with advanced type system features, strict typing, and modern patterns. Masters generic constraints, conditional types, and type inference. Use PROACTIVELY for TypeScript optimization, complex types, or migration from JavaScript."
 config_file = "agents/typescript-pro.toml"
-
-[agents.ux-journey-critic]
-description = "Evaluate user journey friction, edge states, and accessibility risks."
-config_file = "agents/ux-journey-critic.toml"
-
-[agents.web-researcher]
-description = "Web research specialist for competitor scans and external solution benchmarking."
-config_file = "agents/web-researcher.toml"

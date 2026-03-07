@@ -4,8 +4,12 @@ description = "Non-trivial single writer. Apply the smallest validated diff only
 source = "codex-builtin"
 
 [projection]
-repo = false
+repo = true
 codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 
 [codex]
 agent_key = "worker"

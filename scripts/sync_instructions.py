@@ -13,8 +13,8 @@ def build_agents_content(instructions: str) -> str:
     return f"{HEADER}\n\n{instructions}"
 
 
-def build_claude_content() -> str:
-    return f"{HEADER}\n"
+def build_claude_content(instructions: str) -> str:
+    return f"{HEADER}\n\n{instructions}"
 
 
 def check_or_write(path: Path, content: str, check: bool) -> bool:
@@ -45,7 +45,7 @@ def main() -> int:
 
     instructions = instructions_path.read_text(encoding="utf-8")
     agents_content = build_agents_content(instructions)
-    claude_content = build_claude_content()
+    claude_content = build_claude_content(instructions)
 
     agents_ok = check_or_write(agents_path, agents_content, args.check)
     claude_ok = check_or_write(claude_path, claude_content, args.check)

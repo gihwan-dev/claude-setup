@@ -49,9 +49,11 @@ description: >
 
 필요할 때만 read-only 병렬 에이전트를 사용한다. 설계 단계에서는 writer를 사용하지 않는다.
 
-### Planning Roles (Priority)
+### Planning Roles (Internal-Only Priority)
 
-아래 planning role을 우선 사용한다.
+planning role은 internal fan-out 전용이다.
+user-facing install/projection 대상으로 취급하지 않는다.
+아래 planning role을 내부 우선 순위로 사용한다.
 - `web-researcher`
 - `solution-analyst`
 - `product-planner`
@@ -61,7 +63,7 @@ description: >
 
 ### Fallback Rules (Runtime Unavailable)
 
-런타임에서 custom planning role이 직접 실행되지 않으면 아래 fallback을 사용한다.
+런타임에서 internal planning role이 직접 실행되지 않으면 아래 fallback을 사용한다.
 - `web-researcher`: 메인 스레드에서 직접 웹 조사 수행 (출처 링크 + 날짜 + 사실/추정 구분)
 - 나머지 planning role: `explorer` + role card overlay를 사용한다.
   - role card source: `${SKILL_DIR}/references/planning-role-cards.md`

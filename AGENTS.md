@@ -73,6 +73,7 @@
 
 ### Exception: `project-planner` + `implement-task`
 
+- 사용자에게는 `design-task`, `implement-task`만 노출한다.
 - `project-planner`가 `implement-task`를 실행할 때는 fast lane/deep solo를 적용하지 않고 항상 delegated team lane으로 실행한다.
 - 오케스트레이터는 strategy-only 역할로 제한한다. 직접 코드 수정이나 raw validation log 해석을 수행하지 않는다.
 - single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff는 fresh `worker` 1명이 담당한다.
@@ -80,6 +81,8 @@
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 검증 실행은 writer가 담당하고, noisy/multi-step 로그 해석만 `verification-worker`에 위임한다.
 - 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
+- planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
+- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)는 runtime helper로 보장되어야 한다.
 
 ## 워크플로우 역할
 
@@ -107,13 +110,12 @@
 | 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
 | Storybook/디자인 검증 | implementer | storybook-specialist |
 | 프롬프트 최적화 | implementer | prompt-engineer |
-| 외부 리서치/경쟁사 벤치마킹 | explorer | web-researcher |
-| 솔루션 옵션 비교/트레이드오프 분석 | reviewer | solution-analyst |
-| 요구사항/성공 기준 구조화 | orchestrator | product-planner |
-| UX 여정/마찰/엣지 상태 점검 | reviewer | ux-journey-critic |
-| 전달/롤아웃 리스크 설계 | reviewer | delivery-risk-planner |
-| 프롬프트 시스템 계약/평가 설계 | reviewer | prompt-systems-designer |
 | 검증/결과 분석 | verifier | — |
+
+## Internal Planning Roles
+
+- `web-researcher`, `solution-analyst`, `product-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`
+- 위 role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 
 ## 자동 리뷰 트리거
 

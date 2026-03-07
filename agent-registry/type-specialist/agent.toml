@@ -4,8 +4,12 @@ description = "Read-only reviewer for shared/public types, interfaces, generics,
 source = "codex-builtin"
 
 [projection]
-repo = false
+repo = true
 codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
 
 [codex]
 agent_key = "type-specialist"

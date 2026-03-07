@@ -4,16 +4,5 @@ description = "Evaluate user journey friction, edge states, and accessibility ri
 source = "planning-role"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Grep", "Glob"]
-
-[codex]
-agent_key = "ux-journey-critic"
-config_file = "ux-journey-critic.toml"
-model = "gpt-5.3-codex"
-reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+repo = false
+codex = false

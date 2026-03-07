@@ -4,8 +4,12 @@ description = "Read-only validation summarizer. Use only when validation output 
 source = "codex-builtin"
 
 [projection]
-repo = false
+repo = true
 codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
 
 [codex]
 agent_key = "verification-worker"

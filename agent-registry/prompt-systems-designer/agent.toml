@@ -4,16 +4,5 @@ description = "Design prompt system contracts, evaluation rules, and fallback st
 source = "planning-role"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Grep", "Glob"]
-
-[codex]
-agent_key = "prompt-systems-designer"
-config_file = "prompt-systems-designer.toml"
-model = "gpt-5.3-codex"
-reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+repo = false
+codex = false

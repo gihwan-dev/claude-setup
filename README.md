@@ -28,6 +28,8 @@ CLAUDE.md / AGENTS.md                          # generated files
 - 에이전트: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
 - `agents/*.md`, `dist/codex/*`: generated projection
 - 정책 문서: `INSTRUCTIONS.md`
+- long-running task public surface: `design-task`, `implement-task`
+- planning role은 internal fan-out 전용이며 user-facing install/projection 대상이 아니다.
 
 ## 작업 시작 전
 
@@ -57,6 +59,8 @@ drift 확인:
 ```bash
 python3 scripts/sync_instructions.py --check
 python3 scripts/sync_agents.py --check
+python3 scripts/validate_workflow_contracts.py
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
 ## 설치 (Python-first)
@@ -74,6 +78,8 @@ python3 scripts/install_assets.py --target claude --link
 python3 scripts/install_assets.py --target codex --link
 python3 scripts/install_assets.py --target all --link
 ```
+
+`codex` 설치 시에는 built-in helper preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
 
 옵션:
 

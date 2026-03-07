@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from workflow_contract import INTERNAL_PLANNING_ROLE_IDS, REQUIRED_HELPER_AGENT_IDS
+
 REPO_NOTICE = """<!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->
 <!-- Run: python3 scripts/sync_agents.py -->"""
 
@@ -21,16 +23,6 @@ MANAGED_CONFIG_NOTICE = """# AUTO-GENERATED from agent-registry. Do not edit dir
 
 REPO_NOTICE_LINE_1 = "<!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->"
 REPO_NOTICE_LINE_2 = "<!-- Run: python3 scripts/sync_agents.py -->"
-
-PLANNING_ROLE_IDS = [
-    "web-researcher",
-    "solution-analyst",
-    "product-planner",
-    "ux-journey-critic",
-    "delivery-risk-planner",
-    "prompt-systems-designer",
-]
-
 
 @dataclass
 class AgentEntry:
@@ -490,6 +482,12 @@ def _role_for_codex_builtin(agent_key: str) -> str:
     return "reviewer"
 
 
+def _repo_tools_for_helper(agent_key: str) -> list[str]:
+    if agent_key == "worker":
+        return ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+    return ["Read", "Grep", "Glob"]
+
+
 def _bootstrap_codex_builtins(registry_root: Path) -> None:
     codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
     config_path = codex_home / "config.toml"
@@ -524,10 +522,12 @@ def _bootstrap_codex_builtins(registry_root: Path) -> None:
             role=role,
             description=description,
             source="codex-builtin",
-            repo_projection=False,
+            repo_projection=agent_key in REQUIRED_HELPER_AGENT_IDS,
             codex_projection=True,
-            repo_model=None,
-            repo_tools=[],
+            repo_model="sonnet" if agent_key in REQUIRED_HELPER_AGENT_IDS else None,
+            repo_tools=_repo_tools_for_helper(agent_key)
+            if agent_key in REQUIRED_HELPER_AGENT_IDS
+            else [],
             codex_agent_key=agent_key,
             codex_config_file=filename,
             codex_model=str(profile.get("model", "gpt-5.3-codex")),
@@ -659,7 +659,7 @@ def _planning_role_templates() -> dict[str, dict[str, str]]:
 
 def _bootstrap_planning_roles(registry_root: Path) -> None:
     templates = _planning_role_templates()
-    for agent_id in PLANNING_ROLE_IDS:
+    for agent_id in INTERNAL_PLANNING_ROLE_IDS:
         template = templates[agent_id]
         role = template["role"]
         _write_registry_entry(
@@ -668,15 +668,15 @@ def _bootstrap_planning_roles(registry_root: Path) -> None:
             role=role,
             description=template["description"],
             source="planning-role",
-            repo_projection=True,
-            codex_projection=True,
-            repo_model="sonnet",
-            repo_tools=["Read", "Grep", "Glob"],
-            codex_agent_key=agent_id,
-            codex_config_file=f"{agent_id}.toml",
-            codex_model="gpt-5.3-codex",
-            codex_reasoning_effort="xhigh",
-            codex_sandbox_mode="read-only",
+            repo_projection=False,
+            codex_projection=False,
+            repo_model=None,
+            repo_tools=[],
+            codex_agent_key=None,
+            codex_config_file=None,
+            codex_model=None,
+            codex_reasoning_effort=None,
+            codex_sandbox_mode=None,
             instructions=template["instructions"],
         )
 

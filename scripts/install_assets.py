@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -9,6 +10,12 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+
+from workflow_contract import (
+    GENERATED_SKILL_MANIFEST_NAME,
+    LEGACY_MILESTONE_SKILL_NAMES,
+    REQUIRED_HELPER_AGENT_IDS,
+)
 
 BEGIN_MANAGED = "# BEGIN MANAGED AGENTS (claude-setup)"
 END_MANAGED = "# END MANAGED AGENTS (claude-setup)"
@@ -119,6 +126,132 @@ def install_entries(
         install_path(source, destination_dir / source.name, mode, dry_run)
 
 
+def expected_generated_skill_names(*source_dirs: Path) -> set[str]:
+    names: set[str] = set()
+    for source_dir in source_dirs:
+        if not source_dir.exists():
+            continue
+        for source in source_dir.iterdir():
+            if source.is_dir():
+                names.add(source.name)
+    return names
+
+
+def _skill_manifest_path(skills_dir: Path) -> Path:
+    return skills_dir / GENERATED_SKILL_MANIFEST_NAME
+
+
+def read_generated_skill_manifest(skills_dir: Path) -> set[str]:
+    manifest_path = _skill_manifest_path(skills_dir)
+    if not manifest_path.exists():
+        return set()
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return set()
+    names = payload.get("generated_skills")
+    if not isinstance(names, list):
+        return set()
+    return {name for name in names if isinstance(name, str) and name}
+
+
+def write_generated_skill_manifest(
+    skills_dir: Path,
+    generated_skill_names: set[str],
+    *,
+    dry_run: bool,
+) -> None:
+    manifest_path = _skill_manifest_path(skills_dir)
+    payload = {"generated_skills": sorted(generated_skill_names)}
+    if dry_run:
+        print(f"[dry-run] update skill manifest {manifest_path}")
+        return
+    skills_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
+def prune_generated_skills(
+    *,
+    skills_dir: Path,
+    expected_generated_names: set[str],
+    previous_generated_names: set[str],
+    dry_run: bool,
+) -> None:
+    stale_names = sorted(previous_generated_names - expected_generated_names)
+    for name in stale_names:
+        path = skills_dir / name
+        if not path.exists() and not path.is_symlink():
+            continue
+        _prune_file(path, reason="stale generated skill", dry_run=dry_run)
+
+    for name in LEGACY_MILESTONE_SKILL_NAMES:
+        if name in expected_generated_names:
+            continue
+        path = skills_dir / name
+        if not path.exists() and not path.is_symlink():
+            continue
+        _prune_file(path, reason="legacy milestone generated skill", dry_run=dry_run)
+
+    for path in sorted(skills_dir.iterdir() if skills_dir.exists() else []):
+        if not path.is_symlink() or path.name in expected_generated_names:
+            continue
+        if path.exists():
+            continue
+        _prune_file(path, reason="broken stale skill symlink", dry_run=dry_run)
+
+
+def _load_codex_config(codex_home: Path) -> tuple[Path, dict[str, object]]:
+    config_path = codex_home / "config.toml"
+    if not config_path.exists():
+        raise SystemExit(f"codex preflight failed: missing config: {config_path}")
+    try:
+        config_data = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError as exc:
+        raise SystemExit(f"codex preflight failed: invalid config.toml: {exc}") from exc
+    if not isinstance(config_data, dict):
+        raise SystemExit("codex preflight failed: config.toml must decode to a table")
+    return config_path, config_data
+
+
+def validate_required_codex_helpers(codex_home: Path) -> None:
+    config_path, config_data = _load_codex_config(codex_home)
+    agents = config_data.get("agents")
+    if not isinstance(agents, dict):
+        raise SystemExit(
+            f"codex preflight failed: missing [agents] table in {config_path}"
+        )
+
+    errors: list[str] = []
+    for agent_key in REQUIRED_HELPER_AGENT_IDS:
+        entry = agents.get(agent_key)
+        if not isinstance(entry, dict):
+            errors.append(f"missing helper agent key: agents.{agent_key}")
+            continue
+
+        config_file = entry.get("config_file")
+        if not isinstance(config_file, str) or not config_file.strip():
+            errors.append(f"missing config_file for agents.{agent_key}")
+            continue
+
+        profile_path = codex_home / config_file
+        if not profile_path.exists():
+            errors.append(f"missing helper profile file: {profile_path}")
+            continue
+
+        try:
+            tomllib.loads(profile_path.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as exc:
+            errors.append(f"invalid helper profile TOML: {profile_path} ({exc})")
+
+    if errors:
+        lines = ["codex preflight failed:"]
+        lines.extend(f"- {error}" for error in errors)
+        raise SystemExit("\n".join(lines))
+
+
 def _read_text(path: Path) -> str:
     if not path.exists():
         return ""
@@ -175,7 +308,10 @@ def _prune_file(path: Path, *, reason: str, dry_run: bool) -> None:
         return
     if not path.exists() and not path.is_symlink():
         return
-    path.unlink()
+    if path.is_dir() and not path.is_symlink():
+        shutil.rmtree(path)
+    else:
+        path.unlink()
     print(f"prune {path} ({reason})")
 
 
@@ -271,11 +407,13 @@ def main() -> int:
     repo_agents_src = repo_root / "agents"
     codex_agents_src = repo_root / "dist" / "codex" / "agents"
     codex_managed_src = repo_root / "dist" / "codex" / "config.managed-agents.toml"
+    expected_skill_names = expected_generated_skill_names(skills_src, agent_skills_src)
     expected_repo_agent_names = {path.name for path in repo_agents_src.glob("*.md")}
     expected_codex_agent_names = {path.name for path in codex_agents_src.glob("*.toml")}
 
     if args.dest:
         destination = Path(args.dest)
+        previous_skill_names = read_generated_skill_manifest(destination)
         install_entries(
             skills_src, destination, mode=mode, dry_run=args.dry_run, include_dirs=True
         )
@@ -285,6 +423,17 @@ def main() -> int:
             mode=mode,
             dry_run=args.dry_run,
             include_dirs=True,
+        )
+        prune_generated_skills(
+            skills_dir=destination,
+            expected_generated_names=expected_skill_names,
+            previous_generated_names=previous_skill_names,
+            dry_run=args.dry_run,
+        )
+        write_generated_skill_manifest(
+            destination,
+            expected_skill_names,
+            dry_run=args.dry_run,
         )
         print("Done.")
         return 0
@@ -300,6 +449,7 @@ def main() -> int:
     for target in targets:
         home = resolve_home(target)
         skills_dest = home / "skills"
+        previous_skill_names = read_generated_skill_manifest(skills_dest)
         install_entries(
             skills_src, skills_dest, mode=mode, dry_run=args.dry_run, include_dirs=True
         )
@@ -309,6 +459,17 @@ def main() -> int:
             mode=mode,
             dry_run=args.dry_run,
             include_dirs=True,
+        )
+        prune_generated_skills(
+            skills_dir=skills_dest,
+            expected_generated_names=expected_skill_names,
+            previous_generated_names=previous_skill_names,
+            dry_run=args.dry_run,
+        )
+        write_generated_skill_manifest(
+            skills_dest,
+            expected_skill_names,
+            dry_run=args.dry_run,
         )
 
         if target == "claude":
@@ -326,6 +487,7 @@ def main() -> int:
                 dry_run=args.dry_run,
             )
         else:
+            validate_required_codex_helpers(home)
             existing_config = _read_text(home / "config.toml")
             previous_managed_names = _parse_managed_agent_files(
                 _extract_existing_managed_body(existing_config)

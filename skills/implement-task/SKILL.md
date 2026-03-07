@@ -27,9 +27,10 @@ description: >
 
 1. 사용자 지정 slug/path가 있으면 해당 task를 사용한다.
 2. 지정이 없고 `tasks/` 아래 작업이 1개면 자동 선택한다.
-3. 작업이 여러 개면 최근 수정된 task를 후보로 본다.
-4. 3번은 `STATUS.md`에 미완료 `Next slice`가 있을 때만 자동 선택한다.
-5. 위 조건을 만족하지 않으면 사용자에게 task를 확인받는다.
+3. 작업이 여러 개면 미완료 `Next slice`가 있는 task만 후보로 본다.
+4. 후보가 정확히 1개면 자동 선택한다.
+5. 후보가 2개 이상이면 사용자에게 task를 확인받는다.
+6. 후보가 없으면 최근 수정 task를 참고하되 사용자 확인 전까지 실행하지 않는다.
 
 ## Mode Rules
 
@@ -50,11 +51,20 @@ description: >
 3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
 4. 현재 slice 기준 handoff brief를 만든다. brief에는 목표, 완료 기준, 변경 경계, 우선 확인 파일, 검증 기준을 최소 정보로 포함한다.
 5. 현재 slice 전용 fresh `worker` 1명을 spawn한다.
-6. `worker`가 현재 slice 구현과 focused validation을 수행한다. `PLAN.md` 검증이 부족하면 최소 `pnpm typecheck`, 가능한 경우 `pnpm lint`, slice 관련 테스트를 실행한다.
+6. `worker`가 현재 slice 구현과 focused validation을 수행한다. `PLAN.md` 검증이 비어 있을 때만 repo-aware fallback을 사용한다.
 7. 검증 출력이 noisy하면 `verification-worker`가 raw log를 해석한다.
 8. 오케스트레이터는 worker/verifier의 요약만 받아 결과를 통합한다. 오케스트레이터는 raw log를 직접 처리하지 않는다.
 9. 오케스트레이터가 `STATUS.md`를 manager-facing 요약으로 갱신한다.
 10. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
+
+## Default Validation Fallback (Repo-Aware)
+
+- `PLAN.md`에 검증 명령이 있으면 해당 명령을 우선 사용한다.
+- `PLAN.md` 검증이 비어 있을 때만 repo-aware fallback을 사용한다.
+- JS/TS repo 추론: `package.json` + lockfile(`pnpm-lock.yaml`, `package-lock.json`, `yarn.lock`, `bun.lockb`)를 기준으로 package manager를 고른다.
+- Python repo 추론: `pyproject.toml` 또는 `tests/`/`test_*.py`를 기준으로 `python3 -m unittest discover`를 후보로 본다.
+- 추론된 manager/도구에서 존재하는 스크립트(예: `typecheck`, `lint`, `test`)만 실행한다.
+- 안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.
 
 ## Lane and Agent Rules
 

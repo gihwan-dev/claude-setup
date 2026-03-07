@@ -4,16 +4,5 @@ description = "Web research specialist for competitor scans and external solutio
 source = "planning-role"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Grep", "Glob"]
-
-[codex]
-agent_key = "web-researcher"
-config_file = "web-researcher.toml"
-model = "gpt-5.3-codex"
-reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+repo = false
+codex = false

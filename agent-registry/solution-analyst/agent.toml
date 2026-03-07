@@ -4,16 +4,5 @@ description = "Compare implementation options and tradeoffs with clear decision 
 source = "planning-role"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Grep", "Glob"]
-
-[codex]
-agent_key = "solution-analyst"
-config_file = "solution-analyst.toml"
-model = "gpt-5.3-codex"
-reasoning_effort = "xhigh"
-sandbox_mode = "read-only"
+repo = false
+codex = false

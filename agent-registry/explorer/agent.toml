@@ -4,8 +4,12 @@ description = "Read-only evidence collector. Use only when delegated lane needs 
 source = "codex-builtin"
 
 [projection]
-repo = false
+repo = true
 codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
 
 [codex]
 agent_key = "explorer"
