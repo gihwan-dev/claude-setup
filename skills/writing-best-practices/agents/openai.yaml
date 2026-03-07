@@ -1,0 +1,6 @@
+interface:
+  display_name: "Writing Best Practices"
+  short_description: "자연스럽고 이해가 빠른 글을 쓰거나 다듬는 산문 작성 스킬"
+  default_prompt: "$writing-best-practices 이 초안을 자연스럽고 이해가 빠른 글로 다듬어줘"
+policy:
+  allow_implicit_invocation: true
