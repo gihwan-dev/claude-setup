@@ -14,6 +14,6 @@ tools = ["Read", "Bash", "Grep", "Glob"]
 [codex]
 agent_key = "interface-inspector"
 config_file = "interface-inspector.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"

@@ -10,6 +10,6 @@ codex = true
 [codex]
 agent_key = "code-quality-reviewer"
 config_file = "code-quality-reviewer.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"

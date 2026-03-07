@@ -72,7 +72,7 @@ class WorkflowContractTests(unittest.TestCase):
                 profile_path.write_text(
                     "\n".join(
                         [
-                            'model = "gpt-5.3-codex"',
+                            'model = "gpt-5.4"',
                             'model_reasoning_effort = "xhigh"',
                             'sandbox_mode = "read-only"',
                             'developer_instructions = "helper profile"',

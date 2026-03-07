@@ -14,6 +14,6 @@ tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
 [codex]
 agent_key = "prompt-engineer"
 config_file = "prompt-engineer.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"

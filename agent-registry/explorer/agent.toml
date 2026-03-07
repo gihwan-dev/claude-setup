@@ -14,6 +14,6 @@ tools = ["Read", "Grep", "Glob"]
 [codex]
 agent_key = "explorer"
 config_file = "explorer-worker.toml"
-model = "gpt-5.3-codex-spark"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"

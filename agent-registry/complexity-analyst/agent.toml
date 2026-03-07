@@ -14,6 +14,6 @@ tools = ["Read", "Bash", "Grep", "Glob"]
 [codex]
 agent_key = "complexity-analyst"
 config_file = "complexity-analyst.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"

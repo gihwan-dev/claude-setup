@@ -1,7 +1,7 @@
 # AUTO-GENERATED from agent-registry. Do not edit directly.
 # Run: python3 scripts/sync_agents.py
 
-model = "gpt-5.3-codex-spark"
+model = "gpt-5.4"
 model_reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
 

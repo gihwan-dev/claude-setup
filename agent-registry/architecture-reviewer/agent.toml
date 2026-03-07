@@ -14,6 +14,6 @@ tools = ["Read", "Grep", "Glob"]
 [codex]
 agent_key = "architecture-reviewer"
 config_file = "architecture-reviewer.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"

@@ -14,6 +14,6 @@ tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 [codex]
 agent_key = "storybook-specialist"
 config_file = "storybook-specialist.toml"
-model = "gpt-5.3-codex"
+model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "workspace-write"
