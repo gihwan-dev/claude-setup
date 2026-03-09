@@ -1,0 +1,19 @@
+id = "frontend-structure-gatekeeper"
+role = "reviewer"
+description = "Read-only frontend structure reviewer for module boundaries, SRP, and hook/service extraction."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "frontend-structure-gatekeeper"
+config_file = "frontend-structure-gatekeeper.toml"
+model = "gpt-5.4"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

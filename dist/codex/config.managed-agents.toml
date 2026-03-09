@@ -13,6 +13,10 @@ config_file = "agents/complexity-analyst.toml"
 description = "Frontend development specialist for React applications and responsive design. Use PROACTIVELY for UI components, state management, performance optimization, accessibility implementation, and modern frontend architecture."
 config_file = "agents/frontend-developer.toml"
 
+[agents.frontend-structure-gatekeeper]
+description = "Read-only frontend structure reviewer for module boundaries, SRP, and hook/service extraction."
+config_file = "agents/frontend-structure-gatekeeper.toml"
+
 [agents.interface-inspector]
 description = "clean-code-inspector v2.1 인터페이스 품질 보조 에이전트. AST 기반 정량 지표(any/assertion/ts-ignore/상태수/import)를 해석하고 의미를 설명한다."
 config_file = "agents/interface-inspector.toml"

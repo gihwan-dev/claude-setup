@@ -9,6 +9,7 @@ INTERNAL_PLANNING_ROLE_IDS = (
     "web-researcher",
     "solution-analyst",
     "product-planner",
+    "structure-planner",
     "ux-journey-critic",
     "delivery-risk-planner",
     "prompt-systems-designer",
@@ -60,6 +61,9 @@ REQUIRED_CONTRACT_PHRASES = {
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.",
         "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)",
+        "`structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.",
+        "`frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 실행한다.",
+        "FAIL 판정은 frontend 구조 관점에서 P1로 취급한다.",
     ),
     "skills/design-task/SKILL.md": (
         "planning role은 internal fan-out 전용이다.",

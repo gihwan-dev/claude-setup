@@ -1,0 +1,8 @@
+id = "structure-planner"
+role = "reviewer"
+description = "Plan frontend file decomposition and responsibility boundaries before implementation."
+source = "planning-role"
+
+[projection]
+repo = false
+codex = false

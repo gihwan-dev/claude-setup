@@ -111,6 +111,8 @@
 | TypeScript 타입 설계 | implementer | typescript-pro |
 | 인터페이스 품질 점검 | reviewer | interface-inspector |
 | 정량 복잡도 분석 | reviewer | complexity-analyst |
+| 프런트엔드 구조 분해 계획(구현 전) | reviewer | structure-planner |
+| 프런트엔드 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
 | 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
 | Storybook/디자인 검증 | implementer | storybook-specialist |
 | 프롬프트 최적화 | implementer | prompt-engineer |
@@ -118,7 +120,7 @@
 
 ## Internal Planning Roles
 
-- `web-researcher`, `solution-analyst`, `product-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`
+- `web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`
 - 위 role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 
 ## 자동 리뷰 트리거
@@ -132,6 +134,10 @@
   - 변경 파일 7개 이상
   - 모듈/패키지 경계 2개 이상 변경
   - public surface 변경 (export, entrypoint, 핵심 설정)
+- `structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.
+  - frontend 작업이며 예상 변경이 150 LOC 이상이거나 컴포넌트 2개 이상인 경우
+- `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 실행한다.
+  - FAIL 판정은 frontend 구조 관점에서 P1로 취급한다.
 - `type-specialist`는 shared/public types, generics, public contract 변경 시 실행한다.
 - `test-engineer`는 회귀 리스크가 크거나 테스트 커버리지 공백이 있을 때 실행한다.
 
