@@ -56,6 +56,8 @@ GENERATED_SKILL_MANIFEST_NAME = ".claude-setup-generated-skills.json"
 REQUIRED_CONTRACT_PHRASES = {
     "INSTRUCTIONS.md": (
         "사용자에게는 `design-task`, `implement-task`만 노출한다.",
+        "각 slice는 `구현 -> 검증 -> 커밋 -> STATUS 갱신 -> 다음 slice 판정` 순서를 따른다.",
+        "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.",
         "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)",
     ),
@@ -66,9 +68,13 @@ REQUIRED_CONTRACT_PHRASES = {
     "skills/implement-task/SKILL.md": (
         "`PLAN.md` 검증이 비어 있을 때만 repo-aware fallback을 사용한다.",
         "안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.",
+        "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
     ),
     "agent-registry/project-planner/instructions.md": (
         "planning role fan-out은 internal-only",
+        "focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.",
+        "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
+        "`--no-verify` 재시도까지 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.",
     ),
 }
 

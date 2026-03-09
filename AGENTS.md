@@ -78,6 +78,10 @@
 - 오케스트레이터는 strategy-only 역할로 제한한다. 직접 코드 수정이나 raw validation log 해석을 수행하지 않는다.
 - single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff는 fresh `worker` 1명이 담당한다.
 - `끝까지` 모드에서 여러 slice에 서로 다른 fresh `worker`가 참여해도 slice당 single-writer를 만족하면 규칙 위반이 아니다.
+- 각 slice는 `구현 -> 검증 -> 커밋 -> STATUS 갱신 -> 다음 slice 판정` 순서를 따른다.
+- focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
+- hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
+- `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 검증 실행은 writer가 담당하고, noisy/multi-step 로그 해석만 `verification-worker`에 위임한다.
 - 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.

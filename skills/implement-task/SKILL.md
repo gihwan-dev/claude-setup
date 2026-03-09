@@ -21,7 +21,11 @@ description: >
 - 코드 수정은 `worker`만 수행한다. 오케스트레이터는 코드 수정을 수행하지 않는다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 기본 실행 단위는 다음 slice 1개다.
-- 구현 후 `STATUS.md`를 반드시 갱신한다.
+- slice 실행 순서는 `구현 -> focused validation -> slice commit -> STATUS 갱신`이다.
+- focused validation이 실패하면 해당 slice는 커밋하지 않고 즉시 중단한다.
+- 각 slice는 커밋을 정확히 1회 남겨야 하며, 커밋 메시지는 한국어 conventional commit 한 줄을 사용한다.
+- hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
+- `--no-verify` 재시도까지 실패하면 slice 실패로 기록하고 다음 slice로 넘어가지 않는다.
 
 ## Task Selection Rules
 
@@ -39,7 +43,8 @@ description: >
 - 연속 실행 루프는 slice마다 새로운 `worker`를 사용한다. 이전 writer session 재사용은 금지한다.
 - `끝까지` 모드에서 여러 fresh `worker`가 순차 참여해도 slice당 single-writer를 만족하면 규칙 위반이 아니다.
 - 연속 실행 중 아래 조건이면 즉시 중단하고 `STATUS.md`만 갱신한다.
-  - 검증 실패
+  - 검증 실패(커밋 시도 없음)
+  - 커밋 실패(`--no-verify` 재시도 실패 포함)
   - `PLAN.md`의 stop/replan 조건 충족
   - public boundary drift 발생
   - 다음 slice 진행 전 의사결정 공백 발생
@@ -49,13 +54,16 @@ description: >
 1. 대상 task를 선택한다.
 2. `PLAN.md`에서 다음 미완료 slice와 검증 기준을 읽는다.
 3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
-4. 현재 slice 기준 handoff brief를 만든다. brief에는 목표, 완료 기준, 변경 경계, 우선 확인 파일, 검증 기준을 최소 정보로 포함한다.
+4. 현재 slice 기준 handoff brief를 만든다. brief에는 목표, 완료 기준, 변경 경계, 우선 확인 파일, 검증 기준, commit requirement/timing/fallback policy를 최소 정보로 포함한다.
 5. 현재 slice 전용 fresh `worker` 1명을 spawn한다.
 6. `worker`가 현재 slice 구현과 focused validation을 수행한다. `PLAN.md` 검증이 비어 있을 때만 repo-aware fallback을 사용한다.
-7. 검증 출력이 noisy하면 `verification-worker`가 raw log를 해석한다.
-8. 오케스트레이터는 worker/verifier의 요약만 받아 결과를 통합한다. 오케스트레이터는 raw log를 직접 처리하지 않는다.
-9. 오케스트레이터가 `STATUS.md`를 manager-facing 요약으로 갱신한다.
-10. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
+7. 검증 출력이 noisy하면 `verification-worker`가 raw log를 해석하고 pass/fail을 요약한다.
+8. focused validation이 통과한 경우에만 `worker`가 해당 slice 변경을 커밋한다. 커밋 메시지는 한국어 conventional commit 한 줄을 사용한다.
+9. 1차 `git commit`이 hook 실패로 막히면 `worker`는 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+10. 커밋이 실패하면 오케스트레이터는 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+11. 오케스트레이터는 worker/verifier의 요약만 받아 결과를 통합한다. 오케스트레이터는 raw log를 직접 처리하지 않는다.
+12. 오케스트레이터가 `STATUS.md`를 manager-facing 요약으로 갱신한다.
+13. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -72,6 +80,7 @@ description: >
 - single-writer 적용 단위는 slice다. slice당 정확히 한 명의 `worker`만 code diff를 적용한다.
 - 연속 실행 시에도 매 slice마다 새로운 `worker`를 사용한다.
 - 오케스트레이터는 slice 선택, brief 작성, stop/replan 판정, 상태 기록만 수행한다.
+- writer는 slice별 `구현 -> 검증 -> 커밋`을 수행하고, 오케스트레이터는 커밋 결과를 반영해 상태를 기록한다.
 - 오케스트레이터의 `STATUS.md` 갱신은 메타 상태 기록이며 code diff ownership / single-writer 집계 대상에서 제외한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, raw log 해석은 verifier가 담당한다.
 - `code-quality-reviewer`, `architecture-reviewer`, `type-specialist`, `test-engineer`는 기존 AGENTS 트리거를 따른다.
@@ -92,7 +101,7 @@ description: >
 - `# Current slice`: 이번 실행 대상 slice를 적는다.
 - `# Done`: 구현 세부 나열 대신 완료된 결과와 사용자/시스템 영향만 요약한다.
 - `# Decisions made during implementation`: 다음 slice 또는 공개 경계에 영향을 주는 의사결정만 적는다.
-- `# Verification results`: 검증 명령, pass/fail, 핵심 실패 원인만 적는다. raw log를 붙이지 않는다.
+- `# Verification results`: 검증 명령, pass/fail, 커밋 시도 결과(기본 커밋/`--no-verify` 재시도 여부), 핵심 실패 원인만 적는다. raw log를 붙이지 않는다.
 - `# Known issues / residual risk`: 남은 위험과 미해결 이슈를 적는다.
 - `# Next slice`: 다음 writer가 바로 실행할 수 있도록 목표, 선행조건, 먼저 볼 경계를 handoff brief 형태로 적는다.
 - `STATUS.md`를 최초 생성한 실행에서는 템플릿 생성 사실을 `# Done` 또는 `# Decisions made during implementation`에 기록한다.
