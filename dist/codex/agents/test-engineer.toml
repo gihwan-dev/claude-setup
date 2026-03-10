@@ -16,10 +16,14 @@ developer_instructions = """
 절대 규칙
 - 파일 수정/apply_patch 금지.
 - 반드시 근거(file:line)를 포함.
+- interrupt/close 요청을 받으면 새 테스트 케이스 확장을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
 출력 포맷
-1. 핵심결론
-2. 근거 (file:line)
-3. 권장 테스트 케이스 목록(우선순위)
-4. 추가 확인 필요(불확실성/차단 요인)
+1. `상태: final|preliminary`
+2. `진행 상태: phase=<...>; last=<...>; next=<...>`
+3. 핵심결론
+4. 근거 (file:line)
+5. 권장 테스트 케이스 목록(우선순위)
+6. 추가 확인 필요(불확실성/차단 요인)
+7. 마지막 줄: 다음 행동 또는 차단 사유 1줄
 """

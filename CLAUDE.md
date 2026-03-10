@@ -87,13 +87,22 @@
 - `fork_context` 기본값은 `false`다. 축약 불가능한 컨텍스트 의존일 때만 `true`를 허용하고 이유를 `STATUS.md`에 기록한다.
 - slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
-- writer가 90초 동안 응답이 없으면 1회 interrupt로 상태 요약을 요청한다. 추가 60초 안에 요약이 없으면 slice 실패로 기록하고 stop/replan한다.
+- 멀티에이전트 생명주기 경계는 `inactivity window`, `blocking deadline`, `drain grace` 3개로 고정한다. raw second(예: 90초/60초)는 정책 문구로 고정하지 않는다.
+- stall 판정은 `communication liveness`와 `execution liveness`가 모두 끊긴 경우에만 허용한다.
+- close 절차는 `liveness 확인 -> interrupt로 final/checkpoint flush 요청 -> drain grace 대기 -> 결과 ACK -> close_agent` 순서를 따른다.
+- `wait timeout = 즉시 실패/즉시 close` 규칙을 금지한다.
+- `worker` 실패는 `상태: blocked`이거나 dual-signal inactivity 이후 drain grace 안에 `final/checkpoint`가 없을 때만 기록한다.
+- advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 승격하고, 그 외에는 advisory로 처리한다.
+- writer handoff brief에는 `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`를 포함하고 raw second는 적지 않는다.
+- core helper 출력은 반드시 `상태:`와 `진행 상태:` 두 줄로 시작한다. `진행 상태:` 형식은 `phase=<...>; last=<...>; next=<...>`를 사용한다.
+- interrupt/close 요청 시 helper는 새 작업 시작을 중지하고 `final` 또는 최소 `checkpoint/preliminary`를 1회 flush한 뒤 마지막 줄에 다음 행동 또는 차단 사유를 남긴다.
 - 같은 slice에 두 번째 writer를 투입하지 않는다.
 - partial diff가 남으면 오케스트레이터는 read-only로 확인만 하고 `STATUS.md`에 기록한 뒤 재설계한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)는 runtime helper로 보장되어야 한다.
+- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]`을 SSOT로 유지한다.
 
 ## 워크플로우 역할
 

@@ -34,8 +34,13 @@ description: >
 - slice hard guardrail: `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
 - full-repo validation은 shared/public boundary 변경 시에만 허용한다.
-- writer wait 90초 1회 발생 시 interrupt 1회로 상태 요약을 요청한다.
-- interrupt 후 추가 60초 안에 요약이 없으면 slice 실패를 기록하고 stop/replan한다.
+- 멀티에이전트 생명주기 경계는 `inactivity window`, `blocking deadline`, `drain grace`다. raw second(예: 90초/60초)를 정책 문구로 고정하지 않는다.
+- stall 판정은 `communication liveness`와 `execution liveness`가 모두 끊겼을 때만 허용한다.
+- close 절차는 `liveness 확인 -> interrupt로 final/checkpoint flush 요청 -> drain grace 대기 -> 결과 ACK -> close_agent` 순서를 따른다.
+- `wait timeout = 즉시 실패/즉시 close`는 금지한다.
+- worker 실패는 `상태: blocked`이거나 dual-signal inactivity 이후 drain grace 안에 `final/checkpoint`를 받지 못했을 때만 기록한다.
+- advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 취급하고 그 외에는 advisory로 취급한다.
 - 같은 slice에 두 번째 writer를 투입하지 않는다.
 - partial diff는 오케스트레이터가 read-only inspection만 수행하고 `STATUS.md`에 기록한 뒤 재설계한다.
 
@@ -57,7 +62,8 @@ description: >
 - 연속 실행 중 아래 조건이면 즉시 중단하고 `STATUS.md`만 갱신한다.
   - 검증 실패(커밋 시도 없음)
   - 커밋 실패(`--no-verify` 재시도 실패 포함)
-  - timeout/recovery 실패(90초 대기 + interrupt 1회 + 추가 60초 내 요약 실패)
+  - worker가 `상태: blocked`를 보고
+  - dual-signal inactivity 이후 `blocking deadline + drain grace` 안에 `final/checkpoint` 미수신
   - `PLAN.md`의 stop/replan 조건 충족
   - public boundary drift 발생
   - 다음 slice 진행 전 의사결정 공백 발생
@@ -67,19 +73,20 @@ description: >
 1. 대상 task를 선택한다.
 2. `PLAN.md`에서 다음 미완료 slice와 검증 기준을 읽는다.
 3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
-4. 현재 slice 기준 handoff brief를 만든다. brief에는 목표, 완료 기준, 변경 경계, 우선 확인 파일, phase, file budget, validation owner, fork_context policy, timeout policy, commit requirement/timing/fallback policy를 포함한다.
+4. 현재 slice 기준 handoff brief를 만든다. brief에는 목표, 완료 기준, 변경 경계, 우선 확인 파일, phase, file budget, validation owner, fork_context policy, `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.
 5. phase 1: 현재 slice 전용 fresh `worker` 1명을 `fork_context:false` 기본값으로 spawn해 edit-only를 수행한다.
-6. phase 1 진행 중 writer 대기 90초가 발생하면 1회 interrupt로 상태 요약을 요청한다.
-7. interrupt 이후 추가 60초 안에 요약이 없으면 slice 실패를 기록하고, partial diff를 read-only inspection 후 `STATUS.md`에 남기고 stop/replan한다.
-8. phase 2: 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-9. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다.
-10. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-11. phase 3: focused validation이 통과한 경우에만 phase 1 same writer를 재개해 commit-only를 수행한다.
-12. 1차 `git commit`이 hook 실패로 막히면 same writer는 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-13. 커밋이 실패하면 오케스트레이터는 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-14. 오케스트레이터는 worker/verifier의 요약만 받아 결과를 통합한다. 오케스트레이터는 raw log를 직접 처리하지 않는다.
-15. 오케스트레이터가 `STATUS.md`를 manager-facing 요약으로 갱신한다.
-16. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
+6. phase 1 진행 중 `inactivity window`에서 dual-signal liveness가 모두 끊기면 interrupt로 `final/checkpoint` flush를 요청한다.
+7. `blocking deadline` 내 `final/checkpoint`가 없으면 `drain grace`로 전환한다. `drain grace` 내에도 결과가 없으면 slice 실패를 기록하고, partial diff를 read-only inspection 후 `STATUS.md`에 남기고 stop/replan한다.
+8. `final/checkpoint`를 수신하면 오케스트레이터는 ACK를 기록한 뒤 phase 2로 진행한다.
+9. phase 2: 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+10. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+11. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+12. phase 3: focused validation이 통과한 경우에만 phase 1 same writer를 재개해 commit-only를 수행한다.
+13. 1차 `git commit`이 hook 실패로 막히면 same writer는 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+14. 커밋이 실패하면 오케스트레이터는 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+15. 오케스트레이터는 worker/verifier의 요약만 받아 결과를 통합한다. 오케스트레이터는 raw log를 직접 처리하지 않는다.
+16. 오케스트레이터가 `STATUS.md`를 manager-facing 요약으로 갱신한다.
+17. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -99,6 +106,7 @@ description: >
 - single-writer 적용 단위는 slice다. slice당 정확히 한 명의 `worker`만 code diff를 적용한다.
 - 연속 실행 시에도 매 slice마다 새로운 `worker`를 phase 1에 사용하고, phase 3은 same writer commit-only를 유지한다.
 - 오케스트레이터는 slice 선택, brief 작성, phase 2 focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
+- handoff brief에는 `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`를 반드시 포함한다.
 - writer 기본 동작은 edit-only이며 validation/commit은 handoff에 phase가 명시된 경우만 수행한다.
 - 같은 slice에 두 번째 writer를 투입하지 않는다.
 - 오케스트레이터의 `STATUS.md` 갱신은 메타 상태 기록이며 code diff ownership / single-writer 집계 대상에서 제외한다.
@@ -127,7 +135,7 @@ description: >
 - `# Next slice`: 다음 writer가 바로 실행할 수 있도록 목표, 선행조건, 먼저 볼 경계를 handoff brief 형태로 적는다.
 - `STATUS.md`를 최초 생성한 실행에서는 템플릿 생성 사실을 `# Done` 또는 `# Decisions made during implementation`에 기록한다.
 - `fork_context:true`를 사용한 경우 이유를 `# Decisions made during implementation`에 기록한다.
-- timeout/recovery 또는 partial diff 발생 시 경과와 stop/replan 이유를 `# Verification results` 또는 `# Known issues / residual risk`에 기록한다.
+- `inactivity window`/`blocking deadline`/`drain grace` 경로 또는 partial diff 발생 시 경과와 stop/replan 이유를 `# Verification results` 또는 `# Known issues / residual risk`에 기록한다.
 
 ## Non-Goals
 

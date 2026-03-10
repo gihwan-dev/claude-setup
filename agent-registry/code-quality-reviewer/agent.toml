@@ -4,8 +4,18 @@ description = "Read-only reviewer for non-trivial diffs, risky logic, missing va
 source = "codex-builtin"
 
 [projection]
-repo = false
+repo = true
 codex = true
+
+[orchestration]
+blocking_class = "advisory"
+result_contract = "preliminary-or-final"
+close_protocol = "interrupt-drain-ack-close"
+late_result_policy = "merge-if-relevant"
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
 
 [codex]
 agent_key = "code-quality-reviewer"

@@ -11,6 +11,8 @@
 | 글로벌 정책 | `INSTRUCTIONS.md` | `AGENTS.md`, `CLAUDE.md` |
 | 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
+`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
+
 ## Do Not Edit Directly
 
 - `agents/*.md`
@@ -27,9 +29,11 @@
 
 1. `agent-registry/<agent-id>/agent.toml`을 수정한다.
 2. `agent-registry/<agent-id>/instructions.md`를 수정한다.
-3. `python3 scripts/sync_agents.py`
-4. `python3 scripts/sync_agents.py --check`
-5. 실제 설치가 필요하면 `python3 scripts/install_assets.py --target all --link`
+3. `python3 scripts/sync_instructions.py`
+4. `python3 scripts/sync_agents.py`
+5. `python3 scripts/sync_instructions.py --check`
+6. `python3 scripts/sync_agents.py --check`
+7. 실제 설치가 필요하면 `python3 scripts/install_assets.py --target all --link`
 
 주의:
 

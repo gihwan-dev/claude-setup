@@ -42,8 +42,13 @@
 - `fork_context` 기본값은 `false`다. 축약 불가능한 컨텍스트 의존일 때만 `true`를 허용하고 이유를 `STATUS.md`에 기록한다.
 - slice hard guardrail: `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
-- writer 대기 90초가 발생하면 1회 interrupt로 상태 요약을 요청한다.
-- interrupt 이후 추가 60초 안에 요약이 없으면 slice 실패를 기록하고 stop/replan한다.
+- 멀티에이전트 생명주기 경계는 `inactivity window`, `blocking deadline`, `drain grace`다. raw second(예: 90초/60초)를 정책 문구로 고정하지 않는다.
+- stall 판정은 `communication liveness`와 `execution liveness`가 모두 끊겼을 때만 허용한다.
+- close 절차는 `liveness 확인 -> interrupt로 final/checkpoint flush 요청 -> drain grace 대기 -> 결과 ACK -> close_agent` 순서를 따른다.
+- `wait timeout = 즉시 실패/즉시 close`는 금지한다.
+- worker 실패는 `상태: blocked`이거나 dual-signal inactivity 이후 drain grace 안에 `final/checkpoint`가 없을 때만 기록한다.
+- advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 승격하고 그 외에는 advisory로 처리한다.
 - partial diff는 메인 스레드가 read-only inspection만 수행하고 `STATUS.md`에 기록한 뒤 재설계한다.
 - 실행 후 항상 `tasks/<task-slug>/STATUS.md`를 갱신한다.
 
@@ -53,7 +58,7 @@
 2. 오케스트레이터는 현재 slice 선택, writer handoff brief 작성, phase 2 검증 실행, stop/replan 판정, 상태 기록을 수행한다.
 3. writer 기본 동작은 edit-only이며, validation/commit은 handoff에 phase가 명시된 경우만 수행한다.
 4. noisy 검증 로그는 `verification-worker`가 해석하고 오케스트레이터는 요약만 받는다.
-5. writer handoff brief에는 phase, file budget, validation owner, fork_context policy, timeout policy, commit requirement/timing/fallback policy를 포함한다.
+5. writer handoff brief에는 phase, file budget, validation owner, fork_context policy, `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.
 6. `끝까지` 모드에서는 slice 완료마다 다음 slice를 재판정하고 fresh writer를 새로 배정한다.
 7. 오케스트레이터의 `STATUS.md` 갱신은 메타 상태 기록이며 code diff ownership / single-writer 집계 대상에서 제외한다.
 8. stop/replan 조건이 충족되면 즉시 중단하고 상태를 기록한다.

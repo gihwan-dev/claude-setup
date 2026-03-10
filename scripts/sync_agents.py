@@ -39,6 +39,7 @@ class AgentEntry:
     codex_model: str | None
     codex_reasoning_effort: str | None
     codex_sandbox_mode: str | None
+    orchestration: dict[str, str] | None
     instructions: str
 
 
@@ -169,8 +170,18 @@ def _read_agent_entries(registry_root: Path) -> list[AgentEntry]:
 
         raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
         projection = raw.get("projection", {})
+        orchestration_raw = raw.get("orchestration")
         repo = raw.get("repo", {})
         codex = raw.get("codex", {})
+
+        orchestration: dict[str, str] | None = None
+        if isinstance(orchestration_raw, dict):
+            parsed_orchestration: dict[str, str] = {}
+            for key, value in orchestration_raw.items():
+                if isinstance(key, str) and isinstance(value, str):
+                    parsed_orchestration[key] = value
+            if parsed_orchestration:
+                orchestration = parsed_orchestration
 
         entry = AgentEntry(
             agent_id=str(raw["id"]),
@@ -186,6 +197,7 @@ def _read_agent_entries(registry_root: Path) -> list[AgentEntry]:
             codex_model=codex.get("model"),
             codex_reasoning_effort=codex.get("reasoning_effort"),
             codex_sandbox_mode=codex.get("sandbox_mode"),
+            orchestration=orchestration,
             instructions=_normalize_instructions(
                 _strip_generated_notice(instructions_path.read_text(encoding="utf-8"))
             ),
@@ -355,6 +367,7 @@ def _serialize_agent_toml(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
+    orchestration: dict[str, str] | None,
 ) -> str:
     lines = [
         f'id = {_quote_toml(agent_id)}',
@@ -367,6 +380,11 @@ def _serialize_agent_toml(
         f"codex = {str(codex_projection).lower()}",
         "",
     ]
+    if orchestration:
+        lines.append("[orchestration]")
+        for key, value in orchestration.items():
+            lines.append(f"{key} = {_quote_toml(value)}")
+        lines.append("")
     if repo_projection:
         if repo_model is None:
             raise ValueError(f"repo model missing for {agent_id}")
@@ -417,6 +435,7 @@ def _write_registry_entry(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
+    orchestration: dict[str, str] | None,
     instructions: str,
 ) -> None:
     entry_dir = registry_root / agent_id
@@ -435,6 +454,7 @@ def _write_registry_entry(
         codex_model=codex_model,
         codex_reasoning_effort=codex_reasoning_effort,
         codex_sandbox_mode=codex_sandbox_mode,
+        orchestration=orchestration,
     )
     (entry_dir / "agent.toml").write_text(toml_content, encoding="utf-8")
     (entry_dir / "instructions.md").write_text(
@@ -468,6 +488,7 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
             codex_model="gpt-5.4",
             codex_reasoning_effort="xhigh",
             codex_sandbox_mode=_sandbox_for_role(role),
+            orchestration=None,
             instructions=_strip_generated_notice(body),
         )
 
@@ -533,6 +554,7 @@ def _bootstrap_codex_builtins(registry_root: Path) -> None:
             codex_model=str(profile.get("model", "gpt-5.4")),
             codex_reasoning_effort=str(profile.get("model_reasoning_effort", "xhigh")),
             codex_sandbox_mode=str(profile.get("sandbox_mode", "read-only")),
+            orchestration=None,
             instructions=instructions,
         )
 
@@ -677,6 +699,7 @@ def _bootstrap_planning_roles(registry_root: Path) -> None:
             codex_model=None,
             codex_reasoning_effort=None,
             codex_sandbox_mode=None,
+            orchestration=None,
             instructions=template["instructions"],
         )
 

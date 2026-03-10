@@ -7,6 +7,7 @@ import tomllib
 from pathlib import Path
 
 from workflow_contract import (
+    CORE_HELPER_ORCHESTRATION_EXPECTED,
     FORBIDDEN_CONTRACT_PHRASES,
     INTERNAL_PLANNING_ROLE_IDS,
     PLAN_SECTION_ORDER,
@@ -62,6 +63,27 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
             errors.append(f"helper must define [repo] for Claude projection: {path}")
 
 
+def _validate_helper_orchestration(repo_root: Path, errors: list[str]) -> None:
+    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
+        path = repo_root / "agent-registry" / agent_id / "agent.toml"
+        if not path.exists():
+            errors.append(f"missing helper config: {path}")
+            continue
+        data = _load_toml(path)
+        orchestration = data.get("orchestration")
+        if not isinstance(orchestration, dict):
+            errors.append(f"missing [orchestration]: {path}")
+            continue
+
+        for key, expected_value in expected.items():
+            actual_value = orchestration.get(key)
+            if actual_value != expected_value:
+                errors.append(
+                    f"invalid orchestration mapping for {agent_id}.{key}: "
+                    f"expected={expected_value!r} actual={actual_value!r} ({path})"
+                )
+
+
 def _validate_contract_phrases(repo_root: Path, errors: list[str]) -> None:
     for relative_path, phrases in REQUIRED_CONTRACT_PHRASES.items():
         path = repo_root / relative_path
@@ -110,6 +132,7 @@ def main() -> int:
 
     errors: list[str] = []
     _validate_agent_projection(repo_root, errors)
+    _validate_helper_orchestration(repo_root, errors)
     _validate_contract_phrases(repo_root, errors)
     _validate_task_documents(repo_root, errors)
 

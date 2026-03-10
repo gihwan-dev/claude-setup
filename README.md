@@ -26,6 +26,7 @@ CLAUDE.md / AGENTS.md                          # generated files
 ## 단일 진실원 정책
 
 - 에이전트: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
+- core helper 생명주기 정책: 각 helper `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`)
 - `agents/*.md`, `dist/codex/*`: generated projection
 - 정책 문서: `INSTRUCTIONS.md`
 - long-running task public surface: `design-task`, `implement-task`
@@ -35,6 +36,7 @@ CLAUDE.md / AGENTS.md                          # generated files
 
 - generated projection을 직접 수정하지 않는다.
 - 먼저 어떤 파일이 source of truth인지 결정한다.
+- source-of-truth 수정 후에는 `python3 scripts/sync_instructions.py`, `python3 scripts/sync_agents.py` 순서로 projection을 재생성한다.
 - 작업 후에는 `sync`와 `--check`를 실행해 drift가 없는지 확인한다.
 - 실제 홈 디렉터리 설치가 필요하면 마지막에 `install_assets.py`를 실행한다.
 
@@ -79,7 +81,7 @@ python3 scripts/install_assets.py --target codex --link
 python3 scripts/install_assets.py --target all --link
 ```
 
-`codex` 설치 시에는 built-in helper preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
+`codex` 설치 시에는 built-in helper preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
 
 옵션:
 

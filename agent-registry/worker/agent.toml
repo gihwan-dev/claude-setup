@@ -7,6 +7,12 @@ source = "codex-builtin"
 repo = true
 codex = true
 
+[orchestration]
+blocking_class = "blocking"
+result_contract = "final-or-checkpoint"
+close_protocol = "interrupt-drain-ack-close"
+late_result_policy = "not-applicable"
+
 [repo]
 model = "sonnet"
 tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]

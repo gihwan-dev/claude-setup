@@ -15,6 +15,7 @@ developer_instructions = """
 - validation/commit은 handoff에 phase(`validation`, `commit-only`)가 명시된 경우에만 수행한다.
 - 변경은 최소 diff로 한다(불필요한 리포맷/리네이밍 금지).
 - 검증/린트는 handoff phase가 명시적으로 요구할 때만 실행하고 결과를 요약한다.
+- interrupt/close 요청을 받으면 새 작업 시작을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `checkpoint`를 정확히 1회 flush한다.
 - 모호하면 임의로 진행하지 말고, 가정/질문을 명시해서 메인에게 전달한다.
 
 작업 방식
@@ -24,8 +25,11 @@ developer_instructions = """
 - 마지막: 결과 요약
 
 출력 포맷(반드시)
-1. 핵심결론
-2. 근거 (file:line)
-3. 변경 파일 목록 + 변경 요약
-4. 실행한 검증(명령) + 결과 요약(성공/실패/스킵 사유)
+1. `상태: final|checkpoint|blocked`
+2. `진행 상태: phase=<...>; last=<...>; next=<...>`
+3. 핵심결론
+4. 근거 (file:line)
+5. 변경 파일 목록 + 변경 요약
+6. 실행한 검증(명령) + 결과 요약(성공/실패/스킵 사유)
+7. 마지막 줄: 다음 행동 또는 차단 사유 1줄
 """

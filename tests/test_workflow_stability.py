@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 from pathlib import Path
 
@@ -12,7 +13,9 @@ SCRIPTS_DIR = REPO_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from install_assets import prune_generated_skills, write_generated_skill_manifest
+from sync_agents import _serialize_agent_toml
 from workflow_contract import (
+    CORE_HELPER_ORCHESTRATION_EXPECTED,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
@@ -213,6 +216,12 @@ class WorkflowContractTests(unittest.TestCase):
             "skills/design-task/agents/openai.yaml",
             "agent-registry/project-planner/instructions.md",
             "agent-registry/worker/instructions.md",
+            "agent-registry/explorer/instructions.md",
+            "agent-registry/verification-worker/instructions.md",
+            "agent-registry/architecture-reviewer/instructions.md",
+            "agent-registry/code-quality-reviewer/instructions.md",
+            "agent-registry/type-specialist/instructions.md",
+            "agent-registry/test-engineer/instructions.md",
         )
 
         for relative_path in targets:
@@ -223,6 +232,49 @@ class WorkflowContractTests(unittest.TestCase):
                     content,
                     msg=f"missing contract phrase in {relative_path}: {phrase}",
                 )
+
+    def test_core_helper_orchestration_mapping_contract(self) -> None:
+        for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
+            path = REPO_ROOT / "agent-registry" / agent_id / "agent.toml"
+            payload = tomllib.loads(path.read_text(encoding="utf-8"))
+            orchestration = payload.get("orchestration")
+            self.assertIsInstance(orchestration, dict, msg=f"missing [orchestration] in {path}")
+            for key, expected_value in expected.items():
+                self.assertEqual(
+                    orchestration.get(key),
+                    expected_value,
+                    msg=f"unexpected orchestration mapping {agent_id}.{key}",
+                )
+
+    def test_sync_agents_serialize_roundtrips_orchestration_section(self) -> None:
+        serialized = _serialize_agent_toml(
+            agent_id="sample-helper",
+            role="reviewer",
+            description="sample",
+            source="codex-builtin",
+            repo_projection=False,
+            codex_projection=False,
+            repo_model=None,
+            repo_tools=[],
+            codex_agent_key=None,
+            codex_config_file=None,
+            codex_model=None,
+            codex_reasoning_effort=None,
+            codex_sandbox_mode=None,
+            orchestration={
+                "blocking_class": "advisory",
+                "result_contract": "preliminary-or-final",
+                "close_protocol": "interrupt-drain-ack-close",
+                "late_result_policy": "merge-if-relevant",
+            },
+        )
+        payload = tomllib.loads(serialized)
+        orchestration = payload.get("orchestration")
+        self.assertIsInstance(orchestration, dict)
+        self.assertEqual(orchestration.get("blocking_class"), "advisory")
+        self.assertEqual(orchestration.get("result_contract"), "preliminary-or-final")
+        self.assertEqual(orchestration.get("close_protocol"), "interrupt-drain-ack-close")
+        self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
 
 
 if __name__ == "__main__":
