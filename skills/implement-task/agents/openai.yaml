@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run slice lifecycle with 3 boundaries (inactivity/blocking/drain), ACK-based close, then writer edit-only -> main focused validation -> same-writer commit-only"
-  default_prompt: "$implement-task tasks/<task-slug>/PLAN.md 기준으로 다음 slice를 진행해. handoff brief에 blocking_class/result_contract/close_protocol/liveness_signals를 포함하고, close는 liveness 확인 -> interrupt flush -> drain grace -> ACK -> close_agent 순서로 처리해 STATUS.md를 갱신해"
+  short_description: "Run delegated slices from an approved PLAN with protocol-level worker ownership, 3 boundaries (inactivity/blocking/drain), ACK-based close, then worker edit-only -> main focused validation -> same-worker commit-only"
+  default_prompt: "$implement-task 승인된 tasks/<task-slug>/PLAN.md 기준으로 다음 slice를 진행해. slice가 refactor/test/type-contract 성격을 가져도 code diff ownership은 `worker` 1명으로 유지해. handoff brief에 blocking_class/result_contract/close_protocol/liveness_signals를 포함하고, close는 liveness 확인 -> interrupt flush -> drain grace -> ACK -> close_agent 순서로 처리해 STATUS.md를 갱신해"
 policy:
   allow_implicit_invocation: true

@@ -16,13 +16,16 @@ description: >
 
 - 항상 `PLAN.md`와 기존 `STATUS.md`를 먼저 읽는다.
 - `PLAN.md`가 없으면 구현하지 않고 `design-task`를 먼저 수행하도록 유도한다.
+- 이 스킬은 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
+- 기존 코드 구현은 `PLAN.md` 없이 즉시 시작하지 않는다.
 - `STATUS.md`가 없으면 고정 템플릿 섹션으로 `tasks/<task-slug>/STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
 - `implement-task`는 항상 delegated lane으로 실행한다. fast lane/deep solo를 이 스킬에서 허용하지 않는다.
 - 코드 수정은 `worker`만 수행한다. 오케스트레이터는 코드 수정을 수행하지 않는다.
+- slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 기본 실행 단위는 다음 slice 1개다.
 - slice 실행 순서는 `writer edit -> main focused validation -> same writer commit-only -> STATUS update -> next slice decision`이다.
-- phase 1은 fresh writer edit-only다.
+- phase 1은 fresh `worker` edit-only다.
 - phase 2 focused validation은 메인 스레드가 수행한다.
 - phase 3은 phase 1을 수행한 same writer가 commit-only로 재개한다.
 - verification-worker는 메인 검증 로그가 noisy/multi-step일 때만 사용한다.
@@ -43,6 +46,7 @@ description: >
 - `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 취급하고 그 외에는 advisory로 취급한다.
 - 같은 slice에 두 번째 writer를 투입하지 않는다.
 - partial diff는 오케스트레이터가 read-only inspection만 수행하고 `STATUS.md`에 기록한 뒤 재설계한다.
+- 리뷰 요청에서 구조 개선 계획을 새로 만드는 역할은 이 스킬이 아니라 `design-task`/reviewer에 있다. `implement-task`는 승인된 계획 실행에만 집중한다.
 
 ## Task Selection Rules
 
@@ -105,6 +109,7 @@ description: >
 - 이 스킬은 lane 판정을 delegated team lane으로 고정한다.
 - single-writer 적용 단위는 slice다. slice당 정확히 한 명의 `worker`만 code diff를 적용한다.
 - 연속 실행 시에도 매 slice마다 새로운 `worker`를 phase 1에 사용하고, phase 3은 same writer commit-only를 유지한다.
+- slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.
 - 오케스트레이터는 slice 선택, brief 작성, phase 2 focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
 - handoff brief에는 `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`를 반드시 포함한다.
 - writer 기본 동작은 edit-only이며 validation/commit은 handoff에 phase가 명시된 경우만 수행한다.

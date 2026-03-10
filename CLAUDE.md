@@ -20,7 +20,26 @@
 
 ### Triage first
 
-- 어떤 에이전트도 spawn하기 전에 먼저 lane을 결정한다.
+- 어떤 에이전트도 spawn하기 전에 먼저 quality preflight를 통해 승격 여부와 lane을 결정한다.
+
+### Quality preflight
+
+- 기존 코드 수정/리뷰/`계속해`/`다음 단계`/버그 수정/기능 추가 요청에는 lane 판정 전에 quality preflight를 먼저 수행한다.
+- 예외는 fast lane 조건을 모두 만족하는 명백한 1파일 소규모 수정이다.
+- quality preflight 결과는 `keep-local` / `promote-refactor` / `promote-architecture` 셋 중 하나로 기록한다.
+- 아래 중 하나라도 해당하면 자동 승격한다.
+  - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
+  - CC > 10 또는 중첩 > 2
+  - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
+  - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
+  - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
+- 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
+- `promote-refactor`면 `design-task` 성격의 리팩터링 계획을 먼저 만든 뒤 `implement-task` slice로 진행한다.
+- `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한 뒤 slice를 설계한다.
+- 기존 코드의 long-running `design-task`/`implement-task` 경로는 `promote-refactor` 또는 `promote-architecture`일 때만 시작한다.
+- 리뷰 요청은 findings-first를 유지한다. `promote-refactor` 판정이면 같은 턴에 구조 개선 계획 요약을 함께 제공한다.
+- TS/JS/React 기존 코드는 quality preflight에서 `explorer`를 기본으로 사용한다.
+- 구조 냄새가 보이면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 
 ### Fast lane: direct edit in main thread
 
@@ -79,6 +98,7 @@
 - single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff ownership은 fresh `worker` 1명이 담당한다.
 - `끝까지` 모드에서 여러 slice에 서로 다른 fresh `worker`가 참여해도 slice당 single-writer를 만족하면 규칙 위반이 아니다.
 - 각 slice는 `writer edit -> main focused validation -> same writer commit-only -> STATUS update -> next slice decision` 순서를 따른다.
+- slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경일 때만 full-repo validation을 허용한다.
 - noisy/multi-step validation log는 `verification-worker`가 메인 검증 로그를 해석한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
@@ -111,7 +131,7 @@
 | orchestrator | 전략만 | 계획, 라우팅, 최종 의사결정 |
 | implementer | 읽기/쓰기 | delegated lane의 유일한 코드 변경 수행자 |
 | explorer | 읽기 전용 | 레포지토리 탐색 및 증거 수집 |
-| reviewer | 읽기 전용 | 코드 품질, 아키텍처 리뷰 |
+| reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |
 
 ## 역할-에이전트 매핑
@@ -142,6 +162,10 @@
 
 ## 자동 리뷰 트리거
 
+- reviewer는 지적 전용이 아니라 quality preflight 승격 판정과 focused gate를 담당한다.
+- quality preflight에서 TS/JS/React 기존 코드는 `explorer`를 기본으로 붙인다.
+- 구조 냄새가 있으면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가한다.
+- `architecture-reviewer`는 public/shared boundary 예상 시에만 붙인다.
 - `code-quality-reviewer`는 아래 중 하나라도 만족할 때만 실행한다.
   - 변경 파일이 3개 이상
   - 테스트가 추가되거나 변경됨
@@ -166,6 +190,7 @@
 ## 서브 에이전트 응답 가이드라인
 
 서브 에이전트는 간결하고 의사결정 가능한 요약을 우선한다.
+quality preflight/reviewer helper는 `품질판정: keep-local | promote-refactor | promote-architecture`를 포함한다.
 
 **필수 항목:**
 1. 핵심결론

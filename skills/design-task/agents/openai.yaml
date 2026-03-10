@@ -1,6 +1,6 @@
 interface:
   display_name: "Design Task"
-  short_description: "Create bounded execution slices with clear change boundary, file budget, validation owner, and stop/replan conditions"
-  default_prompt: "$design-task 코드 수정 없이 조사/옵션 비교를 포함해 slice별 변경 경계/예상 파일 수/validation owner/stop-replan 조건을 명시한 PLAN.md를 갱신해"
+  short_description: "Handle promoted planning paths after quality preflight, record a Quality preflight subsection, and create bounded execution slices for promote-refactor or promote-architecture with architecture-reviewer boundary decisions"
+  default_prompt: "$design-task quality preflight verdict와 근거를 `Quality preflight` subsection에 기록하고, planning path가 `promote-refactor` 또는 `promote-architecture`로 확정된 task의 PLAN.md를 갱신해. `promote-refactor`면 제거/유지 로직, 모듈 경계, 허용/금지 추상화, 테스트 처리 기준, slice별 focused verification 1개를 포함하고, `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한 뒤 slice를 설계해. change boundary, file budget, validation owner, and stop/replan conditions를 각 slice에 명시해"
 policy:
   allow_implicit_invocation: true

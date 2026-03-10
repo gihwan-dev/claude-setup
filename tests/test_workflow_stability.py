@@ -21,6 +21,7 @@ from install_assets import (
 from sync_agents import _serialize_agent_toml
 from workflow_contract import (
     CORE_HELPER_ORCHESTRATION_EXPECTED,
+    FORBIDDEN_CONTRACT_PHRASES,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
@@ -303,6 +304,51 @@ class WorkflowContractTests(unittest.TestCase):
                     content,
                     msg=f"missing contract phrase in {relative_path}: {phrase}",
                 )
+
+    def test_quality_preflight_paths_and_worker_protocol_contracts(self) -> None:
+        design_skill = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("`Quality preflight`", design_skill)
+        self.assertIn(
+            "`promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한 뒤 slice를 설계한다.",
+            design_skill,
+        )
+
+        implement_skill = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.",
+            implement_skill,
+        )
+        for phrase in FORBIDDEN_CONTRACT_PHRASES["skills/implement-task/SKILL.md"]:
+            self.assertNotIn(
+                phrase,
+                implement_skill,
+                msg=f"forbidden phrase still present in implement-task skill: {phrase}",
+            )
+
+        implement_prompt = (
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        for phrase in FORBIDDEN_CONTRACT_PHRASES["skills/implement-task/agents/openai.yaml"]:
+            self.assertNotIn(
+                phrase,
+                implement_prompt,
+                msg=f"forbidden phrase still present in implement-task prompt: {phrase}",
+            )
+
+        reviewer_targets = (
+            "agent-registry/code-quality-reviewer/instructions.md",
+            "agent-registry/architecture-reviewer/instructions.md",
+            "agent-registry/test-engineer/instructions.md",
+        )
+        for relative_path in reviewer_targets:
+            content = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+            self.assertIn(
+                "`품질판정: keep-local | promote-refactor | promote-architecture`",
+                content,
+                msg=f"missing quality verdict phrase in {relative_path}",
+            )
 
     def test_core_helper_orchestration_mapping_contract(self) -> None:
         for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
