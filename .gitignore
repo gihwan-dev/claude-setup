@@ -6,4 +6,5 @@ hooks
 settings.json
 .idea/
 __pycache__/
+.DS_Store
 *.py[cod]
