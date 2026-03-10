@@ -493,8 +493,6 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
 
 
 def _role_for_codex_builtin(agent_key: str) -> str:
-    if agent_key == "worker":
-        return "implementer"
     if agent_key == "explorer":
         return "explorer"
     if agent_key == "verification-worker":
@@ -503,8 +501,6 @@ def _role_for_codex_builtin(agent_key: str) -> str:
 
 
 def _repo_tools_for_helper(agent_key: str) -> list[str]:
-    if agent_key == "worker":
-        return ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
     return ["Read", "Grep", "Glob"]
 
 

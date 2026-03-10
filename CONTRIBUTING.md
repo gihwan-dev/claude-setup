@@ -11,7 +11,7 @@
 | 글로벌 정책 | `INSTRUCTIONS.md` | `AGENTS.md`, `CLAUDE.md` |
 | 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
-`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
+`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
 
 ## Do Not Edit Directly
 

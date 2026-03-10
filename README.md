@@ -81,7 +81,7 @@ python3 scripts/install_assets.py --target codex --link
 python3 scripts/install_assets.py --target all --link
 ```
 
-`codex` 설치 시에는 built-in helper preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
+`codex` 설치 시에는 built-in helper preflight(`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
 
 옵션:
 

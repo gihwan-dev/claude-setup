@@ -56,7 +56,7 @@ description: >
 
 ## Multi-Agent Usage (Optional)
 
-필요할 때만 read-only 병렬 에이전트를 사용한다. 설계 단계에서는 writer를 사용하지 않는다.
+필요할 때만 read-only 병렬 에이전트를 사용한다.
 
 ### Planning Roles (Internal-Only Priority)
 

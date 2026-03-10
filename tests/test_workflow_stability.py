@@ -100,18 +100,18 @@ class WorkflowContractTests(unittest.TestCase):
             [
                 'model = "gpt-5.4"',
                 "",
-                "[agents.worker]",
-                'config_file = "agents/implementer.toml"',
+                "[agents.explorer]",
+                'config_file = "agents/explorer.toml"',
                 "",
-                "[agents.worker.meta]",
+                "[agents.explorer.meta]",
                 'kind = "legacy"',
                 "",
                 "[agents.code-reviewer]",
                 'config_file = "agents/code-reviewer.toml"',
                 "",
                 "# BEGIN MANAGED AGENTS (claude-setup)",
-                '[agents.worker]',
-                'config_file = "agents/implementer.toml"',
+                '[agents.explorer]',
+                'config_file = "agents/explorer.toml"',
                 "# END MANAGED AGENTS (claude-setup)",
                 "",
                 "[features]",
@@ -119,9 +119,9 @@ class WorkflowContractTests(unittest.TestCase):
                 "",
             ]
         )
-        updated = _remove_managed_agent_sections(sample, {"worker"})
+        updated = _remove_managed_agent_sections(sample, {"explorer"})
 
-        self.assertNotIn("[agents.worker.meta]", updated)
+        self.assertNotIn("[agents.explorer.meta]", updated)
         self.assertIn("[agents.code-reviewer]", updated)
         self.assertIn("# BEGIN MANAGED AGENTS (claude-setup)", updated)
         self.assertIn("# END MANAGED AGENTS (claude-setup)", updated)
@@ -140,10 +140,6 @@ class WorkflowContractTests(unittest.TestCase):
                         'description = "repo-managed"',
                         'config_file = "agents/code-reviewer.toml"',
                         "",
-                        "[agents.worker]",
-                        'description = "repo-managed"',
-                        'config_file = "agents/implementer.toml"',
-                        "",
                     ]
                 ),
                 encoding="utf-8",
@@ -156,10 +152,6 @@ class WorkflowContractTests(unittest.TestCase):
                         "[agents.code-reviewer]",
                         'description = "manual"',
                         'config_file = "agents/code-reviewer.toml"',
-                        "",
-                        "[agents.worker]",
-                        'description = "legacy-helper"',
-                        'config_file = "agents/implementer.toml"',
                         "",
                         "[features]",
                         "apps = true",
@@ -174,9 +166,7 @@ class WorkflowContractTests(unittest.TestCase):
             agents = parsed.get("agents")
             self.assertIsInstance(agents, dict)
             self.assertIn("code-reviewer", agents)
-            self.assertIn("worker", agents)
             self.assertEqual(updated.count("[agents.code-reviewer]"), 1)
-            self.assertEqual(updated.count("[agents.worker]"), 1)
             self.assertIn("[features]", updated)
 
     def test_install_assets_dry_run_dest_runs_skill_prune_and_manifest_update(self) -> None:
@@ -287,7 +277,6 @@ class WorkflowContractTests(unittest.TestCase):
             "skills/implement-task/agents/openai.yaml",
             "skills/design-task/agents/openai.yaml",
             "agent-registry/project-planner/instructions.md",
-            "agent-registry/worker/instructions.md",
             "agent-registry/explorer/instructions.md",
             "agent-registry/verification-worker/instructions.md",
             "agent-registry/architecture-reviewer/instructions.md",
@@ -305,7 +294,7 @@ class WorkflowContractTests(unittest.TestCase):
                     msg=f"missing contract phrase in {relative_path}: {phrase}",
                 )
 
-    def test_quality_preflight_paths_and_worker_protocol_contracts(self) -> None:
+    def test_quality_preflight_paths_and_forbidden_phrases(self) -> None:
         design_skill = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn("`Quality preflight`", design_skill)
         self.assertIn(
@@ -315,10 +304,6 @@ class WorkflowContractTests(unittest.TestCase):
 
         implement_skill = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(
             encoding="utf-8"
-        )
-        self.assertIn(
-            "slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.",
-            implement_skill,
         )
         for phrase in FORBIDDEN_CONTRACT_PHRASES["skills/implement-task/SKILL.md"]:
             self.assertNotIn(
