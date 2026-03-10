@@ -12,7 +12,12 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS_DIR = REPO_ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from install_assets import prune_generated_skills, write_generated_skill_manifest
+from install_assets import (
+    _remove_managed_agent_sections,
+    prune_generated_skills,
+    update_codex_config,
+    write_generated_skill_manifest,
+)
 from sync_agents import _serialize_agent_toml
 from workflow_contract import (
     CORE_HELPER_ORCHESTRATION_EXPECTED,
@@ -59,35 +64,17 @@ class WorkflowContractTests(unittest.TestCase):
             codex_home = root / ".codex"
             (claude_home / "skills").mkdir(parents=True)
             (codex_home / "agents").mkdir(parents=True)
-
-            config_lines = []
-            for helper_id in REQUIRED_HELPER_AGENT_IDS:
-                config_file = f"agents/{helper_id}.toml"
-                config_lines.extend(
+            (codex_home / "config.toml").write_text(
+                '\n'.join(
                     [
-                        f"[agents.{helper_id}]",
-                        f'description = "{helper_id}"',
-                        f'config_file = "{config_file}"',
+                        'model = "gpt-5.4"',
+                        "",
+                        "[features]",
+                        "apps = true",
                         "",
                     ]
-                )
-                profile_path = codex_home / config_file
-                profile_path.parent.mkdir(parents=True, exist_ok=True)
-                profile_path.write_text(
-                    "\n".join(
-                        [
-                            'model = "gpt-5.4"',
-                            'model_reasoning_effort = "xhigh"',
-                            'sandbox_mode = "read-only"',
-                            'developer_instructions = "helper profile"',
-                            "",
-                        ]
-                    ),
-                    encoding="utf-8",
-                )
-
-            (codex_home / "config.toml").write_text(
-                "\n".join(config_lines), encoding="utf-8"
+                ),
+                encoding="utf-8",
             )
 
             completed = self.run_cmd(
@@ -106,6 +93,90 @@ class WorkflowContractTests(unittest.TestCase):
                 0,
                 msg=f"install_assets dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
             )
+
+    def test_remove_managed_agent_sections_preserves_unmanaged_agents(self) -> None:
+        sample = "\n".join(
+            [
+                'model = "gpt-5.4"',
+                "",
+                "[agents.worker]",
+                'config_file = "agents/implementer.toml"',
+                "",
+                "[agents.worker.meta]",
+                'kind = "legacy"',
+                "",
+                "[agents.code-reviewer]",
+                'config_file = "agents/code-reviewer.toml"',
+                "",
+                "# BEGIN MANAGED AGENTS (claude-setup)",
+                '[agents.worker]',
+                'config_file = "agents/implementer.toml"',
+                "# END MANAGED AGENTS (claude-setup)",
+                "",
+                "[features]",
+                "apps = true",
+                "",
+            ]
+        )
+        updated = _remove_managed_agent_sections(sample, {"worker"})
+
+        self.assertNotIn("[agents.worker.meta]", updated)
+        self.assertIn("[agents.code-reviewer]", updated)
+        self.assertIn("# BEGIN MANAGED AGENTS (claude-setup)", updated)
+        self.assertIn("# END MANAGED AGENTS (claude-setup)", updated)
+        self.assertIn("[features]", updated)
+
+    def test_update_codex_config_removes_duplicate_non_helper_agent_tables(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            codex_home = root / ".codex"
+            codex_home.mkdir(parents=True)
+            managed_path = root / "config.managed-agents.toml"
+            managed_path.write_text(
+                "\n".join(
+                    [
+                        "[agents.code-reviewer]",
+                        'description = "repo-managed"',
+                        'config_file = "agents/code-reviewer.toml"',
+                        "",
+                        "[agents.worker]",
+                        'description = "repo-managed"',
+                        'config_file = "agents/implementer.toml"',
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (codex_home / "config.toml").write_text(
+                "\n".join(
+                    [
+                        'model = "gpt-5.4"',
+                        "",
+                        "[agents.code-reviewer]",
+                        'description = "manual"',
+                        'config_file = "agents/code-reviewer.toml"',
+                        "",
+                        "[agents.worker]",
+                        'description = "legacy-helper"',
+                        'config_file = "agents/implementer.toml"',
+                        "",
+                        "[features]",
+                        "apps = true",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            updated = update_codex_config(codex_home, managed_path, dry_run=True)
+            parsed = tomllib.loads(updated)
+            agents = parsed.get("agents")
+            self.assertIsInstance(agents, dict)
+            self.assertIn("code-reviewer", agents)
+            self.assertIn("worker", agents)
+            self.assertEqual(updated.count("[agents.code-reviewer]"), 1)
+            self.assertEqual(updated.count("[agents.worker]"), 1)
+            self.assertIn("[features]", updated)
 
     def test_install_assets_dry_run_dest_runs_skill_prune_and_manifest_update(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -245,6 +316,20 @@ class WorkflowContractTests(unittest.TestCase):
                     expected_value,
                     msg=f"unexpected orchestration mapping {agent_id}.{key}",
                 )
+
+    def test_generated_managed_config_contains_required_helpers(self) -> None:
+        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
+        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
+        agents = payload.get("agents")
+        self.assertIsInstance(agents, dict)
+
+        for agent_id in REQUIRED_HELPER_AGENT_IDS:
+            entry = agents.get(agent_id)
+            self.assertIsInstance(entry, dict, msg=f"missing generated helper {agent_id}")
+            config_file = entry.get("config_file")
+            self.assertIsInstance(config_file, str, msg=f"missing config_file for {agent_id}")
+            profile_path = REPO_ROOT / "dist" / "codex" / config_file
+            self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
     def test_sync_agents_serialize_roundtrips_orchestration_section(self) -> None:
         serialized = _serialize_agent_toml(

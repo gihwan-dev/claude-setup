@@ -29,8 +29,8 @@
 ## `structure-planner`
 
 핵심 임무:
-- 구현 전에 프런트엔드 파일 분해안과 책임 경계를 설계한다.
-- component/hook/service/util 분리와 파일 비대화 위험을 점검한다.
+- 구현 전에 공통 모듈 분해안과 책임 경계를 설계한다.
+- component/view/hook/composable/middleware/service/use-case/repository/controller/util/adapter 분리와 파일 비대화 위험을 점검한다.
 
 출력:
 1. 핵심결론

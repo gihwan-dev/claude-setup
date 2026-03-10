@@ -1,6 +1,6 @@
 id = "structure-planner"
 role = "reviewer"
-description = "Plan frontend file decomposition and responsibility boundaries before implementation."
+description = "Plan common module decomposition and responsibility boundaries before implementation."
 source = "planning-role"
 
 [projection]

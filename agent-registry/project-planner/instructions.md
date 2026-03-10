@@ -19,7 +19,7 @@
 - 설계는 실행 슬라이스와 검증 기준을 반드시 포함한다.
 - 기존 `PLAN.md`가 있으면 히스토리를 반영해 갱신한다.
 - 설계 시 필요하면 planning role fan-out은 internal-only(`web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`)로 사용한다.
-- 프런트엔드 작업이 150 LOC 이상이거나 컴포넌트 2개 이상 변경될 가능성이 있으면 `structure-planner`를 포함해 파일 분해안을 먼저 확정한다.
+- 도메인과 무관하게 예상 diff가 150 LOC 이상이거나 예상 변경 파일이 2개 이상이거나 대상 기존 코드 파일이 soft limit 근접/초과면 `structure-planner`를 포함해 파일 분해안을 먼저 확정한다.
 - planning role은 user-facing install/projection 대상이 아니다.
 - custom planning role이 런타임에서 직접 실행되지 않으면 `design-task`의 overlay fallback 규칙을 따른다.
 
@@ -33,6 +33,8 @@
 - phase 1은 fresh writer의 edit-only 단계다.
 - phase 2 focused validation은 메인 스레드가 수행한다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경 시에만 full-repo validation을 허용한다.
+- 비trivial code diff slice면 `module-structure-gatekeeper`를 focused validation reviewer로 기본 포함한다.
+- frontend slice면 `frontend-structure-gatekeeper`를 추가한다.
 - phase 2 로그가 noisy/multi-step일 때만 `verification-worker`를 사용해 해석한다.
 - phase 3은 phase 1을 수행한 same writer가 commit-only로 재개한다.
 - `끝까지` 모드에서도 slice당 same-writer commit phase를 유지한다.

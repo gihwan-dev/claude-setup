@@ -84,6 +84,41 @@ def _validate_helper_orchestration(repo_root: Path, errors: list[str]) -> None:
                 )
 
 
+def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> None:
+    managed_config_path = repo_root / "dist" / "codex" / "config.managed-agents.toml"
+    if not managed_config_path.exists():
+        errors.append(f"missing generated managed config: {managed_config_path}")
+        return
+
+    data = _load_toml(managed_config_path)
+    agents = data.get("agents")
+    if not isinstance(agents, dict):
+        errors.append(f"missing [agents] table: {managed_config_path}")
+        return
+
+    dist_root = repo_root / "dist" / "codex"
+    for agent_id in REQUIRED_HELPER_AGENT_IDS:
+        entry = agents.get(agent_id)
+        if not isinstance(entry, dict):
+            errors.append(f"missing generated helper agent key: agents.{agent_id}")
+            continue
+
+        config_file = entry.get("config_file")
+        if not isinstance(config_file, str) or not config_file.strip():
+            errors.append(f"missing generated config_file for agents.{agent_id}")
+            continue
+
+        profile_path = dist_root / config_file
+        if not profile_path.exists():
+            errors.append(f"missing generated helper profile: {profile_path}")
+            continue
+
+        try:
+            _load_toml(profile_path)
+        except ValueError as exc:
+            errors.append(str(exc))
+
+
 def _validate_contract_phrases(repo_root: Path, errors: list[str]) -> None:
     for relative_path, phrases in REQUIRED_CONTRACT_PHRASES.items():
         path = repo_root / relative_path
@@ -133,6 +168,7 @@ def main() -> int:
     errors: list[str] = []
     _validate_agent_projection(repo_root, errors)
     _validate_helper_orchestration(repo_root, errors)
+    _validate_generated_codex_helpers(repo_root, errors)
     _validate_contract_phrases(repo_root, errors)
     _validate_task_documents(repo_root, errors)
 

@@ -112,6 +112,8 @@ description: >
 - 오케스트레이터의 `STATUS.md` 갱신은 메타 상태 기록이며 code diff ownership / single-writer 집계 대상에서 제외한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
 - `fork_context` 기본값은 `false`이며 `true`는 축약 불가능한 컨텍스트 의존일 때만 허용한다.
+- `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
+- `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.
 - `code-quality-reviewer`, `architecture-reviewer`, `type-specialist`, `test-engineer`는 기존 AGENTS 트리거를 따른다.
 
 ## STATUS Template (Fixed Sections)

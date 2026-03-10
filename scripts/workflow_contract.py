@@ -23,6 +23,7 @@ REQUIRED_HELPER_AGENT_IDS = (
     "code-quality-reviewer",
     "type-specialist",
     "test-engineer",
+    "module-structure-gatekeeper",
 )
 
 CORE_HELPER_ORCHESTRATION_EXPECTED = {
@@ -63,6 +64,12 @@ CORE_HELPER_ORCHESTRATION_EXPECTED = {
         "late_result_policy": "merge-if-relevant",
     },
     "test-engineer": {
+        "blocking_class": "advisory",
+        "result_contract": "preliminary-or-final",
+        "close_protocol": "interrupt-drain-ack-close",
+        "late_result_policy": "merge-if-relevant",
+    },
+    "module-structure-gatekeeper": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
@@ -117,10 +124,13 @@ REQUIRED_CONTRACT_PHRASES = {
         "partial diff가 남으면 오케스트레이터는 read-only로 확인만 하고 `STATUS.md`에 기록한 뒤 재설계한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.",
-        "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)",
+        "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`)",
         "`structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.",
-        "`frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 실행한다.",
-        "FAIL 판정은 frontend 구조 관점에서 P1로 취급한다.",
+        "도메인과 무관하게 아래 조건 중 하나면 실행한다.",
+        "`module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.",
+        "FAIL 판정은 공통 구조 관점에서 P1로 취급한다.",
+        "`frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.",
+        "FAIL 판정은 React 구조 관점에서 P1로 취급한다.",
     ),
     "skills/design-task/SKILL.md": (
         "planning role은 internal fan-out 전용이다.",
@@ -142,11 +152,16 @@ REQUIRED_CONTRACT_PHRASES = {
         "`blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`",
         "안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
+        "`module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.",
+        "`frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.",
     ),
     "agent-registry/project-planner/instructions.md": (
         "planning role fan-out은 internal-only",
+        "도메인과 무관하게 예상 diff가 150 LOC 이상이거나 예상 변경 파일이 2개 이상이거나 대상 기존 코드 파일이 soft limit 근접/초과면 `structure-planner`를 포함해 파일 분해안을 먼저 확정한다.",
         "각 slice는 `writer edit -> main focused validation -> same writer commit-only -> STATUS update -> next slice decision` 순서를 따른다.",
         "phase 2 focused validation은 메인 스레드가 수행한다.",
+        "비trivial code diff slice면 `module-structure-gatekeeper`를 focused validation reviewer로 기본 포함한다.",
+        "frontend slice면 `frontend-structure-gatekeeper`를 추가한다.",
         "phase 3은 phase 1을 수행한 same writer가 commit-only로 재개한다.",
         "focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",

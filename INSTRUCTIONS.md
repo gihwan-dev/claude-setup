@@ -99,7 +99,7 @@
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
 - 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]`을 SSOT로 유지한다.
+- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]`을 SSOT로 유지한다.
 
 ## 워크플로우 역할
 
@@ -124,8 +124,9 @@
 | TypeScript 타입 설계 | implementer | typescript-pro |
 | 인터페이스 품질 점검 | reviewer | interface-inspector |
 | 정량 복잡도 분석 | reviewer | complexity-analyst |
-| 프런트엔드 구조 분해 계획(구현 전) | reviewer | structure-planner |
-| 프런트엔드 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
+| 공통 모듈 구조 분해 계획(구현 전) | reviewer | structure-planner |
+| 공통 구조 게이트 리뷰(구현 후) | reviewer | module-structure-gatekeeper |
+| React 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
 | 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
 | Storybook/디자인 검증 | implementer | storybook-specialist |
 | 프롬프트 최적화 | implementer | prompt-engineer |
@@ -148,9 +149,14 @@
   - 모듈/패키지 경계 2개 이상 변경
   - public surface 변경 (export, entrypoint, 핵심 설정)
 - `structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.
-  - frontend 작업이며 예상 변경이 150 LOC 이상이거나 컴포넌트 2개 이상인 경우
-- `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 실행한다.
-  - FAIL 판정은 frontend 구조 관점에서 P1로 취급한다.
+  - 도메인과 무관하게 아래 조건 중 하나면 실행한다.
+  - 예상 diff가 150 LOC 이상인 경우
+  - 예상 변경 파일이 2개 이상인 경우
+  - 대상 기존 코드 파일이 soft limit에 근접하거나 초과해 분해 설계가 필요한 경우
+- `module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.
+  - FAIL 판정은 공통 구조 관점에서 P1로 취급한다.
+- `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.
+  - FAIL 판정은 React 구조 관점에서 P1로 취급한다.
 - `type-specialist`는 shared/public types, generics, public contract 변경 시 실행한다.
 - `test-engineer`는 회귀 리스크가 크거나 테스트 커버리지 공백이 있을 때 실행한다.
 

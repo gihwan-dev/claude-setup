@@ -1,6 +1,14 @@
 # AUTO-GENERATED from agent-registry. Do not edit directly.
 # Run: python3 scripts/sync_agents.py
 
+[agents.architecture-reviewer]
+description = "Read-only reviewer for boundaries, layering, public-surface changes, and large refactors."
+config_file = "agents/architecture-reviewer.toml"
+
+[agents.code-quality-reviewer]
+description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
+config_file = "agents/code-quality-reviewer.toml"
+
 [agents.code-reviewer]
 description = "Expert code review specialist for quality, security, and maintainability. Use PROACTIVELY after writing or modifying code to ensure high development standards."
 config_file = "agents/code-reviewer.toml"
@@ -8,6 +16,10 @@ config_file = "agents/code-reviewer.toml"
 [agents.complexity-analyst]
 description = "clean-code-inspector v2.1 정량 분석 보조 에이전트. 수동 계수보다 quantitative-metrics.json을 우선 사용해 복잡도 축을 해석·검증한다."
 config_file = "agents/complexity-analyst.toml"
+
+[agents.explorer]
+description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
+config_file = "agents/explorer-worker.toml"
 
 [agents.frontend-developer]
 description = "Frontend development specialist for React applications and responsive design. Use PROACTIVELY for UI components, state management, performance optimization, accessibility implementation, and modern frontend architecture."
@@ -20,6 +32,10 @@ config_file = "agents/frontend-structure-gatekeeper.toml"
 [agents.interface-inspector]
 description = "clean-code-inspector v2.1 인터페이스 품질 보조 에이전트. AST 기반 정량 지표(any/assertion/ts-ignore/상태수/import)를 해석하고 의미를 설명한다."
 config_file = "agents/interface-inspector.toml"
+
+[agents.module-structure-gatekeeper]
+description = "Read-only reviewer for frontend/backend/common modules, file bloat, and responsibility boundaries."
+config_file = "agents/module-structure-gatekeeper.toml"
 
 [agents.project-planner]
 description = "장기 작업 오케스트레이터. design-task와 implement-task 두 스킬을 기준으로 설계와 실행을 관리하고, tasks/<task-slug>/PLAN.md 및 STATUS.md를 단일 진실원으로 유지한다."
@@ -41,6 +57,22 @@ config_file = "agents/refactoring-expert.toml"
 description = "Storybook/디자인 검증 전문가. Story 파일 생성, 컴포넌트 스크린샷 캡처, Figma 디자인 비교 검증을 수행한다. 팀 작업 시 디자인 검증 및 Story 작성 담당으로 활용. 매핑 스킬: story-generator, design-check, component-screenshot"
 config_file = "agents/storybook-specialist.toml"
 
+[agents.test-engineer]
+description = "Read-only reviewer for regression risk and test-plan/coverage gaps."
+config_file = "agents/test-engineer.toml"
+
+[agents.type-specialist]
+description = "Read-only reviewer for shared/public types, interfaces, generics, and contract-safety risks."
+config_file = "agents/type-specialist.toml"
+
 [agents.typescript-pro]
 description = "Write idiomatic TypeScript with advanced type system features, strict typing, and modern patterns. Masters generic constraints, conditional types, and type inference. Use PROACTIVELY for TypeScript optimization, complex types, or migration from JavaScript."
 config_file = "agents/typescript-pro.toml"
+
+[agents.verification-worker]
+description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
+config_file = "agents/verification-worker.toml"
+
+[agents.worker]
+description = "Non-trivial single writer. Apply the smallest validated diff only after triage and plan are settled. No repo exploration. Never used for fast-lane tasks."
+config_file = "agents/implementer.toml"

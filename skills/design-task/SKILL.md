@@ -81,7 +81,7 @@ lens를 하나 이상 선택하고 해당 role을 fan-out한다.
 - `external-benchmark`: 경쟁사/최신 대안 조사 (`web-researcher`)
 - `solution-comparison`: 구현 옵션 비교 (`solution-analyst`)
 - `product-clarification`: 목표/범위/수용 기준 정리 (`product-planner`)
-- `frontend-structure`: 프런트엔드 파일 분해/책임 경계 설계 (`structure-planner`)
+- `module-structure`: 공통 모듈 분해/책임 경계 설계 (`structure-planner`)
 - `ux-journey`: 사용자 흐름/마찰 점검 (`ux-journey-critic`)
 - `delivery-risk`: 배포/운영 리스크 점검 (`delivery-risk-planner`)
 - `prompt-system`: 프롬프트/도구 경계 설계 (`prompt-systems-designer`)

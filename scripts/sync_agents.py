@@ -140,7 +140,6 @@ def _format_managed_config(entries: list[AgentEntry]) -> str:
         if entry.codex_projection
         and entry.codex_agent_key
         and entry.codex_config_file
-        and entry.source != "codex-builtin"
     ]
     projected.sort(key=lambda entry: entry.codex_agent_key or "")
 

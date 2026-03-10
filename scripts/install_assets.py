@@ -27,6 +27,8 @@ MANAGED_BLOCK_PATTERN = re.compile(
     rf"{re.escape(BEGIN_MANAGED)}\n(.*?)\n{re.escape(END_MANAGED)}\n?",
     re.DOTALL,
 )
+SECTION_HEADER_PATTERN = re.compile(r"^\s*\[([^\[\]]+)\]\s*$")
+MANAGED_BLOCK_PLACEHOLDER = "[__claude_setup_managed_agents_placeholder__]"
 
 
 def parse_args() -> argparse.Namespace:
@@ -216,8 +218,26 @@ def _load_codex_config(codex_home: Path) -> tuple[Path, dict[str, object]]:
     return config_path, config_data
 
 
-def validate_required_codex_helpers(codex_home: Path) -> None:
-    config_path, config_data = _load_codex_config(codex_home)
+def validate_required_codex_helpers(
+    codex_home: Path,
+    *,
+    config_text: str | None = None,
+    profile_root: Path | None = None,
+) -> None:
+    config_path = codex_home / "config.toml"
+    if config_text is None:
+        config_path, config_data = _load_codex_config(codex_home)
+    else:
+        try:
+            config_data = tomllib.loads(config_text)
+        except tomllib.TOMLDecodeError as exc:
+            raise SystemExit(
+                f"codex preflight failed: invalid config.toml payload: {exc}"
+            ) from exc
+        if not isinstance(config_data, dict):
+            raise SystemExit("codex preflight failed: config.toml must decode to a table")
+
+    helper_root = profile_root or codex_home
     agents = config_data.get("agents")
     if not isinstance(agents, dict):
         raise SystemExit(
@@ -236,7 +256,7 @@ def validate_required_codex_helpers(codex_home: Path) -> None:
             errors.append(f"missing config_file for agents.{agent_key}")
             continue
 
-        profile_path = codex_home / config_file
+        profile_path = helper_root / config_file
         if not profile_path.exists():
             errors.append(f"missing helper profile file: {profile_path}")
             continue
@@ -263,6 +283,63 @@ def _extract_existing_managed_body(config_text: str) -> str | None:
     if not match:
         return None
     return match.group(1)
+
+
+def _parse_managed_agent_ids(managed_body: str) -> set[str]:
+    try:
+        parsed = tomllib.loads(managed_body)
+    except tomllib.TOMLDecodeError:
+        return set()
+
+    agents = parsed.get("agents")
+    if not isinstance(agents, dict):
+        return set()
+    return {agent_id for agent_id in agents if isinstance(agent_id, str) and agent_id}
+
+
+def _is_managed_agent_section(section_name: str, managed_agent_ids: set[str]) -> bool:
+    normalized = section_name.strip()
+    for agent_id in managed_agent_ids:
+        prefix = f"agents.{agent_id}"
+        if normalized == prefix or normalized.startswith(f"{prefix}."):
+            return True
+    return False
+
+
+def _remove_managed_agent_sections(
+    config_text: str, managed_agent_ids: set[str]
+) -> str:
+    if not managed_agent_ids:
+        return config_text
+
+    managed_block = MANAGED_BLOCK_PATTERN.search(config_text)
+    if managed_block:
+        sanitized = (
+            f"{config_text[:managed_block.start()]}"
+            f"{MANAGED_BLOCK_PLACEHOLDER}\n"
+            f"{config_text[managed_block.end():]}"
+        )
+    else:
+        sanitized = config_text
+
+    kept_lines: list[str] = []
+    skip_section = False
+    for line in sanitized.splitlines(keepends=True):
+        header_match = SECTION_HEADER_PATTERN.match(line)
+        if header_match:
+            skip_section = _is_managed_agent_section(
+                header_match.group(1), managed_agent_ids
+            )
+        if skip_section:
+            continue
+        kept_lines.append(line)
+
+    updated = "".join(kept_lines)
+    if managed_block:
+        updated = updated.replace(
+            f"{MANAGED_BLOCK_PLACEHOLDER}\n", managed_block.group(0), 1
+        )
+    return updated
 
 
 def _parse_managed_agent_files(managed_body: str | None) -> set[str]:
@@ -366,15 +443,17 @@ def update_codex_config(
     managed_config_path: Path,
     *,
     dry_run: bool,
-) -> None:
+) -> str:
     config_path = codex_home / "config.toml"
     managed = managed_config_path.read_text(encoding="utf-8").rstrip()
     managed_block = f"{BEGIN_MANAGED}\n{managed}\n{END_MANAGED}\n"
+    managed_agent_ids = _parse_managed_agent_ids(managed)
 
     if config_path.exists():
-        current = config_path.read_text(encoding="utf-8")
+        existing = config_path.read_text(encoding="utf-8")
     else:
-        current = ""
+        existing = ""
+    current = _remove_managed_agent_sections(existing, managed_agent_ids)
 
     if MANAGED_BLOCK_PATTERN.search(current):
         updated = MANAGED_BLOCK_PATTERN.sub(lambda _: managed_block, current)
@@ -382,17 +461,25 @@ def update_codex_config(
         separator = "" if current.endswith("\n") or not current else "\n"
         updated = f"{current}{separator}{managed_block}"
 
-    if current == updated:
+    try:
+        tomllib.loads(updated)
+    except tomllib.TOMLDecodeError as exc:
+        raise SystemExit(
+            f"codex preflight failed: updated config would be invalid TOML: {exc}"
+        ) from exc
+
+    if existing == updated:
         print(f"ok  {config_path} (managed block unchanged)")
-        return
+        return updated
 
     if dry_run:
         print(f"[dry-run] update managed block in {config_path}")
-        return
+        return updated
 
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(updated, encoding="utf-8")
     print(f"ok  {config_path} (managed block updated)")
+    return updated
 
 
 def main() -> int:
@@ -487,7 +574,6 @@ def main() -> int:
                 dry_run=args.dry_run,
             )
         else:
-            validate_required_codex_helpers(home)
             existing_config = _read_text(home / "config.toml")
             previous_managed_names = _parse_managed_agent_files(
                 _extract_existing_managed_body(existing_config)
@@ -506,8 +592,13 @@ def main() -> int:
                 previous_managed_names=previous_managed_names,
                 dry_run=args.dry_run,
             )
-            update_codex_config(
+            updated_config = update_codex_config(
                 home, codex_managed_src, dry_run=args.dry_run
+            )
+            validate_required_codex_helpers(
+                home,
+                config_text=updated_config,
+                profile_root=(repo_root / "dist" / "codex") if args.dry_run else home,
             )
 
     print("Done.")
