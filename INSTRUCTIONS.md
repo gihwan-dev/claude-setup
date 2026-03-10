@@ -72,15 +72,22 @@
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
 - `project-planner`가 `implement-task`를 실행할 때는 fast lane/deep solo를 적용하지 않고 항상 delegated team lane으로 실행한다.
-- 오케스트레이터는 strategy-only 역할로 제한한다. 직접 코드 수정이나 raw validation log 해석을 수행하지 않는다.
-- single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff는 fresh `worker` 1명이 담당한다.
+- 오케스트레이터는 strategy-only 역할로 제한한다. 직접 코드 수정이나 raw validation log 해석을 수행하지 않는다. 단, non-mutating focused validation 실행은 허용한다.
+- single-writer 적용 단위는 run이 아니라 slice다. 각 slice의 code diff ownership은 fresh `worker` 1명이 담당한다.
 - `끝까지` 모드에서 여러 slice에 서로 다른 fresh `worker`가 참여해도 slice당 single-writer를 만족하면 규칙 위반이 아니다.
-- 각 slice는 `구현 -> 검증 -> 커밋 -> STATUS 갱신 -> 다음 slice 판정` 순서를 따른다.
+- 각 slice는 `writer edit -> main focused validation -> same writer commit-only -> STATUS update -> next slice decision` 순서를 따른다.
+- phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경일 때만 full-repo validation을 허용한다.
+- noisy/multi-step validation log는 `verification-worker`가 메인 검증 로그를 해석한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
+- `fork_context` 기본값은 `false`다. 축약 불가능한 컨텍스트 의존일 때만 `true`를 허용하고 이유를 `STATUS.md`에 기록한다.
+- slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
+- 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
+- writer가 90초 동안 응답이 없으면 1회 interrupt로 상태 요약을 요청한다. 추가 60초 안에 요약이 없으면 slice 실패로 기록하고 stop/replan한다.
+- 같은 slice에 두 번째 writer를 투입하지 않는다.
+- partial diff가 남으면 오케스트레이터는 read-only로 확인만 하고 `STATUS.md`에 기록한 뒤 재설계한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다. `STATUS.md` 갱신은 code diff ownership / single-writer 집계 대상에서 제외한다.
-- 검증 실행은 writer가 담당하고, noisy/multi-step 로그 해석만 `verification-worker`에 위임한다.
 - 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `type-specialist`, `test-engineer`)는 runtime helper로 보장되어야 한다.

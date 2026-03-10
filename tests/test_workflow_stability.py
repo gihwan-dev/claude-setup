@@ -14,6 +14,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from install_assets import prune_generated_skills, write_generated_skill_manifest
 from workflow_contract import (
     PLAN_SECTION_ORDER,
+    REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
     validate_markdown_sections,
@@ -203,6 +204,25 @@ class WorkflowContractTests(unittest.TestCase):
         )
         self.assertIsNone(plan_error, msg=plan_error)
         self.assertIsNone(status_error, msg=status_error)
+
+    def test_skill_metadata_and_contract_phrases_cover_new_slice_flow(self) -> None:
+        targets = (
+            "skills/implement-task/SKILL.md",
+            "skills/design-task/SKILL.md",
+            "skills/implement-task/agents/openai.yaml",
+            "skills/design-task/agents/openai.yaml",
+            "agent-registry/project-planner/instructions.md",
+            "agent-registry/worker/instructions.md",
+        )
+
+        for relative_path in targets:
+            content = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+            for phrase in REQUIRED_CONTRACT_PHRASES[relative_path]:
+                self.assertIn(
+                    phrase,
+                    content,
+                    msg=f"missing contract phrase in {relative_path}: {phrase}",
+                )
 
 
 if __name__ == "__main__":

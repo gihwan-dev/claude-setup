@@ -19,6 +19,9 @@ description: >
 - read-only 탐색만 수행한다.
 - 출력 경로는 항상 `tasks/<task-slug>/PLAN.md`를 사용한다.
 - 기존 `PLAN.md`가 있으면 삭제/초기화하지 말고 현재 결정, 완료 맥락, 남은 리스크를 반영해 갱신한다.
+- 각 execution slice는 변경 경계, 예상 파일 수, validation owner, stop/replan 조건을 반드시 포함한다.
+- slice 설계 기본 guardrail은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`다.
+- 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
 
 ## Inputs
 
@@ -41,7 +44,7 @@ description: >
 4. lens에 맞춰 planning role fan-out을 수행한다.
 5. 작업 유형을 `feature`, `bugfix`, `refactor`, `prototype` 중 하나로 결정한다.
 6. 변경 경계(유지/변경/금지)와 의사결정 공백을 분리한다.
-7. 한 번의 구현 세션에서 검증 가능한 `Execution slices`를 작성한다.
+7. 한 번의 구현 세션에서 검증 가능한 bounded `Execution slices`를 작성한다.
 8. 검증 전략과 stop/replan 조건을 명시한다.
 9. `tasks/<task-slug>/PLAN.md`를 생성 또는 갱신한다.
 
@@ -109,6 +112,12 @@ lens를 하나 이상 선택하고 해당 role을 fan-out한다.
   - `Chosen approach`
   - `Rejected alternatives`
   - `Need user decision`
+- `# Execution slices`의 각 slice에는 아래를 반드시 포함한다.
+  - `Change boundary`
+  - `Expected files` (기본 `3개 이하` 또는 모듈 경계 예외 사유)
+  - `Validation owner` (`main thread`)
+  - `Focused validation plan` (`타깃 검증 1개 + 저비용 체크 1개`, full-repo 필요 시 사유)
+  - `Stop / Replan trigger`
 
 ## Task Type Focus
 
@@ -121,6 +130,9 @@ lens를 하나 이상 선택하고 해당 role을 fan-out한다.
 
 - 실행 슬라이스는 독립적으로 완료/검증 가능한 단위인가?
 - 각 슬라이스에 완료 기준과 검증 항목이 있는가?
+- 각 슬라이스에 변경 경계/예상 파일 수/validation owner가 명시되었는가?
+- 3-file/150 LOC guardrail을 넘길 때 모듈 경계 예외 사유가 기록되었는가?
+- giant mixed slice 금지 조건을 회피하도록 설계되었는가?
 - 공개 경계 변경 여부가 명시되었는가?
 - 즉시 중단 또는 재설계가 필요한 조건이 정의되었는가?
 - 선택한 lens와 role fan-out 근거가 `Evidence`/`Decisions`에 반영되었는가?

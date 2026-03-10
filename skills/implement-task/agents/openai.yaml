@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Execute next slice by default or run fresh-writer slice loop, then update STATUS.md"
-  default_prompt: "$implement-task tasks/<task-slug>/PLAN.md 기준으로 다음 slice 하나를 구현하고 STATUS.md를 갱신해"
+  short_description: "Run slice in 3 steps: writer edit-only -> main focused validation -> same-writer commit-only, then update STATUS.md"
+  default_prompt: "$implement-task tasks/<task-slug>/PLAN.md 기준으로 다음 slice를 writer edit-only로 진행하고 main focused validation 후 same writer commit-only까지 완료해 STATUS.md를 갱신해"
 policy:
   allow_implicit_invocation: true
