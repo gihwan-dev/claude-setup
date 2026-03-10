@@ -44,3 +44,7 @@ config_file = "agents/type-specialist.toml"
 [agents.verification-worker]
 description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
 config_file = "agents/verification-worker.toml"
+
+[agents.worker]
+description = "Non-trivial single writer. Apply the smallest validated diff only after triage and plan are settled. No repo exploration. Never used for fast-lane tasks."
+config_file = "agents/implementer.toml"

@@ -8,12 +8,17 @@ from pathlib import Path
 
 from workflow_contract import (
     CORE_HELPER_ORCHESTRATION_EXPECTED,
+    DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
+    DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
+    EXPECTED_CODEX_REASONING_EFFORT,
+    EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FORBIDDEN_CONTRACT_PHRASES,
     INTERNAL_PLANNING_ROLE_IDS,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
+    WRITABLE_PROJECTION_AGENT_IDS,
     validate_markdown_sections,
 )
 
@@ -26,6 +31,10 @@ def _load_toml(path: Path) -> dict[str, object]:
     if not isinstance(loaded, dict):
         raise ValueError(f"TOML must decode to a table: {path}")
     return loaded
+
+
+def _is_projected(projection: dict[str, object]) -> bool:
+    return projection.get("repo") is True or projection.get("codex") is True
 
 
 def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
@@ -64,18 +73,34 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
         if not isinstance(repo_cfg, dict):
             errors.append(f"helper must define [repo] for Claude projection: {path}")
 
+    for agent_id in DISABLED_WRITABLE_PROJECTION_AGENT_IDS:
+        path = registry_root / agent_id / "agent.toml"
+        if not path.exists():
+            errors.append(f"missing disabled projection config: {path}")
+            continue
+        data = _load_toml(path)
+        projection = data.get("projection")
+        if not isinstance(projection, dict):
+            errors.append(f"missing [projection]: {path}")
+            continue
+        if projection.get("repo") is not False or projection.get("codex") is not False:
+            errors.append(f"projection must remain disabled for {agent_id}: {path}")
+
     for path in sorted(registry_root.glob("*/agent.toml")):
         data = _load_toml(path)
+        agent_id = data.get("id")
         role = data.get("role")
         projection = data.get("projection")
-        if not isinstance(role, str) or not isinstance(projection, dict):
+        if not isinstance(agent_id, str) or not isinstance(role, str) or not isinstance(projection, dict):
+            continue
+        if agent_id in WRITABLE_PROJECTION_AGENT_IDS:
             continue
         if role not in {"implementer", "orchestrator"}:
             continue
-        if projection.get("repo") is True or projection.get("codex") is True:
+        if _is_projected(projection):
             errors.append(
-                "writable sub-agent projection is not allowed; main-thread must remain "
-                f"the only writer: {path}"
+                "projected implementer/orchestrator is not allowed unless it is the "
+                f"`worker`: {path}"
             )
 
 
@@ -130,12 +155,33 @@ def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> Non
             continue
 
         try:
-            _load_toml(profile_path)
+            profile = _load_toml(profile_path)
         except ValueError as exc:
             errors.append(str(exc))
+            continue
+
+        expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
+        sandbox_mode = profile.get("sandbox_mode")
+        if sandbox_mode != expected_sandbox:
+            errors.append(
+                f"invalid sandbox_mode for agents.{agent_id}: "
+                f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({profile_path})"
+            )
+
+        reasoning_effort = profile.get("model_reasoning_effort")
+        if reasoning_effort != EXPECTED_CODEX_REASONING_EFFORT:
+            errors.append(
+                f"invalid model_reasoning_effort for agents.{agent_id}: "
+                f"expected={EXPECTED_CODEX_REASONING_EFFORT!r} actual={reasoning_effort!r} ({profile_path})"
+            )
 
     for agent_id, entry in agents.items():
         if not isinstance(agent_id, str) or not isinstance(entry, dict):
+            continue
+        if agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
+            errors.append(
+                f"documentation-only built-in must not be repo-managed: agents.{agent_id}"
+            )
             continue
         config_file = entry.get("config_file")
         if not isinstance(config_file, str) or not config_file.strip():
@@ -148,10 +194,21 @@ def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> Non
         except ValueError as exc:
             errors.append(str(exc))
             continue
+        expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
         sandbox_mode = profile.get("sandbox_mode")
-        if sandbox_mode != "read-only":
+        if sandbox_mode != expected_sandbox:
             errors.append(
-                f"projected codex agent must be read-only: agents.{agent_id} ({profile_path})"
+                f"projected codex agent sandbox mismatch: agents.{agent_id} "
+                f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({profile_path})"
+            )
+
+
+def _validate_documentation_only_builtins(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    for agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
+        if (registry_root / agent_id).exists():
+            errors.append(
+                f"documentation-only built-in must not have repo-managed registry entry: {registry_root / agent_id}"
             )
 
 
@@ -205,6 +262,7 @@ def main() -> int:
     _validate_agent_projection(repo_root, errors)
     _validate_helper_orchestration(repo_root, errors)
     _validate_generated_codex_helpers(repo_root, errors)
+    _validate_documentation_only_builtins(repo_root, errors)
     _validate_contract_phrases(repo_root, errors)
     _validate_task_documents(repo_root, errors)
 

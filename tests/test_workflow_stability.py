@@ -21,11 +21,16 @@ from install_assets import (
 from sync_agents import _serialize_agent_toml
 from workflow_contract import (
     CORE_HELPER_ORCHESTRATION_EXPECTED,
+    DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
+    DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
+    EXPECTED_CODEX_REASONING_EFFORT,
+    EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FORBIDDEN_CONTRACT_PHRASES,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
+    WRITABLE_PROJECTION_AGENT_IDS,
     validate_markdown_sections,
 )
 
@@ -272,17 +277,22 @@ class WorkflowContractTests(unittest.TestCase):
 
     def test_skill_metadata_and_contract_phrases_cover_new_slice_flow(self) -> None:
         targets = (
+            "README.md",
+            "CONTRIBUTING.md",
             "skills/implement-task/SKILL.md",
             "skills/design-task/SKILL.md",
             "skills/implement-task/agents/openai.yaml",
             "skills/design-task/agents/openai.yaml",
             "agent-registry/project-planner/instructions.md",
+            "agent-registry/worker/instructions.md",
             "agent-registry/explorer/instructions.md",
             "agent-registry/verification-worker/instructions.md",
             "agent-registry/architecture-reviewer/instructions.md",
             "agent-registry/code-quality-reviewer/instructions.md",
             "agent-registry/type-specialist/instructions.md",
             "agent-registry/test-engineer/instructions.md",
+            "agent-registry/module-structure-gatekeeper/instructions.md",
+            "agent-registry/frontend-structure-gatekeeper/instructions.md",
         )
 
         for relative_path in targets:
@@ -365,17 +375,18 @@ class WorkflowContractTests(unittest.TestCase):
     def test_projected_agents_do_not_expose_writable_roles(self) -> None:
         for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
             payload = tomllib.loads(path.read_text(encoding="utf-8"))
+            agent_id = payload.get("id")
             role = payload.get("role")
             projection = payload.get("projection")
+            self.assertIsInstance(agent_id, str, msg=f"missing id in {path}")
             self.assertIsInstance(role, str, msg=f"missing role in {path}")
             self.assertIsInstance(projection, dict, msg=f"missing projection in {path}")
             if projection.get("repo") is not True and projection.get("codex") is not True:
                 continue
-            self.assertNotIn(
-                role,
-                {"implementer", "orchestrator"},
-                msg=f"projected writable role is not allowed: {path}",
-            )
+            if agent_id in WRITABLE_PROJECTION_AGENT_IDS:
+                self.assertEqual(role, "implementer", msg=f"worker role drifted: {path}")
+                continue
+            self.assertNotIn(role, {"implementer", "orchestrator"}, msg=f"projected writable role is not allowed: {path}")
 
     def test_generated_managed_agent_profiles_are_read_only(self) -> None:
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
@@ -388,11 +399,41 @@ class WorkflowContractTests(unittest.TestCase):
             config_file = entry.get("config_file")
             self.assertIsInstance(config_file, str, msg=f"missing config_file for {agent_id}")
             profile = tomllib.loads((REPO_ROOT / "dist" / "codex" / config_file).read_text(encoding="utf-8"))
+            expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
             self.assertEqual(
                 profile.get("sandbox_mode"),
-                "read-only",
-                msg=f"projected agent must be read-only: {agent_id}",
+                expected_sandbox,
+                msg=f"projected agent sandbox mismatch: {agent_id}",
             )
+            self.assertEqual(
+                profile.get("model_reasoning_effort"),
+                EXPECTED_CODEX_REASONING_EFFORT,
+                msg=f"projected agent reasoning effort drifted: {agent_id}",
+            )
+
+    def test_disabled_specialized_writers_remain_unprojected(self) -> None:
+        for agent_id in DISABLED_WRITABLE_PROJECTION_AGENT_IDS:
+            payload = tomllib.loads(
+                (REPO_ROOT / "agent-registry" / agent_id / "agent.toml").read_text(encoding="utf-8")
+            )
+            projection = payload.get("projection")
+            self.assertIsInstance(projection, dict, msg=f"missing projection for {agent_id}")
+            self.assertFalse(projection.get("repo"), msg=f"repo projection unexpectedly enabled: {agent_id}")
+            self.assertFalse(projection.get("codex"), msg=f"codex projection unexpectedly enabled: {agent_id}")
+
+    def test_documentation_only_builtins_are_not_repo_managed(self) -> None:
+        managed_payload = tomllib.loads(
+            (REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml").read_text(encoding="utf-8")
+        )
+        managed_agents = managed_payload.get("agents")
+        self.assertIsInstance(managed_agents, dict)
+
+        for agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
+            self.assertFalse(
+                (REPO_ROOT / "agent-registry" / agent_id).exists(),
+                msg=f"documentation-only built-in unexpectedly has registry entry: {agent_id}",
+            )
+            self.assertNotIn(agent_id, managed_agents, msg=f"documentation-only built-in unexpectedly managed: {agent_id}")
 
     def test_sync_agents_serialize_roundtrips_orchestration_section(self) -> None:
         serialized = _serialize_agent_toml(

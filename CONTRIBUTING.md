@@ -11,8 +11,9 @@
 | 글로벌 정책 | `INSTRUCTIONS.md` | `AGENTS.md`, `CLAUDE.md` |
 | 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
-`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
-설치되는 agent projection은 read-only helper/reviewer만 유지하고, 코드 수정은 메인 스레드가 직접 수행한다.
+`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
+설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.
+`monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.
 
 ## Do Not Edit Directly
 
@@ -109,7 +110,7 @@ python3 scripts/install_assets.py --target all --dry-run
 - install 단계에서는 generated marker가 있는 agent 파일만 prune한다.
 - skill은 generated manifest 기반으로 stale 항목만 prune한다(수동 디렉터리 보존).
 - broken symlink도 install 단계에서 정리된다.
-- `codex` 대상 설치는 helper built-in preflight를 통과해야 진행된다.
+- `codex` 대상 설치는 managed runtime agent preflight를 통과해야 진행된다.
 - `design-task`는 planning role을 직접 또는 fallback overlay로 사용한다. planning role을 바꾸면 `skills/design-task/SKILL.md`와 `skills/design-task/references/`도 같이 확인한다.
 
 ## When Unsure

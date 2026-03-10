@@ -10,7 +10,7 @@ description: >
 
 ## Goal
 
-`tasks/<task-slug>/PLAN.md` 기준으로 실행 슬라이스를 구현하고 `STATUS.md`를 갱신한다.
+`tasks/<task-slug>/PLAN.md` 기준으로 실행 슬라이스를 구현하고 `STATUS.md`를 갱신한다. 구현 계약은 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
 
 ## Hard Rules
 
@@ -19,8 +19,8 @@ description: >
 - 이 스킬은 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
 - 기존 코드 구현은 `PLAN.md` 없이 즉시 시작하지 않는다.
 - `STATUS.md`가 없으면 고정 템플릿 섹션으로 `tasks/<task-slug>/STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
-- `implement-task`의 code writer는 메인 스레드 하나다.
-- `implement-task`는 writable sub-agent를 사용하지 않는다.
+- `implement-task`의 code writer는 `worker` 하나다.
+- writable projection은 `worker`만 허용한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
 - 기본 실행 단위는 다음 slice 1개다.
 - focused validation은 메인 스레드가 수행한다.
@@ -32,7 +32,13 @@ description: >
 - slice hard guardrail: `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
 - full-repo validation은 shared/public boundary 변경 시에만 허용한다.
+- `wait timeout`은 stalled와 동일하지 않다.
+- `liveness gate`와 `completion gate`를 분리한다.
+- close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
+- `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 - advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
 - `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 취급하고 그 외에는 advisory로 취급한다.
 - 리뷰 요청에서 구조 개선 계획을 새로 만드는 역할은 이 스킬이 아니라 `design-task`/reviewer에 있다. `implement-task`는 승인된 계획 실행에만 집중한다.
 
@@ -52,6 +58,8 @@ description: >
 - 연속 실행 중 아래 조건이면 즉시 중단하고 `STATUS.md`만 갱신한다.
   - 검증 실패(커밋 시도 없음)
   - 커밋 실패(`--no-verify` 재시도 실패 포함)
+  - `worker`가 `상태: blocked`를 보고함
+  - `liveness gate` 점검과 `drain grace` 이후에도 `final/checkpoint`를 받지 못함
   - `PLAN.md`의 stop/replan 조건 충족
   - public boundary drift 발생
   - 다음 slice 진행 전 의사결정 공백 발생
@@ -61,15 +69,17 @@ description: >
 1. 대상 task를 선택한다.
 2. `PLAN.md`에서 다음 미완료 slice와 검증 기준을 읽는다.
 3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
-4. 메인 스레드가 현재 slice의 코드 변경을 직접 수행한다.
-5. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-6. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-7. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-8. focused validation이 통과하면 커밋한다.
-9. 1차 `git commit`이 hook 실패로 막히면 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-10. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-11. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-12. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
+4. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
+5. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
+6. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
+7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+8. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+9. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+10. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+11. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+12. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+13. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+14. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -85,11 +95,14 @@ description: >
 
 ## Lane and Agent Rules
 
-- `implement-task`의 code writer는 메인 스레드 하나다.
-- `implement-task`는 writable sub-agent를 사용하지 않는다.
+- `implement-task`의 code writer는 `worker` 하나다.
+- writable projection은 `worker`만 허용한다.
 - 오케스트레이터는 slice 선택, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
 - read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
+- phase 1을 수행한 same `worker`가 commit-only를 수행한다.
+- 같은 slice에는 phase 1을 수행한 same `worker`만 commit-only를 수행한다.
+- `wait timeout`은 stalled와 동일하지 않으며 replacement writer를 트리거하지 않는다.
 - `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.
 - `code-quality-reviewer`, `architecture-reviewer`, `type-specialist`, `test-engineer`는 기존 AGENTS 트리거를 따른다.

@@ -31,7 +31,8 @@ CLAUDE.md / AGENTS.md                          # generated files
 - 정책 문서: `INSTRUCTIONS.md`
 - long-running task public surface: `design-task`, `implement-task`
 - planning role은 internal fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- 설치되는 agent projection은 read-only helper/reviewer만 유지하고, 코드 수정은 메인 스레드가 직접 수행한다.
+- 설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.
+- `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.
 
 ## 작업 시작 전
 
@@ -82,7 +83,7 @@ python3 scripts/install_assets.py --target codex --link
 python3 scripts/install_assets.py --target all --link
 ```
 
-`codex` 설치 시에는 built-in helper preflight(`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`)를 먼저 확인하고 실패하면 중단한다.
+`codex` 설치 시에는 managed runtime agent preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)를 먼저 확인하고 실패하면 중단한다.
 
 옵션:
 

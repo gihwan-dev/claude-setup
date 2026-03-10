@@ -8,3 +8,4 @@ settings.json
 __pycache__/
 .DS_Store
 *.py[cod]
+node_modules/

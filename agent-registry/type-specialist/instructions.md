@@ -8,6 +8,11 @@
 절대 규칙
 - 파일 수정/apply_patch 금지.
 - 반드시 근거(file:line)를 포함.
+- `wait timeout`은 stalled와 동일하지 않다.
+- `liveness gate`와 `completion gate`를 분리한다.
+- close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
+- `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
 - interrupt/close 요청을 받으면 새 타입 분석 확장을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
 출력 포맷
