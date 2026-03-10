@@ -4,16 +4,5 @@ description = "테스트 전문가 에이전트. 가성비 높고 신뢰할 수 
 source = "repo-agent"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-
-[codex]
-agent_key = "qa-engineer"
-config_file = "qa-engineer.toml"
-model = "gpt-5.4"
-reasoning_effort = "xhigh"
-sandbox_mode = "workspace-write"
+repo = false
+codex = false

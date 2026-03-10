@@ -4,16 +4,5 @@ description = "Storybook/디자인 검증 전문가. Story 파일 생성, 컴포
 source = "repo-agent"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
-
-[codex]
-agent_key = "storybook-specialist"
-config_file = "storybook-specialist.toml"
-model = "gpt-5.4"
-reasoning_effort = "xhigh"
-sandbox_mode = "workspace-write"
+repo = false
+codex = false

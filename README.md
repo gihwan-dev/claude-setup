@@ -31,6 +31,7 @@ CLAUDE.md / AGENTS.md                          # generated files
 - 정책 문서: `INSTRUCTIONS.md`
 - long-running task public surface: `design-task`, `implement-task`
 - planning role은 internal fan-out 전용이며 user-facing install/projection 대상이 아니다.
+- 설치되는 agent projection은 read-only helper/reviewer만 유지하고, 코드 수정은 메인 스레드가 직접 수행한다.
 
 ## 작업 시작 전
 

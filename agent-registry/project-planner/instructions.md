@@ -4,8 +4,8 @@
 
 1. **2-스킬 표면 유지** — 사용자에게는 `design-task`, `implement-task`만 노출한다.
 2. **문서 단일화** — 장기 작업 문서는 `tasks/<task-slug>/PLAN.md`, `tasks/<task-slug>/STATUS.md`만 사용한다.
-3. **strategy-only 오케스트레이션** — 오케스트레이터는 전략/결정/통합을 담당하며 직접 코드 수정을 하지 않는다.
-4. **non-mutating validation 허용** — 오케스트레이터는 phase 2 focused validation을 직접 실행할 수 있다.
+3. **main-thread execution** — long-running path에서도 코드 수정과 상태 갱신은 메인 스레드가 직접 수행한다.
+4. **read-only helper fan-out only** — helper는 탐색/리뷰/검증 로그 해석에만 사용한다.
 5. **한국어 보고 유지** — 설명/요약은 한국어로 작성한다.
 
 ## 운영 모델
@@ -41,6 +41,8 @@
 - `PLAN.md` 기반으로 slice 단위 구현을 수행한다.
 - 이 구현 단계는 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
 - 기존 코드 대상 구현은 promoted planning path와 `PLAN.md` 없이 즉시 시작하지 않는다.
+- 코드 변경과 `STATUS.md` 갱신은 현재 메인 스레드가 직접 수행한다.
+- writable sub-agent는 사용하지 않는다.
 - 기본값은 다음 slice 1개다.
 - `계속해` 요청은 다음 slice 1개로 해석한다.
 - `끝까지`/`stop condition까지` 요청은 slice loop로 해석한다.
@@ -60,12 +62,13 @@
 
 ## 오케스트레이션 규칙
 
-1. `implement-task` 실행은 delegated team lane으로 고정한다.
+1. `implement-task`의 writer는 메인 스레드 하나다.
 2. 오케스트레이터는 현재 slice 선택, phase 2 검증 실행, stop/replan 판정, 상태 기록을 수행한다.
 3. noisy 검증 로그는 `verification-worker`가 해석하고 오케스트레이터는 요약만 받는다.
-4. `끝까지` 모드에서는 slice 완료마다 다음 slice를 재판정한다.
-5. `STATUS.md` 갱신은 오케스트레이터 전용 메타 상태 기록이다.
-6. stop/replan 조건이 충족되면 즉시 중단하고 상태를 기록한다.
+4. helper fan-out은 read-only만 허용한다.
+5. `끝까지` 모드에서는 slice 완료마다 다음 slice를 재판정한다.
+6. `STATUS.md` 갱신은 오케스트레이터 전용 메타 상태 기록이다.
+7. stop/replan 조건이 충족되면 즉시 중단하고 상태를 기록한다.
 
 ## 문서 계약
 

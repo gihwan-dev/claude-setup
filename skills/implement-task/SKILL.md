@@ -19,7 +19,8 @@ description: >
 - 이 스킬은 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
 - 기존 코드 구현은 `PLAN.md` 없이 즉시 시작하지 않는다.
 - `STATUS.md`가 없으면 고정 템플릿 섹션으로 `tasks/<task-slug>/STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
-- `implement-task`는 항상 delegated lane으로 실행한다. fast lane/deep solo를 이 스킬에서 허용하지 않는다.
+- `implement-task`의 code writer는 메인 스레드 하나다.
+- `implement-task`는 writable sub-agent를 사용하지 않는다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
 - 기본 실행 단위는 다음 slice 1개다.
 - focused validation은 메인 스레드가 수행한다.
@@ -60,7 +61,7 @@ description: >
 1. 대상 task를 선택한다.
 2. `PLAN.md`에서 다음 미완료 slice와 검증 기준을 읽는다.
 3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
-4. 현재 slice의 코드 변경을 수행한다.
+4. 메인 스레드가 현재 slice의 코드 변경을 직접 수행한다.
 5. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
 6. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
 7. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
@@ -84,8 +85,10 @@ description: >
 
 ## Lane and Agent Rules
 
-- 이 스킬은 lane 판정을 delegated team lane으로 고정한다.
+- `implement-task`의 code writer는 메인 스레드 하나다.
+- `implement-task`는 writable sub-agent를 사용하지 않는다.
 - 오케스트레이터는 slice 선택, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
+- read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
 - `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.

@@ -12,6 +12,7 @@
 | 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
 `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
+설치되는 agent projection은 read-only helper/reviewer만 유지하고, 코드 수정은 메인 스레드가 직접 수행한다.
 
 ## Do Not Edit Directly
 

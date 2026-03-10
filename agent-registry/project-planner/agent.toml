@@ -4,16 +4,5 @@ description = "장기 작업 오케스트레이터. design-task와 implement-tas
 source = "repo-agent"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Write", "Edit", "Grep", "Glob"]
-
-[codex]
-agent_key = "project-planner"
-config_file = "project-planner.toml"
-model = "gpt-5.4"
-reasoning_effort = "xhigh"
-sandbox_mode = "workspace-write"
+repo = false
+codex = false

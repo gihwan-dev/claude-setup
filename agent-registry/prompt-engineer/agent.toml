@@ -4,16 +4,5 @@ description = "Use this agent when you need to design, optimize, test, or evalua
 source = "repo-agent"
 
 [projection]
-repo = true
-codex = true
-
-[repo]
-model = "sonnet"
-tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
-
-[codex]
-agent_key = "prompt-engineer"
-config_file = "prompt-engineer.toml"
-model = "gpt-5.4"
-reasoning_effort = "xhigh"
-sandbox_mode = "workspace-write"
+repo = false
+codex = false

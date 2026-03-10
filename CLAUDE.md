@@ -79,13 +79,16 @@
 
 1. 탐색/증거 수집이 필요할 때만 `explorer`를 사용한다.
 2. 메인 스레드에서 의사결정을 확정한다.
-3. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
-4. 메인 스레드가 결과를 통합해 최종 응답한다.
+3. 필요한 코드 변경은 메인 스레드가 직접 수행한다.
+4. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
+5. 메인 스레드가 결과를 통합해 최종 응답한다.
 
-### Exception: `project-planner` + `implement-task`
+### Long-running `implement-task` path
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
-- `project-planner`가 `implement-task`를 실행할 때는 fast lane/deep solo를 적용하지 않고 항상 delegated team lane으로 실행한다.
+- long-running `implement-task` 경로에서도 코드 변경과 `STATUS.md` 갱신은 메인 스레드가 직접 수행한다.
+- `implement-task` long-running path는 writable sub-agent를 사용하지 않는다.
+- helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경일 때만 full-repo validation을 허용한다.
 - noisy/multi-step validation log는 `verification-worker`가 메인 검증 로그를 해석한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
@@ -98,38 +101,39 @@
 - core helper 출력은 반드시 `상태:`와 `진행 상태:` 두 줄로 시작한다. `진행 상태:` 형식은 `phase=<...>; last=<...>; next=<...>`를 사용한다.
 - interrupt/close 요청 시 helper는 새 작업 시작을 중지하고 `final` 또는 최소 `checkpoint/preliminary`를 1회 flush한 뒤 마지막 줄에 다음 행동 또는 차단 사유를 남긴다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
-- 오케스트레이터는 요약 결과만 받아 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
+- 메인 스레드는 helper 요약을 통합해 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
+- writable implementation agent는 user-facing install/projection 대상이 아니다.
 - helper agent(`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]`을 SSOT로 유지한다.
 
 ## 워크플로우 역할
 
 | 역할 | 접근 권한 | 책임 |
 |------|----------|------|
-| orchestrator | 전략만 | 계획, 라우팅, 최종 의사결정 |
+| main-thread | 쓰기 가능 | 코드 수정, focused validation, 상태 갱신 |
 | explorer | 읽기 전용 | 레포지토리 탐색 및 증거 수집 |
 | reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |
 
-## 역할-에이전트 매핑
+## 역할-실행 매핑
 
-| 작업 성격 | 워크플로우 역할 | 도메인 에이전트 |
-|-----------|----------------|----------------|
+| 작업 성격 | 워크플로우 역할 | 보조 수단 |
+|-----------|----------------|-----------|
 | 코드 탐색/분석 | explorer | — |
-| React UI 구현 | implementer | frontend-developer |
-| 테스트 작성 | implementer | qa-engineer |
+| React UI 구현 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 테스트 작성 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 코드 품질 리뷰 | reviewer | code-reviewer |
 | 아키텍처 리뷰 | reviewer | architecture-reviewer |
-| 리팩토링 실행 | implementer | refactoring-expert |
-| TypeScript 타입 설계 | implementer | typescript-pro |
+| 리팩토링 실행 | main-thread | 관련 skill/레퍼런스만 사용 |
+| TypeScript 타입 설계 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 인터페이스 품질 점검 | reviewer | interface-inspector |
 | 정량 복잡도 분석 | reviewer | complexity-analyst |
 | 공통 모듈 구조 분해 계획(구현 전) | reviewer | structure-planner |
 | 공통 구조 게이트 리뷰(구현 후) | reviewer | module-structure-gatekeeper |
 | React 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
-| 장기 작업 설계/실행 오케스트레이션 | orchestrator | project-planner |
-| Storybook/디자인 검증 | implementer | storybook-specialist |
-| 프롬프트 최적화 | implementer | prompt-engineer |
+| 장기 작업 설계/실행 | main-thread | `design-task`, `implement-task` |
+| Storybook/디자인 검증 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 프롬프트 최적화 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 검증/결과 분석 | verifier | — |
 
 ## Internal Planning Roles

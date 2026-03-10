@@ -29,8 +29,10 @@ def _load_toml(path: Path) -> dict[str, object]:
 
 
 def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+
     for agent_id in INTERNAL_PLANNING_ROLE_IDS:
-        path = repo_root / "agent-registry" / agent_id / "agent.toml"
+        path = registry_root / agent_id / "agent.toml"
         if not path.exists():
             errors.append(f"missing planning-role config: {path}")
             continue
@@ -45,7 +47,7 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
             )
 
     for agent_id in REQUIRED_HELPER_AGENT_IDS:
-        path = repo_root / "agent-registry" / agent_id / "agent.toml"
+        path = registry_root / agent_id / "agent.toml"
         if not path.exists():
             errors.append(f"missing helper config: {path}")
             continue
@@ -61,6 +63,20 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
         repo_cfg = data.get("repo")
         if not isinstance(repo_cfg, dict):
             errors.append(f"helper must define [repo] for Claude projection: {path}")
+
+    for path in sorted(registry_root.glob("*/agent.toml")):
+        data = _load_toml(path)
+        role = data.get("role")
+        projection = data.get("projection")
+        if not isinstance(role, str) or not isinstance(projection, dict):
+            continue
+        if role not in {"implementer", "orchestrator"}:
+            continue
+        if projection.get("repo") is True or projection.get("codex") is True:
+            errors.append(
+                "writable sub-agent projection is not allowed; main-thread must remain "
+                f"the only writer: {path}"
+            )
 
 
 def _validate_helper_orchestration(repo_root: Path, errors: list[str]) -> None:
@@ -117,6 +133,26 @@ def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> Non
             _load_toml(profile_path)
         except ValueError as exc:
             errors.append(str(exc))
+
+    for agent_id, entry in agents.items():
+        if not isinstance(agent_id, str) or not isinstance(entry, dict):
+            continue
+        config_file = entry.get("config_file")
+        if not isinstance(config_file, str) or not config_file.strip():
+            continue
+        profile_path = dist_root / config_file
+        if not profile_path.exists():
+            continue
+        try:
+            profile = _load_toml(profile_path)
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        sandbox_mode = profile.get("sandbox_mode")
+        if sandbox_mode != "read-only":
+            errors.append(
+                f"projected codex agent must be read-only: agents.{agent_id} ({profile_path})"
+            )
 
 
 def _validate_contract_phrases(repo_root: Path, errors: list[str]) -> None:

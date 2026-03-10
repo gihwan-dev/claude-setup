@@ -362,6 +362,38 @@ class WorkflowContractTests(unittest.TestCase):
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
+    def test_projected_agents_do_not_expose_writable_roles(self) -> None:
+        for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
+            payload = tomllib.loads(path.read_text(encoding="utf-8"))
+            role = payload.get("role")
+            projection = payload.get("projection")
+            self.assertIsInstance(role, str, msg=f"missing role in {path}")
+            self.assertIsInstance(projection, dict, msg=f"missing projection in {path}")
+            if projection.get("repo") is not True and projection.get("codex") is not True:
+                continue
+            self.assertNotIn(
+                role,
+                {"implementer", "orchestrator"},
+                msg=f"projected writable role is not allowed: {path}",
+            )
+
+    def test_generated_managed_agent_profiles_are_read_only(self) -> None:
+        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
+        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
+        agents = payload.get("agents")
+        self.assertIsInstance(agents, dict)
+
+        for agent_id, entry in agents.items():
+            self.assertIsInstance(entry, dict, msg=f"invalid agent entry for {agent_id}")
+            config_file = entry.get("config_file")
+            self.assertIsInstance(config_file, str, msg=f"missing config_file for {agent_id}")
+            profile = tomllib.loads((REPO_ROOT / "dist" / "codex" / config_file).read_text(encoding="utf-8"))
+            self.assertEqual(
+                profile.get("sandbox_mode"),
+                "read-only",
+                msg=f"projected agent must be read-only: {agent_id}",
+            )
+
     def test_sync_agents_serialize_roundtrips_orchestration_section(self) -> None:
         serialized = _serialize_agent_toml(
             agent_id="sample-helper",

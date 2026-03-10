@@ -348,7 +348,7 @@ def _sync_from_registry(repo_root: Path, entries: list[AgentEntry], check: bool)
 
 
 def _sandbox_for_role(role: str) -> str:
-    return "workspace-write" if role in {"implementer", "orchestrator"} else "read-only"
+    return "read-only"
 
 
 def _serialize_agent_toml(
