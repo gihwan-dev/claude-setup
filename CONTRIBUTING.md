@@ -74,4 +74,4 @@ PY
 1. 어떤 파일이 source of truth인지 먼저 확인한다.
 2. generated 파일은 재생성으로 맞춘다.
 3. 설치 문제는 `--dry-run`으로 먼저 확인한다.
-4. 그래도 모호하면 [README.md](/Users/choegihwan/Documents/Projects/claude-setup/README.md)와 `docs/policy/*.md`를 다시 읽는다.
+4. 그래도 모호하면 [README.md](./README.md)와 `docs/policy/*.md`를 다시 읽는다.

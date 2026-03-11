@@ -2,7 +2,7 @@
 
 Claude Code, Codex 등 여러 에이전트 도구에 공통으로 설치할 정책, agent registry, skill source를 관리하는 저장소다.
 
-처음 작업할 때는 [CONTRIBUTING.md](/Users/choegihwan/Documents/Projects/claude-setup/CONTRIBUTING.md)를 먼저 읽는다.
+처음 작업할 때는 [CONTRIBUTING.md](./CONTRIBUTING.md)를 먼저 읽는다.
 
 ## Source Of Truth
 
@@ -63,4 +63,4 @@ python3 scripts/install_assets.py --target codex --link
 - shell wrapper는 legacy 호환용이고 기준 구현은 Python 스크립트다.
 - skill index/manifest는 `python3 scripts/sync_skills_index.py`로 갱신한다.
 - 설치 시에는 `skills/`를 먼저 반영하고, `.agents/skills`가 존재하면 legacy overlay로 덮어쓴다.
-- 세부 정책은 [`docs/policy/`](docs/policy/)와 [CONTRIBUTING.md](/Users/choegihwan/Documents/Projects/claude-setup/CONTRIBUTING.md)에 정리한다.
+- 세부 정책은 [`docs/policy/`](docs/policy/)와 [CONTRIBUTING.md](./CONTRIBUTING.md)에 정리한다.
