@@ -55,7 +55,7 @@
     },
     {
       "name": "design-task",
-      "description": "Large or ambiguous task planning skill. Use when the user asks to \"설계해줘\", \"계획 세워줘\", \"어떻게 쪼갤지 정리해줘\", or explicitly asks for no code changes. Build or update tasks/{task-slug}/PLAN.md from repository evidence and user intent without modifying code.",
+      "description": "Large or ambiguous task planning skill. Use when the user asks to \"설계해줘\", \"계획 세워줘\", \"어떻게 쪼갤지 정리해줘\", or explicitly asks for no code changes. Select or create tasks/{task-path}/PLAN.md via a continuity gate from repository evidence and user intent without modifying code.",
       "path": "skills/design-task/SKILL.md"
     },
     {
@@ -85,7 +85,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Implementation execution skill for long-running tasks. Use when the user says \"구현해줘\", \"다음 단계 진행해\", \"계속해\", or asks to execute based on an existing design. Read tasks/{task-slug}/PLAN.md, execute the next slice, and always update tasks/{task-slug}/STATUS.md.",
+      "description": "Implementation execution skill for long-running tasks. Use when the user says \"구현해줘\", \"다음 단계 진행해\", \"계속해\", or asks to execute based on an existing design. Read a selected tasks/{task-path}/PLAN.md, execute the next slice, and always update that task's STATUS.md.",
       "path": "skills/implement-task/SKILL.md"
     },
     {

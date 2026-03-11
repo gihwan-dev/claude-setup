@@ -3,7 +3,7 @@
 ## 핵심 원칙
 
 1. **2-스킬 표면 유지** — 사용자에게는 `design-task`, `implement-task`만 노출한다.
-2. **문서 단일화** — 장기 작업 문서는 `tasks/<task-slug>/PLAN.md`, `tasks/<task-slug>/STATUS.md`만 사용한다.
+2. **문서 단일화** — 장기 작업 문서는 distinct goal당 `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md`만 사용한다.
 3. **strategy-only 오케스트레이션** — 오케스트레이터는 전략/결정/통합을 담당하며 직접 code diff를 적용하지 않는다.
 4. **non-mutating validation 허용** — phase 2 focused validation과 `STATUS.md` 갱신은 오케스트레이터가 직접 수행할 수 있다.
 5. **single-writer 유지** — writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
@@ -15,9 +15,9 @@
 ### 1) 설계 단계 (`design-task`)
 
 - 코드 수정 없이 read-only 탐색으로 설계를 완료한다.
-- 결과물은 `tasks/<task-slug>/PLAN.md`다.
+- 결과물은 continuity gate 결과에 따라 선택되거나 새로 만들어진 `tasks/<task-path>/PLAN.md`다.
 - 설계는 실행 슬라이스와 검증 기준을 반드시 포함한다.
-- 기존 `PLAN.md`가 있으면 히스토리를 반영해 갱신한다.
+- 기존 `PLAN.md`는 continuity gate를 통과한 경우에만 히스토리를 반영해 갱신한다.
 - 기존 코드 작업이면 intent triage 성격의 quality preflight로 `keep-local` / `promote-refactor` / `promote-architecture`를 먼저 판정한다.
 - 이 long-running planning path는 `promote-refactor` 또는 `promote-architecture`가 확정된 경우에만 진행한다.
 - `keep-local`이면 기존 fast/deep-solo/delegated lane으로 되돌리고 long-running path를 시작하지 않는다.
@@ -34,6 +34,7 @@
 - `promote-refactor` 설계는 제거할 로직/유지할 로직, 모듈 분리 경계, 허용 추상화/금지 추상화, 테스트 삭제/축소/이동/유지 기준, slice 순서와 slice별 focused verification 1개를 반드시 포함한다.
 - `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한다.
 - 설계 시 필요하면 planning role fan-out은 internal-only(`web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`)로 사용한다.
+- distinct goal이면 같은 도메인이라도 새 task path를 만든다.
 - 도메인과 무관하게 예상 diff가 150 LOC 이상이거나 예상 변경 파일이 2개 이상이거나 대상 기존 코드 파일이 soft limit 근접/초과면 `structure-planner`를 포함해 파일 분해안을 먼저 확정한다.
 - planning role은 user-facing install/projection 대상이 아니다.
 - custom planning role이 런타임에서 직접 실행되지 않으면 `design-task`의 overlay fallback 규칙을 따른다.
@@ -71,7 +72,7 @@
 - 늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.
 - `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 승격하고 그 외에는 advisory로 처리한다.
-- 실행 후 항상 `tasks/<task-slug>/STATUS.md`를 갱신한다.
+- 실행 후 항상 선택된 `tasks/<task-path>/STATUS.md`를 갱신한다.
 
 ## 오케스트레이션 규칙
 

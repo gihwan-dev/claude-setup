@@ -114,7 +114,11 @@
 ### Long-running `implement-task` path
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
+- `design-task`는 continuity gate를 적용해 같은 작업으로 입증된 경우에만 기존 task를 재사용하고, 아니면 새 flat task path를 만든다.
+- 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
+- path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
+- 후보가 2개 이상이면 사용자 확인 전까지 자동 실행하지 않는다.
 - writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
 - 각 slice는 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
@@ -205,6 +209,7 @@
 - `skills/_shared` 같은 internal asset은 catalog/index/generated skill set에는 포함하지 않고, consuming skill의 상대경로 참조를 위해 install-time에만 별도 배포한다.
 - legacy skill overlay: `.agents/skills` (설치 호환용, 기본 source 아님)
 - long-running task public surface: `design-task`, `implement-task`
+- distinct goal당 `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md`를 task source of truth로 유지하고, `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다.
 
 ## 세부 규칙
 

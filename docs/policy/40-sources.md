@@ -11,6 +11,7 @@
 - `skills/_shared` 같은 internal asset은 catalog/index/generated skill set에는 포함하지 않고, consuming skill의 상대경로 참조를 위해 install-time에만 별도 배포한다.
 - legacy skill overlay: `.agents/skills` (설치 호환용, 기본 source 아님)
 - long-running task public surface: `design-task`, `implement-task`
+- distinct goal당 `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md`를 task source of truth로 유지하고, `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다.
 
 ## 세부 규칙
 

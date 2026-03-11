@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tomllib
+from pathlib import Path
 
 from support import REPO_ROOT, RepoTestCase
 from workflow_contract import (
@@ -247,3 +248,27 @@ class WorkflowContractTests(RepoTestCase):
                 msg=f"documentation-only built-in unexpectedly has registry entry: {agent_id}",
             )
             self.assertNotIn(agent_id, managed_agents, msg=f"documentation-only built-in unexpectedly managed: {agent_id}")
+
+    def test_design_task_continuity_contract_is_documented(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("continuity gate", skill_content)
+        self.assertIn("Task continuity", skill_content)
+        self.assertIn("goal differs", skill_content)
+        self.assertIn("새 task 생성이 기본", skill_content)
+
+    def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("여러 active task 폴더가 공존하는 것은 정상 경로다.", skill_content)
+        self.assertIn("path 미지정이면 먼저 active 후보를 만든다.", skill_content)
+        self.assertIn("후보가 정확히 1개일 때만 자동 선택한다.", skill_content)
+        self.assertIn("후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.", skill_content)
+
+    def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
+        reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"
+        self.assertTrue(reference_path.exists(), msg=f"missing continuity reference: {reference_path}")
+
+        reference_content = reference_path.read_text(encoding="utf-8")
+        self.assertIn("Comparison Matrix", reference_content)
+        self.assertIn("reuse-existing", reference_content)
+        self.assertIn("create-new", reference_content)
+        self.assertIn("ambiguous case", reference_content)

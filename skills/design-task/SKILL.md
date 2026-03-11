@@ -3,56 +3,67 @@ name: design-task
 description: >
   Large or ambiguous task planning skill. Use when the user asks to "설계해줘", "계획 세워줘",
   "어떻게 쪼갤지 정리해줘", or explicitly asks for no code changes.
-  Build or update tasks/{task-slug}/PLAN.md from repository evidence and user intent without modifying code.
+  Select or create tasks/{task-path}/PLAN.md via a continuity gate from repository evidence and user intent without modifying code.
 ---
 
 # Workflow: Design Task
 
 ## Goal
 
-사용자 요청을 구현 가능한 실행 슬라이스로 설계하고 `tasks/<task-slug>/PLAN.md`를 생성/갱신한다.
+사용자 요청을 구현 가능한 실행 슬라이스로 설계하고 continuity gate로 기존 task 재사용 여부를 판정한 뒤 `tasks/<task-path>/PLAN.md`를 생성 또는 갱신한다.
 설계 단계에서는 코드 수정을 금지한다.
 
 ## Hard Rules
 
 - 코드/설정/테스트 파일을 수정하지 않는다.
 - read-only 탐색만 수행한다.
-- 출력 경로는 항상 `tasks/<task-slug>/PLAN.md`를 사용한다.
-- 기존 `PLAN.md`가 있으면 삭제/초기화하지 말고 현재 결정, 완료 맥락, 남은 리스크를 반영해 갱신한다.
+- 출력 경로는 항상 flat `tasks/<task-path>/PLAN.md`를 사용한다.
+- continuity gate가 통과한 경우에만 기존 `PLAN.md`를 갱신한다.
+- 기존 plan 재사용은 예외다. 새 task 생성이 기본이다.
 - quality preflight verdict와 근거를 반드시 기록한다.
 - 이 skill 경로는 `promote-refactor` 또는 `promote-architecture`가 확정된 경우에만 진행한다. `keep-local`은 기존 lane으로 되돌리고 여기서 장기 실행 계획을 시작하지 않는다.
 - 각 execution slice는 변경 경계, 예상 파일 수, validation owner, stop/replan 조건을 반드시 포함한다.
 - slice 설계 기본 guardrail은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
+- goal, 성공 기준, 주요 변경 경계, task type, quality preflight verdict가 모두 같을 때만 기존 task를 재사용한다.
+- 위 비교에서 하나라도 다르면 goal differs로 간주하고 새 task를 만든다.
+- 후보가 2개 이상이면 자동 재사용하지 않는다. 사용자 확인 필요를 `Task continuity`에 기록한다.
 
 ## Inputs
 
 - 사용자 요청
 - 코드베이스 read-only 탐색 결과
 - 사용자가 지정한 문서/경로
-- 기존 `tasks/<task-slug>/PLAN.md`, `tasks/<task-slug>/STATUS.md` (있을 때)
+- 기존 `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md` (있을 때)
 
-## Task Slug Selection
+## Task Path Selection
 
-1. 사용자 지정 slug/path가 있으면 그대로 사용한다.
-2. 없으면 작업 제목을 hyphen-case로 정규화해 slug를 만든다.
-3. 동명이인 slug가 이미 있으면 의미를 보존한 접미사(`-v2`, `-api`, `-ui`)를 붙인다.
+1. 사용자 지정 path가 있으면 continuity gate 없이 그대로 사용한다.
+2. `continue`, `update`, `replan`, `기존 계획 이어서` 같은 continuation 표현이 있으면 기존 task 후보를 우선 비교한다.
+3. 기존 task가 감지되면 `${SKILL_DIR}/references/plan-continuity-rules.md`를 읽고 continuity gate를 적용한다.
+4. goal, 성공 기준, 주요 변경 경계, task type, quality preflight verdict가 모두 같은 단일 후보가 있을 때만 해당 task path를 재사용한다.
+5. 위 비교에서 하나라도 다르거나 goal differs로 판정되면 새 flat task path를 만든다.
+6. 새 path는 현재 goal을 hyphen-case로 정규화한 base slug를 사용한다.
+7. base slug가 충돌하면 먼저 현재 계획의 focus를 드러내는 접미사(`-task-identity`, `-plan-split`, `-api`, `-ui`)를 붙인다.
+8. focus suffix까지 충돌할 때만 마지막 fallback으로 `-v2`를 붙인다.
 
 ## Workflow
 
 1. 요청의 목표/제약/성공 기준을 추출한다.
-2. 관련 코드와 문서를 read-only로 조사하고 quality preflight 근거를 수집한다.
+2. 관련 코드, 문서, 기존 `tasks/` 문서를 read-only로 조사하고 quality preflight 근거를 수집한다.
 3. quality preflight verdict와 후속 경로를 기록한다.
 4. 이 skill path는 `promote-refactor` 또는 `promote-architecture`일 때만 계속한다.
-5. `Planning lens`를 분류한다.
-6. lens에 맞춰 planning role fan-out을 수행한다.
-7. 작업 유형을 `feature`, `bugfix`, `refactor`, `prototype` 중 하나로 결정한다.
-8. 구조 냄새가 있으면 기능 설계보다 refactor 설계를 먼저 만든다.
-9. `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한 뒤 slice를 설계한다.
-10. 변경 경계(유지/변경/금지)와 의사결정 공백을 분리한다.
-11. 한 번의 구현 세션에서 검증 가능한 bounded `Execution slices`를 작성한다.
-12. 검증 전략과 stop/replan 조건을 명시한다.
-13. `tasks/<task-slug>/PLAN.md`를 생성 또는 갱신한다.
+5. continuation 표현 또는 관련 task 흔적이 있으면 continuity gate를 수행한다.
+6. `Task continuity`에 `decision`, `compared tasks`, `reason`, `chosen task path`를 기록한다.
+7. `Planning lens`를 분류한다.
+8. lens에 맞춰 planning role fan-out을 수행한다.
+9. 작업 유형을 `feature`, `bugfix`, `refactor`, `prototype` 중 하나로 결정한다.
+10. 구조 냄새가 있으면 기능 설계보다 refactor 설계를 먼저 만든다.
+11. `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한 뒤 slice를 설계한다.
+12. 변경 경계(유지/변경/금지)와 의사결정 공백을 분리한다.
+13. 한 번의 구현 세션에서 검증 가능한 bounded `Execution slices`를 작성한다.
+14. 검증 전략과 stop/replan 조건을 명시한다.
+15. continuity gate 결과에 따라 `tasks/<task-path>/PLAN.md`를 생성 또는 갱신한다.
 
 ## Multi-Agent Usage (Optional)
 
@@ -120,6 +131,11 @@ lens를 하나 이상 선택하고 해당 role을 fan-out한다.
   - `External evidence` (오프라인/불필요/제약 시 `없음` 또는 사유를 명시)
   - `Options considered`
 - `# Decisions / Open questions`에는 아래를 반드시 포함한다.
+  - `Task continuity`
+    - `decision`
+    - `compared tasks`
+    - `reason`
+    - `chosen task path`
   - `Chosen approach`
   - `Rejected alternatives`
   - `Need user decision`
@@ -154,3 +170,4 @@ lens를 하나 이상 선택하고 해당 role을 fan-out한다.
 - 공개 경계 변경 여부가 명시되었는가?
 - 즉시 중단 또는 재설계가 필요한 조건이 정의되었는가?
 - 선택한 lens와 role fan-out 근거가 `Evidence`/`Decisions`에 반영되었는가?
+- continuity gate 결과와 새 task 생성/재사용 근거가 `Task continuity`에 반영되었는가?

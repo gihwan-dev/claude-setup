@@ -3,14 +3,14 @@ name: implement-task
 description: >
   Implementation execution skill for long-running tasks. Use when the user says "구현해줘",
   "다음 단계 진행해", "계속해", or asks to execute based on an existing design.
-  Read tasks/{task-slug}/PLAN.md, execute the next slice, and always update tasks/{task-slug}/STATUS.md.
+  Read a selected tasks/{task-path}/PLAN.md, execute the next slice, and always update that task's STATUS.md.
 ---
 
 # Workflow: Implement Task
 
 ## Goal
 
-`tasks/<task-slug>/PLAN.md` 기준으로 실행 슬라이스를 구현하고 `STATUS.md`를 갱신한다. 구현 계약은 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
+선택된 `tasks/<task-path>/PLAN.md` 기준으로 실행 슬라이스를 구현하고 해당 `STATUS.md`를 갱신한다. 구현 계약은 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
 
 ## Hard Rules
 
@@ -18,7 +18,9 @@ description: >
 - `PLAN.md`가 없으면 구현하지 않고 `design-task`를 먼저 수행하도록 유도한다.
 - 이 스킬은 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
 - 기존 코드 구현은 `PLAN.md` 없이 즉시 시작하지 않는다.
-- `STATUS.md`가 없으면 고정 템플릿 섹션으로 `tasks/<task-slug>/STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
+- 여러 active task 폴더가 공존하는 것은 정상 경로다.
+- path 미지정 시 stale/completed task를 자동 선택하지 않는다.
+- `STATUS.md`가 없으면 고정 템플릿 섹션으로 선택된 task의 `STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
@@ -48,11 +50,10 @@ description: >
 ## Task Selection Rules
 
 1. 사용자 지정 slug/path가 있으면 해당 task를 사용한다.
-2. 지정이 없고 `tasks/` 아래 작업이 1개면 자동 선택한다.
-3. 작업이 여러 개면 미완료 `Next slice`가 있는 task만 후보로 본다.
-4. 후보가 정확히 1개면 자동 선택한다.
-5. 후보가 2개 이상이면 사용자에게 task를 확인받는다.
-6. 후보가 없으면 최근 수정 task를 참고하되 사용자 확인 전까지 실행하지 않는다.
+2. path 미지정이면 먼저 active 후보를 만든다. (`미완료 Next slice`가 있거나 현재 실행 가능한 task만 후보로 본다.)
+3. 후보가 정확히 1개일 때만 자동 선택한다.
+4. 후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.
+5. 후보가 0개면 최근 수정 task를 참고하되 사용자 확인 전까지 실행하지 않는다.
 
 ## Mode Rules
 
