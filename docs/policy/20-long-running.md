@@ -18,7 +18,7 @@
 ### Long-running `implement-task` path
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
-- `design-task`는 continuity gate를 적용해 같은 작업으로 입증된 경우에만 기존 task를 재사용하고, 아니면 새 flat task path를 만든다.
+- `design-task`는 새 task에서 `task.yaml` 중심 task bundle을 만들고, continuity gate를 적용해 같은 작업으로 입증된 경우에만 기존 task를 재사용한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
 - path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
@@ -27,6 +27,15 @@
 - 각 slice는 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
+- 새 task bundle core docs는 `task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`다.
+- `task.yaml`은 machine entry point이고, `README.md`는 사람용 landing 문서다.
+- 새 task는 `PLAN.md`를 만들지 않는다. legacy `PLAN.md`/`STATUS.md` task는 fallback compatibility로만 유지한다.
+- `design-task`는 `work_type + impact_flags`로 필수/선택 문서를 고르고 `required_docs`에 실제 bundle 집합을 기록한다.
+- `SPEC_VALIDATION.md`는 항상 생성한다.
+- `SPEC_VALIDATION.md`의 gate는 `blocking`/`advisory`만 허용한다.
+- `ui_surface_changed`, `workflow_changed`, `architecture_significant`, `public_contract_changed`, `data_contract_changed`, `operability_changed`, `high_user_risk` 중 하나가 있거나 설계 문서가 3종 이상이면 `blocking` gate를 사용한다.
+- `SPEC_VALIDATION.md`는 `Requirement coverage`, `UX/state gaps`, `Architecture/operability risks`, `Slice dependency risks`, `Blocking issues`, `Proceed verdict` 순서를 유지한다.
+- `implement-task`는 새 task에서 `task.yaml + EXECUTION_PLAN.md + STATUS.md`를 우선 읽고, `blocking` validation이 해소되지 않았으면 구현을 시작하지 않는다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경일 때만 full-repo validation을 허용한다.
 - noisy/multi-step validation log는 `verification-worker`가 메인 검증 로그를 해석한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.

@@ -2,24 +2,24 @@
 
 ### Triage first
 
-- 어떤 에이전트도 spawn하기 전에 먼저 quality preflight를 통해 승격 여부와 lane을 결정한다.
+- 어떤 에이전트도 spawn하기 전에 먼저 quality preflight를 통해 direct lane 유지 여부와 long-running orchestration 진입 여부를 결정한다.
 
 ### Quality preflight
 
 - 기존 코드 수정/리뷰/`계속해`/`다음 단계`/버그 수정/기능 추가 요청에는 lane 판정 전에 quality preflight를 먼저 수행한다.
 - 예외는 fast lane 조건을 모두 만족하는 명백한 1파일 소규모 수정이다.
-- quality preflight 결과는 `keep-local` / `promote-refactor` / `promote-architecture` 셋 중 하나로 기록한다.
-- 아래 중 하나라도 해당하면 자동 승격한다.
+- quality preflight 결과는 `keep-local` 또는 `orchestrated-task`로 기록한다.
+- 아래 중 하나라도 해당하면 `orchestrated-task`로 승격한다.
   - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
   - CC > 10 또는 중첩 > 2
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
   - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
   - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
-- `promote-refactor`면 `design-task` 성격의 리팩터링 계획을 먼저 만든 뒤 `implement-task` slice로 진행한다.
-- `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한 뒤 slice를 설계한다.
-- 기존 코드의 long-running `design-task`/`implement-task` 경로는 `promote-refactor` 또는 `promote-architecture`일 때만 시작한다.
-- 리뷰 요청은 findings-first를 유지한다. `promote-refactor` 판정이면 같은 턴에 구조 개선 계획 요약을 함께 제공한다.
+- `orchestrated-task`면 `design-task`가 `work_type + impact_flags`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
+- 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.
+- 기존 코드의 long-running `design-task`/`implement-task` 경로는 refactor/architecture에 한정하지 않고 non-trivial task 전반(`feature`, `bugfix`, `refactor`, `migration`, `prototype`, `ops`)에 사용한다.
+- 리뷰 요청은 findings-first를 유지한다. `orchestrated-task` 판정이면 같은 턴에 구조 개선 또는 bundle 설계 방향을 함께 제공한다.
 - TS/JS/React 기존 코드는 quality preflight에서 `explorer`를 기본으로 사용한다.
 - 구조 냄새가 보이면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 

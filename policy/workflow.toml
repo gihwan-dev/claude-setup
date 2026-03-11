@@ -74,6 +74,106 @@ status_section_order = [
   "Known issues / residual risk",
   "Next slice",
 ]
+bundle_core_docs = [
+  "task.yaml",
+  "README.md",
+  "EXECUTION_PLAN.md",
+  "SPEC_VALIDATION.md",
+  "STATUS.md",
+]
+bundle_task_yaml_required_keys = [
+  "task",
+  "goal",
+  "success_criteria",
+  "major_boundaries",
+  "work_type",
+  "impact_flags",
+  "required_docs",
+  "source_of_truth",
+  "ids",
+  "validation_gate",
+  "current_phase",
+]
+bundle_execution_plan_section_order = [
+  "Execution slices",
+  "Verification",
+  "Stop / Replan conditions",
+]
+bundle_work_types = [
+  "feature",
+  "bugfix",
+  "refactor",
+  "migration",
+  "prototype",
+  "ops",
+]
+bundle_impact_flags = [
+  "ui_surface_changed",
+  "workflow_changed",
+  "architecture_significant",
+  "public_contract_changed",
+  "data_contract_changed",
+  "operability_changed",
+  "high_user_risk",
+]
+bundle_validation_gate_values = ["advisory", "blocking"]
+bundle_blocking_validation_flags = [
+  "ui_surface_changed",
+  "workflow_changed",
+  "architecture_significant",
+  "public_contract_changed",
+  "data_contract_changed",
+  "operability_changed",
+  "high_user_risk",
+]
+bundle_design_docs = [
+  "PRD.md",
+  "UX_SPEC.md",
+  "TECH_SPEC.md",
+  "BUG_REPORT.md",
+  "ROOT_CAUSE.md",
+  "REGRESSION.md",
+  "CURRENT_STATE.md",
+  "TARGET_STATE.md",
+  "MIGRATION.md",
+  "VERIFICATION.md",
+  "ROLLBACK.md",
+  "CHANGE_PLAN.md",
+  "RUNBOOK.md",
+]
+bundle_ux_spec_flags = ["ui_surface_changed", "workflow_changed"]
+bundle_tech_spec_flags = [
+  "architecture_significant",
+  "public_contract_changed",
+  "data_contract_changed",
+  "operability_changed",
+]
+bundle_public_contract_docs = ["openapi.yaml"]
+bundle_data_contract_docs = ["schema.json"]
+bundle_bugfix_regression_flags = [
+  "high_user_risk",
+  "public_contract_changed",
+  "data_contract_changed",
+]
+bundle_refactor_acceptance_flags = [
+  "ui_surface_changed",
+  "workflow_changed",
+  "public_contract_changed",
+  "high_user_risk",
+]
+bundle_prototype_acceptance_flags = [
+  "public_contract_changed",
+  "data_contract_changed",
+  "high_user_risk",
+]
+bundle_spec_validation_section_order = [
+  "Requirement coverage",
+  "UX/state gaps",
+  "Architecture/operability risks",
+  "Slice dependency risks",
+  "Blocking issues",
+  "Proceed verdict",
+]
 legacy_milestone_skill_names = [
   "milestone",
   "milestone-execute",
@@ -81,3 +181,20 @@ legacy_milestone_skill_names = [
   "milestone-update",
 ]
 generated_skill_manifest_name = ".claude-setup-generated-skills.json"
+
+[task_documents.bundle_traceability_ids]
+requirement_prefix = "REQ"
+screen_prefix = "SCR"
+flow_prefix = "FLOW"
+adr_prefix = "ADR"
+acceptance_prefix = "AC"
+slice_prefix = "SLICE"
+risk_prefix = "RISK"
+
+[task_documents.bundle_base_docs]
+feature = ["PRD.md", "ACCEPTANCE.feature"]
+bugfix = ["BUG_REPORT.md", "ROOT_CAUSE.md", "ACCEPTANCE.feature"]
+refactor = ["CURRENT_STATE.md", "TARGET_STATE.md"]
+migration = ["TECH_SPEC.md", "MIGRATION.md", "VERIFICATION.md", "ROLLBACK.md"]
+prototype = ["PRD.md", "VERIFICATION.md"]
+ops = ["CHANGE_PLAN.md", "RUNBOOK.md", "ROLLBACK.md", "VERIFICATION.md"]

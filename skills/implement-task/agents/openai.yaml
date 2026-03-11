@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved PLAN slices with worker edit-only, main focused validation, same-worker commit-only, and STATUS.md updates for the selected task path"
-  default_prompt: "$implement-task 승인된 task path의 PLAN.md 기준으로 다음 slice를 진행해. path가 명시되지 않았고 후보가 2개 이상이면 자동 실행하지 말고 사용자 확인이 필요하다고 멈춰. `worker` edit-only -> main focused validation -> same-worker commit-only 순서를 지키고, 작은/저위험 slice는 메인 수동 리뷰를 우선하고 advisory helper는 `wait timed_out -> status running -> no result -> close` 같은 invalid sequence 없이 background/advisory로 다루면서 해당 task의 STATUS.md를 갱신해"
+  short_description: "Run approved task-bundle slices with worker edit-only, main focused validation, same-worker commit-only, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
+  default_prompt: "$implement-task 승인된 task path의 `task.yaml + EXECUTION_PLAN.md + STATUS.md`를 우선 읽고, `SPEC_VALIDATION.md`의 blocking issue가 남아 있으면 구현을 시작하지 마. `task.yaml.success_criteria`와 `task.yaml.major_boundaries`를 구현 계약으로 유지하고, `EXECUTION_PLAN.md`는 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 전제로 읽어. path가 명시되지 않았고 후보가 2개 이상이면 자동 실행하지 말고 사용자 확인이 필요하다고 멈춰. 새 task가 없고 legacy `PLAN.md`만 있을 때만 fallback을 허용해. `worker` edit-only -> main focused validation -> same-worker commit-only 순서를 지키고, 초기 STATUS는 `Current slice=Not started.` / `Next slice=SLICE-1` 기준을 유지해"
 policy:
   allow_implicit_invocation: true

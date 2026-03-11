@@ -3,24 +3,26 @@ name: implement-task
 description: >
   Implementation execution skill for long-running tasks. Use when the user says "구현해줘",
   "다음 단계 진행해", "계속해", or asks to execute based on an existing design.
-  Read a selected tasks/{task-path}/PLAN.md, execute the next slice, and always update that task's STATUS.md.
+  Read tasks/{task-path}/task.yaml + EXECUTION_PLAN.md + STATUS.md for new bundle tasks,
+  fall back to legacy PLAN.md + STATUS.md only for older tasks, and execute the next slice.
 ---
 
 # Workflow: Implement Task
 
 ## Goal
 
-선택된 `tasks/<task-path>/PLAN.md` 기준으로 실행 슬라이스를 구현하고 해당 `STATUS.md`를 갱신한다. 구현 계약은 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
+선택된 task bundle 또는 legacy plan 기준으로 다음 실행 slice를 구현하고 해당 `STATUS.md`를 갱신한다.
+새 bundle task의 구현 계약은 `task.yaml + EXECUTION_PLAN.md + STATUS.md -> worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
 
 ## Hard Rules
 
-- 항상 `PLAN.md`와 기존 `STATUS.md`를 먼저 읽는다.
-- `PLAN.md`가 없으면 구현하지 않고 `design-task`를 먼저 수행하도록 유도한다.
-- 이 스킬은 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
-- 기존 코드 구현은 `PLAN.md` 없이 즉시 시작하지 않는다.
+- 항상 `STATUS.md`를 먼저 읽는다.
+- 새 bundle task면 `task.yaml`, `EXECUTION_PLAN.md`, `STATUS.md`를 먼저 읽는다.
+- 새 bundle task의 `task.yaml.success_criteria`와 `task.yaml.major_boundaries`는 continuity에서 확정된 계약으로 취급하고 임의 변경하지 않는다.
+- legacy task에 한해서만 `PLAN.md`, `STATUS.md` fallback을 사용한다.
+- mixed mode(`task.yaml`와 `PLAN.md` 공존)는 구현하지 않고 중단한다.
+- 새 bundle task에서 `validation_gate: blocking`인데 `SPEC_VALIDATION.md`의 blocking issue가 해소되지 않았으면 구현을 시작하지 않는다.
 - 여러 active task 폴더가 공존하는 것은 정상 경로다.
-- path 미지정 시 stale/completed task를 자동 선택하지 않는다.
-- `STATUS.md`가 없으면 고정 템플릿 섹션으로 선택된 task의 `STATUS.md`를 먼저 생성한 뒤 실행 기록을 채운다.
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
@@ -54,6 +56,7 @@ description: >
 3. 후보가 정확히 1개일 때만 자동 선택한다.
 4. 후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.
 5. 후보가 0개면 최근 수정 task를 참고하되 사용자 확인 전까지 실행하지 않는다.
+6. 새 bundle 후보가 있으면 legacy 후보보다 bundle 후보를 우선한다.
 
 ## Mode Rules
 
@@ -64,31 +67,35 @@ description: >
   - 커밋 실패(`--no-verify` 재시도 실패 포함)
   - `worker`가 `상태: blocked`를 보고함
   - `liveness gate` 점검과 `drain grace` 이후에도 `final/checkpoint`를 받지 못함
-  - `PLAN.md`의 stop/replan 조건 충족
+  - bundle `SPEC_VALIDATION.md`의 blocking issue가 해소되지 않음
+  - legacy `PLAN.md` 또는 bundle `EXECUTION_PLAN.md`의 stop/replan 조건 충족
   - public boundary drift 발생
   - 다음 slice 진행 전 의사결정 공백 발생
 
 ## Execution Workflow
 
 1. 대상 task를 선택한다.
-2. `PLAN.md`에서 다음 미완료 slice와 검증 기준을 읽는다.
-3. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
-4. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
-5. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
-6. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
-7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-8. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-9. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-10. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
-11. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-12. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-13. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-14. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 4번부터 반복한다.
+2. task mode를 판정한다. 새 bundle이면 `task.yaml + EXECUTION_PLAN.md + STATUS.md`, legacy면 `PLAN.md + STATUS.md`를 읽는다.
+3. 새 bundle이면 `SPEC_VALIDATION.md`를 확인해 `validation_gate`와 blocking issue 상태를 판정한다.
+4. 새 bundle의 `EXECUTION_PLAN.md`가 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 따르는지 전제로 slice를 읽는다.
+5. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
+6. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
+7. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
+8. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
+9. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+10. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+11. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+12. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+13. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+14. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+15. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+16. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
-- `PLAN.md`에 검증 명령이 있으면 해당 명령을 우선 사용한다.
-- `PLAN.md` 검증이 비어 있을 때만 repo-aware fallback을 사용한다.
+- 새 bundle task면 `EXECUTION_PLAN.md`에 있는 검증 명령을 우선 사용한다.
+- legacy task면 `PLAN.md`에 있는 검증 명령을 우선 사용한다.
+- 문서에 검증 명령이 비어 있을 때만 repo-aware fallback을 사용한다.
 - focused validation owner는 메인 스레드다.
 - 기본 focused validation은 `타깃 검증 1개 + 저비용 체크 1개`를 사용한다.
 - full-repo validation은 shared/public boundary 변경으로 범위 확장이 필요한 경우에만 사용한다.
@@ -132,8 +139,9 @@ description: >
 - `# Known issues / residual risk`: 남은 위험과 미해결 이슈를 적는다.
 - `# Next slice`: 바로 실행할 수 있도록 목표, 선행조건, 먼저 볼 경계를 적는다.
 - `STATUS.md`를 최초 생성한 실행에서는 템플릿 생성 사실을 `# Done` 또는 `# Decisions made during implementation`에 기록한다.
+- design 단계에서 생성된 초기 bundle은 `# Current slice`가 `Not started.`, `# Next slice`가 `SLICE-1`이어야 한다.
 
 ## Non-Goals
 
-- 레거시 문서/흐름 호환 로직을 추가하지 않는다.
-- 실행 범위를 벗어난 임의 확장을 하지 않는다.
+- 레거시 문서/흐름 호환 로직을 무한 확장하지 않는다.
+- 승인되지 않은 bundle 구조 확장을 임의로 추가하지 않는다.

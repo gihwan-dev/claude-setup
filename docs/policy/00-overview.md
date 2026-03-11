@@ -31,3 +31,6 @@
 | Storybook/디자인 검증 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 프롬프트 최적화 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 검증/결과 분석 | verifier | — |
+
+- `design-task`는 non-trivial long-running 작업에서 task bundle(`task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`)을 설계한다.
+- `implement-task`는 새 bundle을 우선 읽고, 기존 `PLAN.md`/`STATUS.md` task는 fallback compatibility로만 다룬다.

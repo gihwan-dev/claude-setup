@@ -18,10 +18,19 @@ from workflow_contract import (
     LONG_RUNNING_PUBLIC_SURFACE,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
+    SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+    TASK_BUNDLE_IMPACT_FLAGS,
+    TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
+    TASK_BUNDLE_TRACEABILITY_IDS,
+    TASK_BUNDLE_WORK_TYPES,
     decide_helper_close_action,
+    decide_spec_validation_gate,
+    derive_task_bundle_required_docs,
     should_spawn_advisory_helper,
     validate_markdown_sections,
+    validate_task_bundle_root,
 )
 
 
@@ -55,6 +64,22 @@ class WorkflowContractTests(RepoTestCase):
         status_error = validate_markdown_sections(fixture_root / "STATUS.md", STATUS_SECTION_ORDER)
         self.assertIsNone(plan_error, msg=plan_error)
         self.assertIsNone(status_error, msg=status_error)
+
+    def test_fixture_task_bundle_contract(self) -> None:
+        fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task"
+        errors = validate_task_bundle_root(fixture_root)
+        self.assertEqual([], errors, msg="\n".join(errors))
+
+        spec_error = validate_markdown_sections(
+            fixture_root / "SPEC_VALIDATION.md",
+            SPEC_VALIDATION_SECTION_ORDER,
+        )
+        execution_plan_error = validate_markdown_sections(
+            fixture_root / "EXECUTION_PLAN.md",
+            TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+        )
+        self.assertIsNone(spec_error, msg=spec_error)
+        self.assertIsNone(execution_plan_error, msg=execution_plan_error)
 
     def test_advisory_close_guard_task_section_order(self) -> None:
         task_root = REPO_ROOT / "tasks" / "advisory-helper-close-guard"
@@ -202,6 +227,87 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertTrue(should_spawn_advisory_helper(context))
 
+    def test_task_bundle_policy_constants_cover_new_workflow(self) -> None:
+        self.assertIn("feature", TASK_BUNDLE_WORK_TYPES)
+        self.assertIn("ops", TASK_BUNDLE_WORK_TYPES)
+        self.assertIn("workflow_changed", TASK_BUNDLE_IMPACT_FLAGS)
+        self.assertIn("high_user_risk", TASK_BUNDLE_IMPACT_FLAGS)
+        self.assertIn("task", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertIn("required_docs", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertIn("success_criteria", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertIn("major_boundaries", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertEqual("REQ", TASK_BUNDLE_TRACEABILITY_IDS["requirement_prefix"])
+        self.assertEqual("RISK", TASK_BUNDLE_TRACEABILITY_IDS["risk_prefix"])
+        self.assertEqual(
+            (
+                "Execution slices",
+                "Verification",
+                "Stop / Replan conditions",
+            ),
+            TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+        )
+
+    def test_task_bundle_required_docs_for_feature_flags(self) -> None:
+        docs = set(
+            derive_task_bundle_required_docs(
+                "feature",
+                ("ui_surface_changed", "architecture_significant"),
+            )
+        )
+        self.assertTrue(
+            {
+                "README.md",
+                "EXECUTION_PLAN.md",
+                "SPEC_VALIDATION.md",
+                "STATUS.md",
+                "PRD.md",
+                "UX_SPEC.md",
+                "TECH_SPEC.md",
+                "ACCEPTANCE.feature",
+                "ADRs/",
+            }.issubset(docs)
+        )
+
+    def test_task_bundle_required_docs_for_bugfix_high_risk(self) -> None:
+        docs = set(
+            derive_task_bundle_required_docs(
+                "bugfix",
+                ("high_user_risk",),
+            )
+        )
+        self.assertIn("BUG_REPORT.md", docs)
+        self.assertIn("ROOT_CAUSE.md", docs)
+        self.assertIn("REGRESSION.md", docs)
+
+    def test_task_bundle_required_docs_for_contract_changes(self) -> None:
+        docs = set(
+            derive_task_bundle_required_docs(
+                "feature",
+                ("public_contract_changed", "data_contract_changed"),
+            )
+        )
+        self.assertIn("openapi.yaml", docs)
+        self.assertIn("schema.json", docs)
+
+    def test_spec_validation_gate_defaults_to_advisory_for_low_risk(self) -> None:
+        gate = decide_spec_validation_gate(
+            tuple(),
+            ("README.md", "EXECUTION_PLAN.md", "STATUS.md"),
+        )
+        self.assertEqual("advisory", gate)
+
+    def test_spec_validation_gate_uses_flags_and_design_doc_count(self) -> None:
+        flagged_gate = decide_spec_validation_gate(
+            ("workflow_changed",),
+            ("README.md", "EXECUTION_PLAN.md", "STATUS.md"),
+        )
+        counted_gate = decide_spec_validation_gate(
+            tuple(),
+            ("PRD.md", "UX_SPEC.md", "TECH_SPEC.md"),
+        )
+        self.assertEqual("blocking", flagged_gate)
+        self.assertEqual("blocking", counted_gate)
+
     def test_generated_managed_agent_profiles_match_contract_defaults(self) -> None:
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
         payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
@@ -255,6 +361,11 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("Task continuity", skill_content)
         self.assertIn("goal differs", skill_content)
         self.assertIn("새 task 생성이 기본", skill_content)
+        self.assertIn("task.yaml", skill_content)
+        self.assertIn("SPEC_VALIDATION.md", skill_content)
+        self.assertIn("success_criteria", skill_content)
+        self.assertIn("major_boundaries", skill_content)
+        self.assertIn("Not started.", skill_content)
 
     def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -262,6 +373,10 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("path 미지정이면 먼저 active 후보를 만든다.", skill_content)
         self.assertIn("후보가 정확히 1개일 때만 자동 선택한다.", skill_content)
         self.assertIn("후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.", skill_content)
+        self.assertIn("task.yaml", skill_content)
+        self.assertIn("PLAN.md", skill_content)
+        self.assertIn("blocking", skill_content)
+        self.assertIn("EXECUTION_PLAN.md", skill_content)
 
     def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"
@@ -272,3 +387,17 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("reuse-existing", reference_content)
         self.assertIn("create-new", reference_content)
         self.assertIn("ambiguous case", reference_content)
+        self.assertIn("success_criteria", reference_content)
+        self.assertIn("major_boundaries", reference_content)
+
+    def test_task_bundle_reference_exists_with_core_rules(self) -> None:
+        reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "task-bundle-rules.md"
+        self.assertTrue(reference_path.exists(), msg=f"missing task bundle reference: {reference_path}")
+
+        reference_content = reference_path.read_text(encoding="utf-8")
+        self.assertIn("task.yaml", reference_content)
+        self.assertIn("SPEC_VALIDATION.md", reference_content)
+        self.assertIn("Traceability", reference_content)
+        self.assertIn("success_criteria", reference_content)
+        self.assertIn("Execution slices", reference_content)
+        self.assertIn("Not started.", reference_content)

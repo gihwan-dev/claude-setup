@@ -18,6 +18,7 @@ from workflow_contract import (
     AdvisorySliceContext,
     AGENT_CONTRACTS_BY_ID,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
+    detect_task_document_mode,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
@@ -27,11 +28,22 @@ from workflow_contract import (
     INTERNAL_PLANNING_ROLE_IDS,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
+    SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    TASK_BUNDLE_CORE_DOCS,
+    TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+    TASK_BUNDLE_IMPACT_FLAGS,
+    TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
+    TASK_BUNDLE_TRACEABILITY_IDS,
+    TASK_BUNDLE_WORK_TYPES,
     WRITABLE_PROJECTION_AGENT_IDS,
+    decide_spec_validation_gate,
     decide_helper_close_action,
+    derive_task_bundle_required_docs,
     should_spawn_advisory_helper,
+    validate_legacy_task_root,
     validate_markdown_sections,
+    validate_task_bundle_root,
 )
 
 
@@ -251,6 +263,68 @@ def _validate_policy_functions(errors: list[str]) -> None:
     if not should_spawn_advisory_helper(risky_slice):
         errors.append("triggered advisory reviewer was not selected by spawn gate")
 
+    if "task.yaml" not in TASK_BUNDLE_CORE_DOCS:
+        errors.append("task bundle core docs must include task.yaml")
+    if "task" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS or "required_docs" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS:
+        errors.append("task bundle task.yaml required keys drifted")
+    if "success_criteria" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS or "major_boundaries" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS:
+        errors.append("task bundle continuity keys drifted")
+    if "feature" not in TASK_BUNDLE_WORK_TYPES or "ops" not in TASK_BUNDLE_WORK_TYPES:
+        errors.append("task bundle work types drifted")
+    if "workflow_changed" not in TASK_BUNDLE_IMPACT_FLAGS or "high_user_risk" not in TASK_BUNDLE_IMPACT_FLAGS:
+        errors.append("task bundle impact flags drifted")
+    if TASK_BUNDLE_TRACEABILITY_IDS.get("risk_prefix") != "RISK":
+        errors.append("task bundle traceability ids drifted")
+    if TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER != (
+        "Execution slices",
+        "Verification",
+        "Stop / Replan conditions",
+    ):
+        errors.append("task bundle execution plan section order drifted")
+
+    feature_docs = derive_task_bundle_required_docs(
+        "feature",
+        ("ui_surface_changed", "architecture_significant"),
+    )
+    required_feature_docs = {
+        "README.md",
+        "EXECUTION_PLAN.md",
+        "SPEC_VALIDATION.md",
+        "STATUS.md",
+        "PRD.md",
+        "UX_SPEC.md",
+        "TECH_SPEC.md",
+        "ACCEPTANCE.feature",
+        "ADRs/",
+    }
+    if not required_feature_docs.issubset(set(feature_docs)):
+        errors.append("feature bundle required docs derivation drifted")
+
+    bugfix_docs = derive_task_bundle_required_docs(
+        "bugfix",
+        ("high_user_risk",),
+    )
+    if "REGRESSION.md" not in bugfix_docs:
+        errors.append("bugfix high-risk bundle must require REGRESSION.md")
+
+    contract_docs = derive_task_bundle_required_docs(
+        "feature",
+        ("public_contract_changed", "data_contract_changed"),
+    )
+    if "openapi.yaml" not in contract_docs or "schema.json" not in contract_docs:
+        errors.append("contract-changing bundle must require openapi.yaml and schema.json defaults")
+
+    advisory_gate = decide_spec_validation_gate(tuple(), ("README.md", "EXECUTION_PLAN.md", "STATUS.md"))
+    if advisory_gate != "advisory":
+        errors.append("low-risk bundle should default to advisory validation gate")
+
+    blocking_gate = decide_spec_validation_gate(
+        ("workflow_changed",),
+        ("README.md", "EXECUTION_PLAN.md", "STATUS.md"),
+    )
+    if blocking_gate != "blocking":
+        errors.append("workflow_changed must force blocking validation gate")
+
 
 def _validate_documentation_only_builtins(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
@@ -278,14 +352,20 @@ def _validate_task_documents(repo_root: Path, errors: list[str]) -> None:
     for task_root in task_roots:
         if not task_root.exists():
             continue
-        for plan_path in sorted(task_root.rglob("PLAN.md")):
-            plan_error = validate_markdown_sections(plan_path, PLAN_SECTION_ORDER)
-            if plan_error is not None:
-                errors.append(plan_error)
-        for status_path in sorted(task_root.rglob("STATUS.md")):
-            status_error = validate_markdown_sections(status_path, STATUS_SECTION_ORDER)
-            if status_error is not None:
-                errors.append(status_error)
+        for candidate in sorted(path for path in task_root.iterdir() if path.is_dir()):
+            mode = detect_task_document_mode(candidate)
+            if mode is None:
+                continue
+            if mode == "mixed":
+                errors.append(f"{candidate}: mixed task mode is not allowed")
+                continue
+            if mode == "invalid":
+                errors.append(f"{candidate}: task directory must contain task.yaml or PLAN.md")
+                continue
+            if mode == "bundle":
+                errors.extend(validate_task_bundle_root(candidate))
+                continue
+            errors.extend(validate_legacy_task_root(candidate))
 
 
 def main() -> int:

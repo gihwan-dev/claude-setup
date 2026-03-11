@@ -18,7 +18,7 @@
 
 ## 자동 리뷰 트리거
 
-- reviewer는 지적 전용이 아니라 quality preflight 승격 판정과 focused gate를 담당한다.
+- reviewer는 지적 전용이 아니라 quality preflight lane 판정과 focused gate를 담당한다.
 - quality preflight에서 TS/JS/React 기존 코드는 `explorer`를 기본으로 붙인다.
 - 구조 냄새가 있으면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가한다.
 - `architecture-reviewer`는 public/shared boundary 예상 시에만 붙인다.
@@ -44,7 +44,8 @@
 
 ## 서브 에이전트 응답 가이드라인
 
-- quality preflight/reviewer helper는 `품질판정: keep-local | promote-refactor | promote-architecture`를 포함한다.
+- quality preflight/reviewer helper는 `품질판정: keep-local | orchestrated-task`를 포함한다.
+- `orchestrated-task`일 때는 `work_type`와 핵심 `impact_flags`를 함께 적는다.
 - 필수 항목은 `핵심결론`, `근거`다.
 - 선택 항목은 `리스크`, `권장 다음 행동`, `추가 확인 필요`다.
 - 원문 출력이 필요하면 최소 발췌만 포함하고 소스 경로를 명시한다.
