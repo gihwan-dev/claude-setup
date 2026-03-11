@@ -7,18 +7,24 @@ import tomllib
 from pathlib import Path
 
 from workflow_contract import (
+    ADVISORY_TIMEOUT_POLICY,
+    AdvisorySliceContext,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FORBIDDEN_CONTRACT_PHRASES,
+    HelperCloseSnapshot,
+    INVALID_CLOSE_REASON,
     INTERNAL_PLANNING_ROLE_IDS,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
     WRITABLE_PROJECTION_AGENT_IDS,
+    decide_helper_close_action,
+    should_spawn_advisory_helper,
     validate_markdown_sections,
 )
 
@@ -203,6 +209,39 @@ def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> Non
             )
 
 
+def _validate_policy_functions(errors: list[str]) -> None:
+    bad_sequence = HelperCloseSnapshot(
+        helper_id="explorer",
+        blocking_class="advisory",
+        result_contract="preliminary-or-final",
+        close_protocol="interrupt-drain-ack-close",
+        late_result_policy="merge-if-relevant",
+        timeout_policy=ADVISORY_TIMEOUT_POLICY,
+        runtime_status="running",
+        observed=True,
+        status_pinged=True,
+        wait_timed_out_count=2,
+        close_reason=INVALID_CLOSE_REASON,
+    )
+    bad_sequence_decision = decide_helper_close_action(bad_sequence)
+    if bad_sequence_decision.close_allowed or bad_sequence_decision.action == "allow-close":
+        errors.append("invalid advisory close sequence was not rejected")
+    if not bad_sequence_decision.accept_late_result:
+        errors.append("advisory late result policy must remain merge-if-relevant")
+
+    quiet_slice = AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)
+    if should_spawn_advisory_helper(quiet_slice):
+        errors.append("small/low-risk slice should not spawn advisory reviewer")
+
+    risky_slice = AdvisorySliceContext(
+        helper_id="code-quality-reviewer",
+        files_changed=3,
+        can_change_current_decision=True,
+    )
+    if not should_spawn_advisory_helper(risky_slice):
+        errors.append("triggered advisory reviewer was not selected by spawn gate")
+
+
 def _validate_documentation_only_builtins(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     for agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
@@ -262,6 +301,7 @@ def main() -> int:
     _validate_agent_projection(repo_root, errors)
     _validate_helper_orchestration(repo_root, errors)
     _validate_generated_codex_helpers(repo_root, errors)
+    _validate_policy_functions(errors)
     _validate_documentation_only_builtins(repo_root, errors)
     _validate_contract_phrases(repo_root, errors)
     _validate_task_documents(repo_root, errors)

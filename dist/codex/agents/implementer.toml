@@ -20,6 +20,7 @@ developer_instructions = """
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
 - `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - interrupt/close 요청을 받으면 새 작업 시작을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `checkpoint`를 정확히 1회 flush한다.
 - 모호하면 임의로 진행하지 말고, 가정/질문을 명시해서 메인에게 전달한다.
 

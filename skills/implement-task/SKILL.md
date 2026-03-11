@@ -36,9 +36,12 @@ description: >
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
 - `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
-- advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.
+- 늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.
 - advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
+- `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 취급하고 그 외에는 advisory로 취급한다.
 - 리뷰 요청에서 구조 개선 계획을 새로 만드는 역할은 이 스킬이 아니라 `design-task`/reviewer에 있다. `implement-task`는 승인된 계획 실행에만 집중한다.
 
@@ -99,6 +102,7 @@ description: >
 - writable projection은 `worker`만 허용한다.
 - 오케스트레이터는 slice 선택, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
 - read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용한다.
+- 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
 - phase 1을 수행한 same `worker`가 commit-only를 수행한다.
 - 같은 slice에는 phase 1을 수행한 same `worker`만 commit-only를 수행한다.

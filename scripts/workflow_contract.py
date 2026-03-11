@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeAlias
 
 LONG_RUNNING_PUBLIC_SURFACE = ("design-task", "implement-task")
 EXPECTED_CODEX_REASONING_EFFORT = "xhigh"
+
+OrchestrationValue: TypeAlias = str | list[str]
 
 WRITABLE_PROJECTION_AGENT_IDS = ("worker",)
 
@@ -19,6 +23,22 @@ DISABLED_WRITABLE_PROJECTION_AGENT_IDS = (
 )
 
 DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS = ("monitor",)
+
+STRONG_CLOSE_REASONS = ["explicit-cancel", "hard-deadline", "blocked"]
+ADVISORY_TIMEOUT_POLICY = "background-no-close"
+NON_ADVISORY_TIMEOUT_POLICY = "observe-and-status-ping"
+INVALID_CLOSE_REASON = "result-no-longer-needed"
+HELPER_CLOSE_ACK_DEFINITION = (
+    "interrupt 이후 관측된 `preliminary`/`checkpoint`/`final` 출력 또는 "
+    "drain grace 뒤 terminal runtime status transition"
+)
+TERMINAL_RUNTIME_STATUSES = (
+    "blocked",
+    "cancelled",
+    "completed",
+    "errored",
+    "interrupted",
+)
 
 INTERNAL_PLANNING_ROLE_IDS = (
     "web-researcher",
@@ -46,62 +66,285 @@ EXPECTED_CODEX_SANDBOX_BY_AGENT = {
     "worker": "workspace-write",
 }
 
-CORE_HELPER_ORCHESTRATION_EXPECTED = {
+CORE_HELPER_ORCHESTRATION_EXPECTED: dict[str, dict[str, OrchestrationValue]] = {
     "worker": {
         "blocking_class": "blocking",
         "result_contract": "final-or-checkpoint",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "not-applicable",
+        "timeout_policy": NON_ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "verification-worker": {
         "blocking_class": "semi-blocking",
         "result_contract": "final-or-checkpoint",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": NON_ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "explorer": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "architecture-reviewer": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "code-quality-reviewer": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "type-specialist": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "test-engineer": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "module-structure-gatekeeper": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
     "frontend-structure-gatekeeper": {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
         "close_protocol": "interrupt-drain-ack-close",
         "late_result_policy": "merge-if-relevant",
+        "timeout_policy": ADVISORY_TIMEOUT_POLICY,
+        "allowed_close_reasons": STRONG_CLOSE_REASONS,
     },
 }
+
+ADVISORY_HELPER_AGENT_IDS = tuple(
+    agent_id
+    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items()
+    if expected["blocking_class"] == "advisory"
+)
+
+
+@dataclass(frozen=True)
+class HelperCloseSnapshot:
+    helper_id: str
+    blocking_class: str
+    result_contract: str
+    close_protocol: str
+    late_result_policy: str
+    timeout_policy: str
+    allowed_close_reasons: tuple[str, ...] = tuple(STRONG_CLOSE_REASONS)
+    runtime_status: str = "running"
+    observed: bool = False
+    status_pinged: bool = False
+    interrupt_sent: bool = False
+    drain_grace_elapsed: bool = False
+    wait_timed_out_count: int = 0
+    close_reason: str | None = None
+    has_preliminary: bool = False
+    has_checkpoint: bool = False
+    has_final: bool = False
+    has_terminal_runtime_ack: bool = False
+
+    def has_result(self) -> bool:
+        return self.has_preliminary or self.has_checkpoint or self.has_final
+
+    def has_ack(self) -> bool:
+        return (
+            self.has_result()
+            or self.has_terminal_runtime_ack
+            or self.runtime_status in TERMINAL_RUNTIME_STATUSES
+        )
+
+
+@dataclass(frozen=True)
+class HelperCloseDecision:
+    action: str
+    close_allowed: bool
+    accept_late_result: bool
+    rationale: str
+
+
+@dataclass(frozen=True)
+class AdvisorySliceContext:
+    helper_id: str
+    files_changed: int = 0
+    tests_changed: bool = False
+    risky_logic_changed: bool = False
+    explicit_review_requested: bool = False
+    public_surface_changed: bool = False
+    module_boundaries_changed: int = 0
+    shared_types_changed: bool = False
+    generics_changed: bool = False
+    public_contract_changed: bool = False
+    regression_risk_notable: bool = False
+    coverage_gap: bool = False
+    diff_is_nontrivial: bool = False
+    is_frontend_slice: bool = False
+    needs_discovery: bool = False
+    can_change_current_decision: bool = True
+
+
+def _accept_late_result(late_result_policy: str) -> bool:
+    return late_result_policy == "merge-if-relevant"
+
+
+def _decision(action: str, snapshot: HelperCloseSnapshot, close_allowed: bool, rationale: str) -> HelperCloseDecision:
+    return HelperCloseDecision(
+        action=action,
+        close_allowed=close_allowed,
+        accept_late_result=_accept_late_result(snapshot.late_result_policy),
+        rationale=rationale,
+    )
+
+
+def _has_protocol_completion(snapshot: HelperCloseSnapshot) -> bool:
+    return snapshot.has_ack() and snapshot.interrupt_sent and snapshot.drain_grace_elapsed
+
+
+def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDecision:
+    strong_close_reasons = set(snapshot.allowed_close_reasons)
+    close_reason = snapshot.close_reason
+    has_strong_reason = close_reason in strong_close_reasons
+
+    if close_reason == INVALID_CLOSE_REASON:
+        action = "background" if snapshot.blocking_class == "advisory" else "observe"
+        return _decision(
+            action,
+            snapshot,
+            close_allowed=False,
+            rationale=f"`{INVALID_CLOSE_REASON}` is not a valid close reason",
+        )
+
+    if not snapshot.observed:
+        return _decision("observe", snapshot, False, "close preflight starts with observe")
+
+    if (
+        snapshot.blocking_class == "advisory"
+        and snapshot.runtime_status == "running"
+        and snapshot.wait_timed_out_count > 0
+        and not has_strong_reason
+        and not snapshot.has_result()
+    ):
+        if not snapshot.status_pinged:
+            return _decision(
+                "status-ping",
+                snapshot,
+                False,
+                "timed-out advisory helper must be status-pinged before any close decision",
+            )
+        return _decision(
+            "background",
+            snapshot,
+            False,
+            "advisory nonresponse stays background/advisory until strong close reason or ack",
+        )
+
+    if snapshot.runtime_status == "running" and not snapshot.status_pinged:
+        return _decision(
+            "status-ping",
+            snapshot,
+            False,
+            "running helper requires status ping before interrupt/close",
+        )
+
+    if (has_strong_reason or snapshot.has_ack()) and (
+        not snapshot.interrupt_sent or not snapshot.drain_grace_elapsed
+    ):
+        return _decision(
+            "interrupt-and-drain",
+            snapshot,
+            False,
+            "close requires interrupt flush and drain grace before close judgment",
+        )
+
+    if has_strong_reason and not snapshot.has_ack():
+        action = "background" if snapshot.blocking_class == "advisory" else "observe"
+        return _decision(
+            action,
+            snapshot,
+            False,
+            f"strong close reason requires protocol completion ack ({HELPER_CLOSE_ACK_DEFINITION})",
+        )
+
+    if has_strong_reason and _has_protocol_completion(snapshot):
+        return _decision(
+            "allow-close",
+            snapshot,
+            True,
+            f"strong close reason and ack satisfied ({HELPER_CLOSE_ACK_DEFINITION}): {close_reason}",
+        )
+
+    if snapshot.blocking_class == "advisory" and snapshot.timeout_policy == ADVISORY_TIMEOUT_POLICY:
+        return _decision(
+            "background",
+            snapshot,
+            False,
+            "advisory helper remains background until strong close reason or ack",
+        )
+
+    return _decision("observe", snapshot, False, "continue observing helper state")
+
+
+def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
+    helper_id = slice_context.helper_id
+    if helper_id not in ADVISORY_HELPER_AGENT_IDS:
+        return False
+    if not slice_context.can_change_current_decision:
+        return False
+
+    if helper_id == "explorer":
+        return slice_context.needs_discovery
+    if helper_id == "architecture-reviewer":
+        return (
+            slice_context.files_changed >= 7
+            or slice_context.module_boundaries_changed >= 2
+            or slice_context.public_surface_changed
+        )
+    if helper_id == "code-quality-reviewer":
+        return (
+            slice_context.files_changed >= 3
+            or slice_context.tests_changed
+            or slice_context.risky_logic_changed
+            or slice_context.explicit_review_requested
+        )
+    if helper_id == "type-specialist":
+        return (
+            slice_context.shared_types_changed
+            or slice_context.generics_changed
+            or slice_context.public_contract_changed
+        )
+    if helper_id == "test-engineer":
+        return slice_context.regression_risk_notable or slice_context.coverage_gap
+    if helper_id == "module-structure-gatekeeper":
+        return slice_context.diff_is_nontrivial
+    if helper_id == "frontend-structure-gatekeeper":
+        return slice_context.diff_is_nontrivial and slice_context.is_frontend_slice
+
+    return False
 
 PLAN_SECTION_ORDER = (
     "Goal",
@@ -155,12 +398,16 @@ REQUIRED_CONTRACT_PHRASES = {
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
         "`explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.",
+        "늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "core helper 출력은 반드시 `상태:`와 `진행 상태:` 두 줄로 시작한다. `진행 상태:` 형식은 `phase=<...>; last=<...>; next=<...>`를 사용한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.",
         "`monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.",
-        "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)",
+        "helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.",
         "`structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.",
         "도메인과 무관하게 아래 조건 중 하나면 실행한다.",
         "`module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.",
@@ -168,16 +415,22 @@ REQUIRED_CONTRACT_PHRASES = {
         "`frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.",
         "FAIL 판정은 React 구조 관점에서 P1로 취급한다.",
         "quality preflight/reviewer helper는 `품질판정: keep-local | promote-refactor | promote-architecture`를 포함한다.",
+        "작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.",
     ),
     "README.md": (
+        "core helper 생명주기 정책: 각 helper `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)",
         "설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.",
         "`monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.",
         "managed runtime agent preflight(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)",
+        "작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.",
+        "advisory helper close preflight에서는 `result가 더 이상 필요 없음`과 `wait timed_out -> status running -> no result -> close`를 종료 근거로 인정하지 않는다.",
     ),
     "CONTRIBUTING.md": (
-        "`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.",
+        "`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)이 SSOT다.",
         "설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.",
         "`monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.",
+        "작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.",
+        "advisory helper close preflight에서는 `result가 더 이상 필요 없음`과 `wait timed_out -> status running -> no result -> close`를 종료 근거로 인정하지 않는다.",
     ),
     "skills/design-task/SKILL.md": (
         "이 skill 경로는 `promote-refactor` 또는 `promote-architecture`가 확정된 경우에만 진행한다.",
@@ -201,14 +454,18 @@ REQUIRED_CONTRACT_PHRASES = {
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
         "`explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
-        "advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.",
+        "advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.",
+        "늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "`verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 취급하고 그 외에는 advisory로 취급한다.",
         "안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "`module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.",
         "`frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.",
+        "작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.",
     ),
     "agent-registry/project-planner/instructions.md": (
         "이 long-running planning path는 `promote-refactor` 또는 `promote-architecture`가 확정된 경우에만 진행한다.",
@@ -223,8 +480,12 @@ REQUIRED_CONTRACT_PHRASES = {
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
         "`explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.",
+        "늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "기존 코드에 구조 냄새가 있으면 기능 구현보다 refactor 설계를 먼저 만든다.",
         "`promote-refactor` 설계는 제거할 로직/유지할 로직, 모듈 분리 경계, 허용 추상화/금지 추상화, 테스트 삭제/축소/이동/유지 기준, slice 순서와 slice별 focused verification 1개를 반드시 포함한다.",
         "`promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한다.",
@@ -238,7 +499,8 @@ REQUIRED_CONTRACT_PHRASES = {
         "focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.",
         "hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.",
         "`--no-verify` 재시도까지 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.",
-        "writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.",
+        "writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `timeout_policy`, `allowed_close_reasons`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.",
+        "작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.",
     ),
     "agent-registry/worker/instructions.md": (
         "기본 역할은 edit-only다. handoff에 phase가 명시되지 않으면 코드 수정 외 검증/커밋을 수행하지 않는다.",
@@ -248,6 +510,7 @@ REQUIRED_CONTRACT_PHRASES = {
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
         "`explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "`상태: final|checkpoint|blocked`",
         "`진행 상태: phase=<...>; last=<...>; next=<...>`",
     ),
@@ -257,7 +520,10 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
     ),
     "agent-registry/verification-worker/instructions.md": (
         "`상태: final|checkpoint|blocked`",
@@ -265,6 +531,7 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "메인 검증이 끝났다는 사실만으로 close하지 않는다. 요약 결과 전달 또는 강한 종료 근거가 있어야 close를 판단한다.",
     ),
     "agent-registry/architecture-reviewer/instructions.md": (
@@ -274,7 +541,10 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "findings-first로 작성하고 품질판정과 핵심 결론을 먼저 제시한다.",
     ),
     "agent-registry/code-quality-reviewer/instructions.md": (
@@ -284,7 +554,10 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "findings-first로 작성하고 품질판정과 핵심 결론을 먼저 제시한다.",
     ),
     "agent-registry/type-specialist/instructions.md": (
@@ -293,7 +566,10 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
     ),
     "agent-registry/test-engineer/instructions.md": (
         "`상태: final|preliminary`",
@@ -302,26 +578,34 @@ REQUIRED_CONTRACT_PHRASES = {
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
         "findings-first로 작성하고 품질판정과 핵심 결론을 먼저 제시한다.",
     ),
     "agent-registry/module-structure-gatekeeper/instructions.md": (
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
     ),
     "agent-registry/frontend-structure-gatekeeper/instructions.md": (
         "`wait timeout`은 stalled와 동일하지 않다.",
         "`liveness gate`와 `completion gate`를 분리한다.",
         "close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.",
+        "`result가 더 이상 필요 없음`은 close 근거가 아니다.",
         "advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.",
+        "advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.",
+        "`wait timed_out -> status running -> no result -> close`는 invalid sequence다.",
     ),
     "skills/implement-task/agents/openai.yaml": (
         "worker edit-only",
         "same-worker commit-only",
-        "`liveness gate`/`completion gate`",
-        "상태 기반으로 close를 판단",
+        "작은/저위험 slice는 메인 수동 리뷰를 우선하고 advisory helper는 `wait timed_out -> status running -> no result -> close` 같은 invalid sequence 없이 background/advisory로 다루면서 STATUS.md를 갱신해",
         "STATUS.md",
     ),
     "skills/design-task/agents/openai.yaml": (

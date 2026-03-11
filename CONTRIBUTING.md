@@ -11,9 +11,11 @@
 | 글로벌 정책 | `INSTRUCTIONS.md` | `AGENTS.md`, `CLAUDE.md` |
 | 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
-`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]`이 SSOT다.
+`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)이 SSOT다.
 설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.
 `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.
+작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
+advisory helper close preflight에서는 `result가 더 이상 필요 없음`과 `wait timed_out -> status running -> no result -> close`를 종료 근거로 인정하지 않는다.
 
 ## Do Not Edit Directly
 

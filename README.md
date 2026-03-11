@@ -26,13 +26,15 @@ CLAUDE.md / AGENTS.md                          # generated files
 ## 단일 진실원 정책
 
 - 에이전트: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
-- core helper 생명주기 정책: 각 helper `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`)
+- core helper 생명주기 정책: 각 helper `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)
 - `agents/*.md`, `dist/codex/*`: generated projection
 - 정책 문서: `INSTRUCTIONS.md`
 - long-running task public surface: `design-task`, `implement-task`
 - planning role은 internal fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - 설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.
 - `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.
+- 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
+- advisory helper close preflight에서는 `result가 더 이상 필요 없음`과 `wait timed_out -> status running -> no result -> close`를 종료 근거로 인정하지 않는다.
 
 ## 작업 시작 전
 

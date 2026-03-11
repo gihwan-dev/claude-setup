@@ -8,9 +8,11 @@ import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 from workflow_contract import INTERNAL_PLANNING_ROLE_IDS, REQUIRED_HELPER_AGENT_IDS
+
+OrchestrationValue: TypeAlias = str | list[str]
 
 REPO_NOTICE = """<!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->
 <!-- Run: python3 scripts/sync_agents.py -->"""
@@ -39,12 +41,18 @@ class AgentEntry:
     codex_model: str | None
     codex_reasoning_effort: str | None
     codex_sandbox_mode: str | None
-    orchestration: dict[str, str] | None
+    orchestration: dict[str, OrchestrationValue] | None
     instructions: str
 
 
 def _quote_toml(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
+
+
+def _serialize_toml_value(value: OrchestrationValue) -> str:
+    if isinstance(value, list):
+        return f"[{', '.join(_quote_toml(item) for item in value)}]"
+    return _quote_toml(value)
 
 
 def _normalize_instructions(text: str) -> str:
@@ -173,11 +181,15 @@ def _read_agent_entries(registry_root: Path) -> list[AgentEntry]:
         repo = raw.get("repo", {})
         codex = raw.get("codex", {})
 
-        orchestration: dict[str, str] | None = None
+        orchestration: dict[str, OrchestrationValue] | None = None
         if isinstance(orchestration_raw, dict):
-            parsed_orchestration: dict[str, str] = {}
+            parsed_orchestration: dict[str, OrchestrationValue] = {}
             for key, value in orchestration_raw.items():
                 if isinstance(key, str) and isinstance(value, str):
+                    parsed_orchestration[key] = value
+                elif isinstance(key, str) and isinstance(value, list) and all(
+                    isinstance(item, str) for item in value
+                ):
                     parsed_orchestration[key] = value
             if parsed_orchestration:
                 orchestration = parsed_orchestration
@@ -366,7 +378,7 @@ def _serialize_agent_toml(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
-    orchestration: dict[str, str] | None,
+    orchestration: dict[str, OrchestrationValue] | None,
 ) -> str:
     lines = [
         f'id = {_quote_toml(agent_id)}',
@@ -382,7 +394,7 @@ def _serialize_agent_toml(
     if orchestration:
         lines.append("[orchestration]")
         for key, value in orchestration.items():
-            lines.append(f"{key} = {_quote_toml(value)}")
+            lines.append(f"{key} = {_serialize_toml_value(value)}")
         lines.append("")
     if repo_projection:
         if repo_model is None:
@@ -434,7 +446,7 @@ def _write_registry_entry(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
-    orchestration: dict[str, str] | None,
+    orchestration: dict[str, OrchestrationValue] | None,
     instructions: str,
 ) -> None:
     entry_dir = registry_root / agent_id

@@ -64,9 +64,12 @@
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
 - `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 - advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
-- advisory reviewer 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
+- advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.
+- 늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.
+- `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - `verification-worker`는 commit sign-off가 불가능할 때만 일시적으로 semi-blocking으로 승격하고 그 외에는 advisory로 처리한다.
 - 실행 후 항상 `tasks/<task-slug>/STATUS.md`를 갱신한다.
 
@@ -74,12 +77,13 @@
 
 1. `implement-task` 실행은 delegated team lane으로 고정한다.
 2. 오케스트레이터는 현재 slice 선택, writer handoff brief 작성, phase 2 검증 실행, stop/replan 판정, 상태 기록을 수행한다.
-3. writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.
+3. writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `timeout_policy`, `allowed_close_reasons`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.
 4. noisy 검증 로그는 `verification-worker`가 해석하고 오케스트레이터는 요약만 받는다.
 5. helper fan-out은 read-only만 허용한다.
-6. `끝까지` 모드에서는 slice 완료마다 다음 slice를 재판정하고 fresh `worker`를 새로 배정한다.
-7. `STATUS.md` 갱신은 오케스트레이터 전용 메타 상태 기록이다.
-8. stop/replan 조건이 충족되면 즉시 중단하고 상태를 기록한다.
+6. 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
+7. `끝까지` 모드에서는 slice 완료마다 다음 slice를 재판정하고 fresh `worker`를 새로 배정한다.
+8. `STATUS.md` 갱신은 오케스트레이터 전용 메타 상태 기록이다.
+9. stop/replan 조건이 충족되면 즉시 중단하고 상태를 기록한다.
 
 ## 문서 계약
 

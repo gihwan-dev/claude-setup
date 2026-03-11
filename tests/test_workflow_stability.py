@@ -20,17 +20,23 @@ from install_assets import (
 )
 from sync_agents import _serialize_agent_toml
 from workflow_contract import (
+    ADVISORY_TIMEOUT_POLICY,
+    AdvisorySliceContext,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FORBIDDEN_CONTRACT_PHRASES,
+    HelperCloseSnapshot,
+    INVALID_CLOSE_REASON,
     PLAN_SECTION_ORDER,
     REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
     WRITABLE_PROJECTION_AGENT_IDS,
+    decide_helper_close_action,
+    should_spawn_advisory_helper,
     validate_markdown_sections,
 )
 
@@ -275,6 +281,13 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertIsNone(plan_error, msg=plan_error)
         self.assertIsNone(status_error, msg=status_error)
 
+    def test_advisory_close_guard_task_section_order(self) -> None:
+        task_root = REPO_ROOT / "tasks" / "advisory-helper-close-guard"
+        plan_error = validate_markdown_sections(task_root / "PLAN.md", PLAN_SECTION_ORDER)
+        status_error = validate_markdown_sections(task_root / "STATUS.md", STATUS_SECTION_ORDER)
+        self.assertIsNone(plan_error, msg=plan_error)
+        self.assertIsNone(status_error, msg=status_error)
+
     def test_skill_metadata_and_contract_phrases_cover_new_slice_flow(self) -> None:
         targets = (
             "README.md",
@@ -357,6 +370,139 @@ class WorkflowContractTests(unittest.TestCase):
                     expected_value,
                     msg=f"unexpected orchestration mapping {agent_id}.{key}",
                 )
+
+    def test_decide_helper_close_action_rejects_bad_advisory_sequence(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="explorer",
+            blocking_class="advisory",
+            result_contract="preliminary-or-final",
+            close_protocol="interrupt-drain-ack-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy=ADVISORY_TIMEOUT_POLICY,
+            runtime_status="running",
+            observed=True,
+            status_pinged=True,
+            wait_timed_out_count=2,
+            close_reason=INVALID_CLOSE_REASON,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "background")
+        self.assertTrue(decision.accept_late_result)
+
+    def test_decide_helper_close_action_requires_status_ping_for_running_helper(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="explorer",
+            blocking_class="advisory",
+            result_contract="preliminary-or-final",
+            close_protocol="interrupt-drain-ack-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy=ADVISORY_TIMEOUT_POLICY,
+            runtime_status="running",
+            observed=True,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "status-ping")
+
+    def test_decide_helper_close_action_requires_interrupt_and_drain_before_close(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="verification-worker",
+            blocking_class="semi-blocking",
+            result_contract="final-or-checkpoint",
+            close_protocol="interrupt-drain-ack-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy="observe-and-status-ping",
+            runtime_status="running",
+            observed=True,
+            status_pinged=True,
+            close_reason="blocked",
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "interrupt-and-drain")
+
+    def test_decide_helper_close_action_allows_close_with_strong_reason_and_ack(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="explorer",
+            blocking_class="advisory",
+            result_contract="preliminary-or-final",
+            close_protocol="interrupt-drain-ack-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy=ADVISORY_TIMEOUT_POLICY,
+            runtime_status="interrupted",
+            observed=True,
+            status_pinged=True,
+            interrupt_sent=True,
+            drain_grace_elapsed=True,
+            close_reason="blocked",
+            has_preliminary=True,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertTrue(decision.close_allowed)
+        self.assertEqual(decision.action, "allow-close")
+        self.assertIn("strong close reason", decision.rationale)
+
+    def test_decide_helper_close_action_allows_close_with_terminal_status_only_ack(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="explorer",
+            blocking_class="advisory",
+            result_contract="preliminary-or-final",
+            close_protocol="interrupt-drain-ack-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy=ADVISORY_TIMEOUT_POLICY,
+            runtime_status="interrupted",
+            observed=True,
+            interrupt_sent=True,
+            drain_grace_elapsed=True,
+            close_reason="hard-deadline",
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertTrue(decision.close_allowed)
+        self.assertEqual(decision.action, "allow-close")
+        self.assertIn("hard-deadline", decision.rationale)
+
+    def test_should_spawn_advisory_helper_skips_small_low_risk_slice(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="code-quality-reviewer",
+            can_change_current_decision=True,
+        )
+
+        self.assertFalse(should_spawn_advisory_helper(context))
+
+    def test_should_spawn_advisory_helper_selects_only_relevant_helper(self) -> None:
+        architecture_context = AdvisorySliceContext(
+            helper_id="architecture-reviewer",
+            files_changed=7,
+            can_change_current_decision=True,
+        )
+        type_context = AdvisorySliceContext(
+            helper_id="type-specialist",
+            files_changed=7,
+            can_change_current_decision=True,
+        )
+
+        self.assertTrue(should_spawn_advisory_helper(architecture_context))
+        self.assertFalse(should_spawn_advisory_helper(type_context))
+
+    def test_should_spawn_advisory_helper_uses_existing_trigger_for_reviewer(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="code-quality-reviewer",
+            files_changed=3,
+            can_change_current_decision=True,
+        )
+
+        self.assertTrue(should_spawn_advisory_helper(context))
 
     def test_generated_managed_config_contains_required_helpers(self) -> None:
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
@@ -455,6 +601,8 @@ class WorkflowContractTests(unittest.TestCase):
                 "result_contract": "preliminary-or-final",
                 "close_protocol": "interrupt-drain-ack-close",
                 "late_result_policy": "merge-if-relevant",
+                "timeout_policy": "background-no-close",
+                "allowed_close_reasons": ["explicit-cancel", "hard-deadline", "blocked"],
             },
         )
         payload = tomllib.loads(serialized)
@@ -464,6 +612,11 @@ class WorkflowContractTests(unittest.TestCase):
         self.assertEqual(orchestration.get("result_contract"), "preliminary-or-final")
         self.assertEqual(orchestration.get("close_protocol"), "interrupt-drain-ack-close")
         self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
+        self.assertEqual(orchestration.get("timeout_policy"), "background-no-close")
+        self.assertEqual(
+            orchestration.get("allowed_close_reasons"),
+            ["explicit-cancel", "hard-deadline", "blocked"],
+        )
 
 
 if __name__ == "__main__":

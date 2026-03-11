@@ -12,6 +12,8 @@ blocking_class = "advisory"
 result_contract = "preliminary-or-final"
 close_protocol = "interrupt-drain-ack-close"
 late_result_policy = "merge-if-relevant"
+timeout_policy = "background-no-close"
+allowed_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]
 
 [repo]
 model = "sonnet"
