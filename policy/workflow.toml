@@ -1,0 +1,83 @@
+[public_surface]
+long_running = ["design-task", "implement-task"]
+
+[projection]
+required_helper_agent_ids = [
+  "worker",
+  "explorer",
+  "verification-worker",
+  "architecture-reviewer",
+  "code-quality-reviewer",
+  "type-specialist",
+  "test-engineer",
+  "module-structure-gatekeeper",
+  "frontend-structure-gatekeeper",
+]
+writable_projection_agent_ids = ["worker"]
+disabled_writable_projection_agent_ids = [
+  "frontend-developer",
+  "qa-engineer",
+  "refactoring-expert",
+  "typescript-pro",
+  "storybook-specialist",
+  "prompt-engineer",
+  "project-planner",
+]
+documentation_only_builtins = ["monitor"]
+internal_planning_role_ids = [
+  "web-researcher",
+  "solution-analyst",
+  "product-planner",
+  "structure-planner",
+  "ux-journey-critic",
+  "delivery-risk-planner",
+  "prompt-systems-designer",
+]
+
+[codex]
+expected_reasoning_effort = "xhigh"
+
+[codex.sandbox_overrides]
+worker = "workspace-write"
+
+[helper_close]
+strong_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]
+advisory_timeout_policy = "background-no-close"
+non_advisory_timeout_policy = "observe-and-status-ping"
+invalid_close_reason = "result-no-longer-needed"
+helper_close_ack_definition = "interrupt 이후 관측된 `preliminary`/`checkpoint`/`final` 출력 또는 drain grace 뒤 terminal runtime status transition"
+terminal_runtime_statuses = [
+  "blocked",
+  "cancelled",
+  "completed",
+  "errored",
+  "interrupted",
+]
+
+[task_documents]
+plan_section_order = [
+  "Goal",
+  "Task Type",
+  "Scope / Non-goals",
+  "Keep / Change / Don't touch",
+  "Evidence",
+  "Decisions / Open questions",
+  "Execution slices",
+  "Verification",
+  "Stop / Replan conditions",
+]
+status_section_order = [
+  "Current slice",
+  "Done",
+  "Decisions made during implementation",
+  "Verification results",
+  "Known issues / residual risk",
+  "Next slice",
+]
+legacy_milestone_skill_names = [
+  "milestone",
+  "milestone-execute",
+  "milestone-runner",
+  "milestone-update",
+]
+generated_skill_manifest_name = ".claude-setup-generated-skills.json"

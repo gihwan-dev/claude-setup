@@ -1,0 +1,132 @@
+{
+  "generated_by": "python3 scripts/sync_skills_index.py",
+  "canonical_source_root": "skills",
+  "legacy_overlay_root": ".agents/skills",
+  "skills": [
+    {
+      "name": "change-architecture-doc",
+      "description": "Analyze git changes and generate/update architecture documentation with Mermaid diagrams. 현재 브랜치와 워크트리의 git 변경사항을 분석해 아키텍처 중심 변경 문서를 생성하거나 갱신한다. 프로젝트 안에서 이미 문서가 관리되는 폴더(docs, packages/docs, guides, documentation, doc)를 우선 사용하고, 적합한 위치가 없으면 프로젝트 루트에 마크다운 문서를 생성한다. 세부 구현보다 시스템 경계, 모듈 상호작용, 데이터/이벤트 흐름, 영향 범위를 Mermaid 다이어그램으로 시각화해 기록해야 할 때 사용한다. 트리거: \"변경사항 문서화\", \"브랜치 작업 문서 정리\", \"아키텍처 문서 업데이트\", \"worktree 변경 요약\", \"머메이드 문서\".",
+      "path": "skills/change-architecture-doc/SKILL.md"
+    },
+    {
+      "name": "clean-code-inspector",
+      "description": "AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%). TS/JS 특화 코드 품질 분석 스킬. AST/정적분석 기반 정량 메트릭과 정성 오버레이(근거 기반 루브릭)를 결합해 clean-code-inspect-result.json / .md를 생성한다. 트리거: \"코드 리뷰\", \"품질 검사\", \"클린 코드\", \"인스펙션\", \"코드 분석\" 등",
+      "path": "skills/clean-code-inspector/SKILL.md"
+    },
+    {
+      "name": "code-cleaner",
+      "description": "Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis. AI 코드 생성 후 불필요한 코드 정리 스킬. git diff로 변경된 TS/JS 파일을 분석하여 사용되지 않는 코드를 자동 제거한다. 트리거: unused 코드 정리, 불필요한 코드 삭제, dead code 제거, 코드 클린업, AI 작업 후 정리 요청 시",
+      "path": "skills/code-cleaner/SKILL.md"
+    },
+    {
+      "name": "commit",
+      "description": "Generate conventional commit messages with logical diff splitting. 컨벤셔널 커밋 메시지 생성. \"커밋해줘\", \"커밋\", \"변경사항 저장\" 등의 요청 시 사용",
+      "path": "skills/commit/SKILL.md"
+    },
+    {
+      "name": "commter",
+      "description": "Add/improve JSDoc and inline comments for changed TS/JS code based on git diff. git diff 기준으로 변경된 TypeScript/JavaScript 코드에 필요한 주석과 JSDoc을 추가/개선한다. 유지보수자 관점에서 의도, 제약, 부작용, 트레이드오프를 문서화하고, 자명하거나 코드와 불일치한 코멘트를 제거해 가독성과 신뢰도를 높인다. 코드 리뷰 준비, 신규 팀원 온보딩, 공개 API 문서화, 복잡 로직 설명 보강 요청에서 사용한다. 트리거: \"주석 추가\", \"JSDoc 작성\", \"코멘트 보강\", \"diff 기반 문서화\", \"주석 정리\".",
+      "path": "skills/commter/SKILL.md"
+    },
+    {
+      "name": "complexity-refactor",
+      "description": "Refactor high cyclomatic complexity functions into human-readable, maintainable code. 순환 복잡도(Cyclomatic Complexity)가 높은 함수를 인간의 논리적 사고 흐름에 맞게 재구성하는 스킬. \"복잡한 함수 정리해줘\", \"이 함수 읽기 어려워\", \"순환 복잡도 낮춰줘\", \"리팩토링 해줘\" 등의 요청에 사용. 단순 코드 추출이 아닌 논리적 재구성을 수행하며, 성능보다 가독성과 수정 용이성을 우선시함.",
+      "path": "skills/complexity-refactor/SKILL.md"
+    },
+    {
+      "name": "component-screenshot",
+      "description": "Capture component screenshots from Storybook stories. Story 파일에서 컴포넌트 스크린샷 캡처. \"/screenshot\", \"스크린샷 캡처\" 등의 요청 시 사용",
+      "path": "skills/component-screenshot/SKILL.md"
+    },
+    {
+      "name": "daily-diary",
+      "description": "Auto-generate daily diary from AI agent activity logs and Obsidian vault changes. 매일 하루가 끝날 때 AI 에이전트 활동 히스토리와 Obsidian 볼트 변경사항을 기반으로 자동 일기를 생성한다. \"일기 써줘\", \"daily diary\", \"오늘 일기\", \"어제 일기\" 등의 요청 시 사용.",
+      "path": "skills/daily-diary/SKILL.md"
+    },
+    {
+      "name": "deep-think",
+      "description": "Adaptive multi-persona deep reasoning with tiered complexity (2-5 agents) and convergence-based synthesis. Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth. Uses tiered complexity (2-5 agents), targeted critique→reflect cycles, convergence shortcuts, and 3-pass PENCIL-inspired synthesis. Detects execution environment to choose between Agent Teams (normal mode) and Task Orchestration (plan mode). Use when the user prefixes with \"deep think\", \"딥씽크\", \"깊게 생각해\", or requests thorough analysis. Best for complex architecture, debugging, algorithmic, or multi-domain problems. NOT for simple lookups. Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.",
+      "path": "skills/deep-think/SKILL.md"
+    },
+    {
+      "name": "design-check",
+      "description": "Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill. 디자인 검증 자동화. Figma vs 구현 비교 리포트 생성. \"/design-check\", \"디자인 검증\" 등의 요청 시 사용",
+      "path": "skills/design-check/SKILL.md"
+    },
+    {
+      "name": "design-task",
+      "description": "Large or ambiguous task planning skill. Use when the user asks to \"설계해줘\", \"계획 세워줘\", \"어떻게 쪼갤지 정리해줘\", or explicitly asks for no code changes. Build or update tasks/{task-slug}/PLAN.md from repository evidence and user intent without modifying code.",
+      "path": "skills/design-task/SKILL.md"
+    },
+    {
+      "name": "figma-design-pipeline",
+      "description": "End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills. Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. \"/figma-pipeline\", \"피그마 파이프라인\" 등의 요청 시 사용",
+      "path": "skills/figma-design-pipeline/SKILL.md"
+    },
+    {
+      "name": "figma-to-code",
+      "description": "Convert Figma designs to React component code using Figma REST API data. Figma 디자인을 코드로 변환. Figma URL과 빈 컴포넌트 파일 경로를 받아 UI 구현. \"/figma-to-code\", \"피그마 구현\" 등의 요청 시 사용",
+      "path": "skills/figma-to-code/SKILL.md"
+    },
+    {
+      "name": "frontend-first-principles",
+      "description": "First-principles decision support for frontend feature planning and UI flow changes before implementation. Use when planning a frontend feature or UI flow, when requirements are vague or overloaded with assumptions, when validating whether a proposed frontend approach is actually right, or when tradeoff analysis is needed before coding. Do not use for trivial code edits, known-root-cause bugs, or syntax/type/mechanical refactor-only tasks.",
+      "path": "skills/frontend-first-principles/SKILL.md"
+    },
+    {
+      "name": "frontend-root-cause-analysis",
+      "description": "Evidence-based root cause analysis for frontend bugs using Five Whys and Socratic questioning. Use when debugging frontend issues with flaky UI behavior, async timing, stale state, hydration mismatch, focus problems, race conditions, event ordering, rendering glitches, or performance regressions, especially when the user wants root cause analysis instead of a quick patch. Do not use when the fix is already obvious, when the task is a simple type/syntax/lint error, or when planning a new feature.",
+      "path": "skills/frontend-root-cause-analysis/SKILL.md"
+    },
+    {
+      "name": "frontend-ui-state-decomposer",
+      "description": "Turn vague frontend feature requirements into an explicit UI state model, event transition map, component boundary plan, and pre-implementation test checklist. Use when designing a page, component, form, modal, table, onboarding flow, checkout flow, or dashboard interaction, especially when requirements are feature-oriented but the UI state model is not explicit, or when the user wants to identify edge cases before coding. Do not use for backend-only tasks, pure debugging, or when the UI state model is already fully specified and implementation-ready.",
+      "path": "skills/frontend-ui-state-decomposer/SKILL.md"
+    },
+    {
+      "name": "implement-task",
+      "description": "Implementation execution skill for long-running tasks. Use when the user says \"구현해줘\", \"다음 단계 진행해\", \"계속해\", or asks to execute based on an existing design. Read tasks/{task-slug}/PLAN.md, execute the next slice, and always update tasks/{task-slug}/STATUS.md.",
+      "path": "skills/implement-task/SKILL.md"
+    },
+    {
+      "name": "korean-cognitive-code-explainer",
+      "description": "Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams. 코드/함수/컴포넌트의 동작을 한국어로 인지부하를 낮추는 방식으로 설명한다. 프로그래머의 뇌(작업기억 한계, 청킹, 스키마 형성) 기반으로 복잡도를 분해하고, 필요한 경우 함수/변수에 한국어 별칭을 붙여 이해를 돕는다. Mermaid 다이어그램(흐름도, 시퀀스, 상태 전이)을 적극 사용해 시각적으로 설명해야 할 때 사용한다. \"이 코드 설명해줘\", \"이 함수 이해가 안 돼\", \"한국어로 쉽게\", \"시각화해서 설명\", \"함수명 번역해줘\" 요청에서 사용한다.",
+      "path": "skills/korean-cognitive-code-explainer/SKILL.md"
+    },
+    {
+      "name": "pm-spec-from-code",
+      "description": "Convert implemented code into PM-perspective spec documents focusing on user-facing behavior and rules. 코드로 구현된 기능을 기획자(PM) 시선의 간결한 스펙 문서로 변환한다. 사용자 관점 동작, 규칙, 제약, 예외, 비목표를 명확한 bullet로 정리하고 함수/변수/컴포넌트 내부 구현 등 기술 상세는 제외한다. \"테이블 리사이즈 기능 스펙 문서 만들어줘\", \"코드 기준으로 기능 스펙 정리해줘\", \"기획 문서 형태로 요약해줘\" 같은 요청에서 사용한다.",
+      "path": "skills/pm-spec-from-code/SKILL.md"
+    },
+    {
+      "name": "prompt-builder",
+      "description": "Transform rough task requests into high-quality structured prompts for AI agents. 사용자의 거친 작업 요청을 AI 에이전트 실행용 고품질 프롬프트로 변환한다. 작업 목적, 완료 조건, 필수 컨텍스트, 비목표, 제약, 리스크/예외 케이스를 질의응답으로 정리해 최종 프롬프트를 작성할 때 사용한다. \"프롬프트 만들어줘\", \"요청 정리해줘\", \"컨텍스트 포함해서 프롬프트 작성\", \"예외 케이스까지 프롬프트 구성\" 같은 요청에서 사용한다.",
+      "path": "skills/prompt-builder/SKILL.md"
+    },
+    {
+      "name": "react-refactoring",
+      "description": "Critical analysis and execution of React/TypeScript component refactoring. React/TypeScript 코드 리팩토링을 위한 비판적 분석 및 실행 스킬. 사용자가 컴포넌트 경로와 문제점을 제시하면, 각 문제점을 \"수정하기 좋은 코드\" 관점에서 비판적으로 검토하고, sequential-thinking으로 단계별 분석 후 리팩토링 계획을 수립하여 실행한다. 트리거: \"리팩토링\", \"개선하고 싶어\", \"코드 구조 변경\", \"훅 분리\", \"응집도\", \"결합도\" 등의 키워드와 함께 React 컴포넌트 경로가 제시될 때 사용.",
+      "path": "skills/react-refactoring/SKILL.md"
+    },
+    {
+      "name": "story-generator",
+      "description": "Auto-generate Storybook story files for component screenshot comparison. 스크린샷 비교용 Story 파일 자동 생성. \"/story-gen\", \"스토리 생성\" 등의 요청 시 사용",
+      "path": "skills/story-generator/SKILL.md"
+    },
+    {
+      "name": "test",
+      "description": "Write reliable test code (unit/browser/integration) focusing on failure detection over coverage metrics. 테스트 코드 작성 스킬. \"테스트 작성\", \"브라우저 테스트\", \"유닛 테스트\", \"테이블 테스트\" 등의 요청 시 사용",
+      "path": "skills/test/SKILL.md"
+    },
+    {
+      "name": "writing-best-practices",
+      "description": "Write or rewrite prose so it reads naturally, clearly, and quickly. 글을 처음부터 작성하거나 초안을 자연스럽고 이해가 빠른 글로 다시 쓰는 산문 작성 스킬이다. 주제만 주어졌을 때도 목적, 독자, 매체, 길이, 톤을 합리적으로 추론해 바로 작성하고, 초안이 있으면 어색한 구조, 번역투, 군더더기, 상투적 표현을 정리해 최종본으로 다듬는다. \"글 써줘\", \"초안 다듬어줘\", \"자연스럽게 다시 써줘\", \"문장 흐름 고쳐줘\", \"산문 정리해줘\" 같은 요청에서 사용한다.",
+      "path": "skills/writing-best-practices/SKILL.md"
+    },
+    {
+      "name": "writing-review-workflow",
+      "description": "Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger final version. 작성된 글 초안을 3개의 병렬 리뷰어 관점으로 검토하고, 그 결과를 메인 에이전트가 종합해 최종 수정본으로 다시 쓰는 글쓰기 리뷰 워크플로우다. 구조, 독자 관점 가독성, 정보 정확성·과장을 분리해서 검토해야 할 때 사용한다. \"글 리뷰해줘\", \"초안 검토 후 고쳐줘\", \"문장 구조랑 흐름 검토해줘\", \"3개 관점으로 리뷰해줘\", \"수정 전에 먼저 검토해줘\" 같은 요청에서 사용한다.",
+      "path": "skills/writing-review-workflow/SKILL.md"
+    }
+  ]
+}

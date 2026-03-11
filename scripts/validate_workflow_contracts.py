@@ -6,20 +6,26 @@ import sys
 import tomllib
 from pathlib import Path
 
+from sync_agents import (
+    _format_codex_agent_toml,
+    _format_managed_config,
+    _format_repo_markdown,
+    _read_agent_entries,
+    _validate_entries,
+)
 from workflow_contract import (
     ADVISORY_TIMEOUT_POLICY,
     AdvisorySliceContext,
+    AGENT_CONTRACTS_BY_ID,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
-    FORBIDDEN_CONTRACT_PHRASES,
     HelperCloseSnapshot,
     INVALID_CLOSE_REASON,
     INTERNAL_PLANNING_ROLE_IDS,
     PLAN_SECTION_ORDER,
-    REQUIRED_CONTRACT_PHRASES,
     REQUIRED_HELPER_AGENT_IDS,
     STATUS_SECTION_ORDER,
     WRITABLE_PROJECTION_AGENT_IDS,
@@ -110,103 +116,107 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
             )
 
 
-def _validate_helper_orchestration(repo_root: Path, errors: list[str]) -> None:
-    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
-        path = repo_root / "agent-registry" / agent_id / "agent.toml"
+def _validate_registry_codex_contract(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    for agent_id in REQUIRED_HELPER_AGENT_IDS:
+        path = registry_root / agent_id / "agent.toml"
         if not path.exists():
-            errors.append(f"missing helper config: {path}")
             continue
         data = _load_toml(path)
-        orchestration = data.get("orchestration")
-        if not isinstance(orchestration, dict):
-            errors.append(f"missing [orchestration]: {path}")
+        codex = data.get("codex")
+        if not isinstance(codex, dict):
+            errors.append(f"missing [codex]: {path}")
             continue
 
-        for key, expected_value in expected.items():
-            actual_value = orchestration.get(key)
-            if actual_value != expected_value:
-                errors.append(
-                    f"invalid orchestration mapping for {agent_id}.{key}: "
-                    f"expected={expected_value!r} actual={actual_value!r} ({path})"
-                )
+        reasoning_effort = codex.get("reasoning_effort")
+        if reasoning_effort != EXPECTED_CODEX_REASONING_EFFORT:
+            errors.append(
+                f"registry reasoning_effort mismatch for {agent_id}: "
+                f"expected={EXPECTED_CODEX_REASONING_EFFORT!r} actual={reasoning_effort!r} ({path})"
+            )
+
+        expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
+        sandbox_mode = codex.get("sandbox_mode")
+        if sandbox_mode != expected_sandbox:
+            errors.append(
+                f"registry sandbox_mode mismatch for {agent_id}: "
+                f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({path})"
+            )
 
 
-def _validate_generated_codex_helpers(repo_root: Path, errors: list[str]) -> None:
+def _validate_helper_orchestration(errors: list[str]) -> None:
+    required_keys = {
+        "blocking_class",
+        "result_contract",
+        "close_protocol",
+        "late_result_policy",
+        "timeout_policy",
+        "allowed_close_reasons",
+    }
+    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
+        contract = AGENT_CONTRACTS_BY_ID.get(agent_id)
+        if contract is None:
+            errors.append(f"missing helper contract: {agent_id}")
+            continue
+        orchestration = contract.get("orchestration")
+        if not isinstance(orchestration, dict):
+            errors.append(f"missing [orchestration] for {agent_id}")
+            continue
+
+        missing_keys = required_keys - set(orchestration.keys())
+        if missing_keys:
+            errors.append(
+                f"helper orchestration missing keys for {agent_id}: {sorted(missing_keys)}"
+            )
+
+        if orchestration != expected:
+            errors.append(f"helper orchestration cache drifted for {agent_id}")
+
+
+def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    entries = _read_agent_entries(registry_root)
+    try:
+        _validate_entries(entries)
+    except ValueError as exc:
+        errors.append(str(exc))
+        return
+
+    agents_dir = repo_root / "agents"
+    codex_agents_dir = repo_root / "dist" / "codex" / "agents"
     managed_config_path = repo_root / "dist" / "codex" / "config.managed-agents.toml"
+
+    for entry in entries:
+        if entry.repo_projection:
+            projected_path = agents_dir / f"{entry.agent_id}.md"
+            if not projected_path.exists():
+                errors.append(f"missing generated repo projection: {projected_path}")
+            else:
+                expected_content = _format_repo_markdown(entry)
+                actual_content = projected_path.read_text(encoding="utf-8")
+                if actual_content != expected_content:
+                    errors.append(f"generated repo projection drifted: {projected_path}")
+
+        if entry.codex_projection:
+            if not entry.codex_config_file:
+                errors.append(f"missing codex config_file in registry for {entry.agent_id}")
+                continue
+            projected_path = codex_agents_dir / entry.codex_config_file
+            if not projected_path.exists():
+                errors.append(f"missing generated codex profile: {projected_path}")
+            else:
+                expected_content = _format_codex_agent_toml(entry)
+                actual_content = projected_path.read_text(encoding="utf-8")
+                if actual_content != expected_content:
+                    errors.append(f"generated codex profile drifted: {projected_path}")
+
     if not managed_config_path.exists():
         errors.append(f"missing generated managed config: {managed_config_path}")
         return
-
-    data = _load_toml(managed_config_path)
-    agents = data.get("agents")
-    if not isinstance(agents, dict):
-        errors.append(f"missing [agents] table: {managed_config_path}")
-        return
-
-    dist_root = repo_root / "dist" / "codex"
-    for agent_id in REQUIRED_HELPER_AGENT_IDS:
-        entry = agents.get(agent_id)
-        if not isinstance(entry, dict):
-            errors.append(f"missing generated helper agent key: agents.{agent_id}")
-            continue
-
-        config_file = entry.get("config_file")
-        if not isinstance(config_file, str) or not config_file.strip():
-            errors.append(f"missing generated config_file for agents.{agent_id}")
-            continue
-
-        profile_path = dist_root / config_file
-        if not profile_path.exists():
-            errors.append(f"missing generated helper profile: {profile_path}")
-            continue
-
-        try:
-            profile = _load_toml(profile_path)
-        except ValueError as exc:
-            errors.append(str(exc))
-            continue
-
-        expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
-        sandbox_mode = profile.get("sandbox_mode")
-        if sandbox_mode != expected_sandbox:
-            errors.append(
-                f"invalid sandbox_mode for agents.{agent_id}: "
-                f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({profile_path})"
-            )
-
-        reasoning_effort = profile.get("model_reasoning_effort")
-        if reasoning_effort != EXPECTED_CODEX_REASONING_EFFORT:
-            errors.append(
-                f"invalid model_reasoning_effort for agents.{agent_id}: "
-                f"expected={EXPECTED_CODEX_REASONING_EFFORT!r} actual={reasoning_effort!r} ({profile_path})"
-            )
-
-    for agent_id, entry in agents.items():
-        if not isinstance(agent_id, str) or not isinstance(entry, dict):
-            continue
-        if agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
-            errors.append(
-                f"documentation-only built-in must not be repo-managed: agents.{agent_id}"
-            )
-            continue
-        config_file = entry.get("config_file")
-        if not isinstance(config_file, str) or not config_file.strip():
-            continue
-        profile_path = dist_root / config_file
-        if not profile_path.exists():
-            continue
-        try:
-            profile = _load_toml(profile_path)
-        except ValueError as exc:
-            errors.append(str(exc))
-            continue
-        expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
-        sandbox_mode = profile.get("sandbox_mode")
-        if sandbox_mode != expected_sandbox:
-            errors.append(
-                f"projected codex agent sandbox mismatch: agents.{agent_id} "
-                f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({profile_path})"
-            )
+    expected_managed_config = _format_managed_config(entries)
+    actual_managed_config = managed_config_path.read_text(encoding="utf-8")
+    if actual_managed_config != expected_managed_config:
+        errors.append(f"generated managed config drifted: {managed_config_path}")
 
 
 def _validate_policy_functions(errors: list[str]) -> None:
@@ -244,32 +254,23 @@ def _validate_policy_functions(errors: list[str]) -> None:
 
 def _validate_documentation_only_builtins(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
+    managed_config_path = repo_root / "dist" / "codex" / "config.managed-agents.toml"
+    managed_agents: dict[str, object] = {}
+    if managed_config_path.exists():
+        managed_data = _load_toml(managed_config_path)
+        agents = managed_data.get("agents")
+        if isinstance(agents, dict):
+            managed_agents = agents
+
     for agent_id in DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS:
         if (registry_root / agent_id).exists():
             errors.append(
                 f"documentation-only built-in must not have repo-managed registry entry: {registry_root / agent_id}"
             )
-
-
-def _validate_contract_phrases(repo_root: Path, errors: list[str]) -> None:
-    for relative_path, phrases in REQUIRED_CONTRACT_PHRASES.items():
-        path = repo_root / relative_path
-        if not path.exists():
-            errors.append(f"missing required file: {path}")
-            continue
-        content = path.read_text(encoding="utf-8")
-        for phrase in phrases:
-            if phrase not in content:
-                errors.append(f"missing contract phrase '{phrase}' in {path}")
-
-    for relative_path, phrases in FORBIDDEN_CONTRACT_PHRASES.items():
-        path = repo_root / relative_path
-        if not path.exists():
-            continue
-        content = path.read_text(encoding="utf-8")
-        for phrase in phrases:
-            if phrase in content:
-                errors.append(f"forbidden phrase still present '{phrase}' in {path}")
+        if agent_id in managed_agents:
+            errors.append(
+                f"documentation-only built-in must not be repo-managed: agents.{agent_id}"
+            )
 
 
 def _validate_task_documents(repo_root: Path, errors: list[str]) -> None:
@@ -299,11 +300,11 @@ def main() -> int:
 
     errors: list[str] = []
     _validate_agent_projection(repo_root, errors)
-    _validate_helper_orchestration(repo_root, errors)
-    _validate_generated_codex_helpers(repo_root, errors)
+    _validate_registry_codex_contract(repo_root, errors)
+    _validate_helper_orchestration(errors)
+    _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(errors)
     _validate_documentation_only_builtins(repo_root, errors)
-    _validate_contract_phrases(repo_root, errors)
     _validate_task_documents(repo_root, errors)
 
     if errors:

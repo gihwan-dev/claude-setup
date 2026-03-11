@@ -3,14 +3,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TypeAlias
-
-from workflow_contract import INTERNAL_PLANNING_ROLE_IDS, REQUIRED_HELPER_AGENT_IDS
 
 OrchestrationValue: TypeAlias = str | list[str]
 
@@ -359,10 +356,6 @@ def _sync_from_registry(repo_root: Path, entries: list[AgentEntry], check: bool)
     return 0
 
 
-def _sandbox_for_role(role: str) -> str:
-    return "read-only"
-
-
 def _serialize_agent_toml(
     *,
     agent_id: str,
@@ -471,251 +464,14 @@ def _write_registry_entry(
     (entry_dir / "instructions.md").write_text(
         _normalize_instructions(instructions), encoding="utf-8"
     )
-
-
-def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
-    for path in sorted((repo_root / "agents").glob("*.md")):
-        markdown = path.read_text(encoding="utf-8")
-        meta, body = _parse_frontmatter(markdown)
-
-        agent_id = meta.get("name", path.stem).strip()
-        role = meta.get("role", "reviewer").strip()
-        description = meta.get("description", "").strip() or f"{agent_id} agent"
-        tools = [item.strip() for item in meta.get("tools", "").split(",") if item.strip()]
-        repo_model = meta.get("model", "sonnet").strip() or "sonnet"
-
-        _write_registry_entry(
-            registry_root,
-            agent_id=agent_id,
-            role=role,
-            description=description,
-            source="repo-agent",
-            repo_projection=True,
-            codex_projection=True,
-            repo_model=repo_model,
-            repo_tools=tools,
-            codex_agent_key=agent_id,
-            codex_config_file=f"{agent_id}.toml",
-            codex_model="gpt-5.4",
-            codex_reasoning_effort="xhigh",
-            codex_sandbox_mode=_sandbox_for_role(role),
-            orchestration=None,
-            instructions=_strip_generated_notice(body),
-        )
-
-
-def _role_for_codex_builtin(agent_key: str) -> str:
-    if agent_key == "explorer":
-        return "explorer"
-    if agent_key == "verification-worker":
-        return "reviewer"
-    return "reviewer"
-
-
-def _repo_tools_for_helper(agent_key: str) -> list[str]:
-    return ["Read", "Grep", "Glob"]
-
-
-def _bootstrap_codex_builtins(registry_root: Path) -> None:
-    codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
-    config_path = codex_home / "config.toml"
-    if not config_path.exists():
-        print(f"bootstrap skipped: config not found: {config_path}", file=sys.stderr)
-        return
-
-    config_data = tomllib.loads(config_path.read_text(encoding="utf-8"))
-    agents = config_data.get("agents", {})
-    if not isinstance(agents, dict):
-        return
-
-    for agent_key, info in agents.items():
-        if not isinstance(info, dict):
-            continue
-        config_file = str(info.get("config_file", ""))
-        if not config_file:
-            continue
-        profile_path = codex_home / config_file
-        if not profile_path.exists():
-            continue
-
-        profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
-        description = str(info.get("description", agent_key))
-        role = _role_for_codex_builtin(agent_key)
-        instructions = str(profile.get("developer_instructions", "")).strip()
-        filename = Path(config_file).name
-
-        _write_registry_entry(
-            registry_root,
-            agent_id=agent_key,
-            role=role,
-            description=description,
-            source="codex-builtin",
-            repo_projection=agent_key in REQUIRED_HELPER_AGENT_IDS,
-            codex_projection=True,
-            repo_model="sonnet" if agent_key in REQUIRED_HELPER_AGENT_IDS else None,
-            repo_tools=_repo_tools_for_helper(agent_key)
-            if agent_key in REQUIRED_HELPER_AGENT_IDS
-            else [],
-            codex_agent_key=agent_key,
-            codex_config_file=filename,
-            codex_model=str(profile.get("model", "gpt-5.4")),
-            codex_reasoning_effort=str(profile.get("model_reasoning_effort", "xhigh")),
-            codex_sandbox_mode=str(profile.get("sandbox_mode", "read-only")),
-            orchestration=None,
-            instructions=instructions,
-        )
-
-
-def _planning_role_templates() -> dict[str, dict[str, str]]:
-    return {
-        "web-researcher": {
-            "role": "explorer",
-            "description": "Web research specialist for competitor scans and external solution benchmarking.",
-            "instructions": """너는 web-researcher다.
-
-핵심 임무
-- 경쟁사/대안/최신 사례를 신뢰 가능한 출처로 조사한다.
-- 사실과 해석을 분리해 보고한다.
-
-규칙
-- 출처 링크와 날짜를 반드시 남긴다.
-- 확인된 사실과 추정을 분리한다.
-- 과장된 결론을 피하고 의사결정에 필요한 비교 축을 제시한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (source 링크 + 날짜)
-3. 리스크/불확실성
-4. 권장 다음 행동""",
-        },
-        "solution-analyst": {
-            "role": "reviewer",
-            "description": "Compare implementation options and tradeoffs with clear decision criteria.",
-            "instructions": """너는 solution-analyst다.
-
-핵심 임무
-- 최소 2개 이상의 현실적 옵션을 비교한다.
-- 비용/복잡도/리스크/확장성 기준으로 트레이드오프를 정리한다.
-
-규칙
-- 결론보다 비교 근거를 우선 제시한다.
-- 선택/비선택 사유를 분리한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (옵션별 비교 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "product-planner": {
-            "role": "orchestrator",
-            "description": "Structure ambiguous requests into goal, scope, and acceptance criteria.",
-            "instructions": """너는 product-planner다.
-
-핵심 임무
-- 모호한 요청을 실행 가능한 요구사항으로 구조화한다.
-- goal/scope/acceptance/open questions를 명확히 만든다.
-
-규칙
-- 사용자 가치와 성공 기준을 먼저 고정한다.
-- 구현 디테일보다 제품 동작/경계 정의를 우선한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (요구사항/컨텍스트 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "ux-journey-critic": {
-            "role": "reviewer",
-            "description": "Evaluate user journey friction, edge states, and accessibility risks.",
-            "instructions": """너는 ux-journey-critic이다.
-
-핵심 임무
-- 사용자 여정의 마찰 지점을 찾고 개선 우선순위를 제시한다.
-- empty/error/loading/permission edge case를 점검한다.
-
-규칙
-- 주관적 미감보다 사용성 리스크를 우선한다.
-- 접근성 영향(키보드/스크린리더)을 최소한으로라도 점검한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (journey 단계별 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "delivery-risk-planner": {
-            "role": "reviewer",
-            "description": "Plan rollout, migration, and operational guardrails before implementation.",
-            "instructions": """너는 delivery-risk-planner다.
-
-핵심 임무
-- 배포/마이그레이션/운영 리스크를 사전에 식별한다.
-- stop/replan 조건과 완화 전략을 정의한다.
-
-규칙
-- 영향 범위와 rollback 가능성을 명확히 적는다.
-- 관측 가능성(로그/모니터링) 요구를 포함한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (리스크 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "prompt-systems-designer": {
-            "role": "reviewer",
-            "description": "Design prompt system contracts, evaluation rules, and fallback strategy.",
-            "instructions": """너는 prompt-systems-designer다.
-
-핵심 임무
-- 프롬프트 시스템의 입력/출력 계약과 실패 복구 정책을 설계한다.
-- 평가 기준과 fallback 체계를 제시한다.
-
-규칙
-- 모델/툴 경계를 명확히 분리한다.
-- 재현 가능한 평가 기준을 포함한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (계약/평가 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-    }
-
-
-def _bootstrap_planning_roles(registry_root: Path) -> None:
-    templates = _planning_role_templates()
-    for agent_id in INTERNAL_PLANNING_ROLE_IDS:
-        template = templates[agent_id]
-        role = template["role"]
-        _write_registry_entry(
-            registry_root,
-            agent_id=agent_id,
-            role=role,
-            description=template["description"],
-            source="planning-role",
-            repo_projection=False,
-            codex_projection=False,
-            repo_model=None,
-            repo_tools=[],
-            codex_agent_key=None,
-            codex_config_file=None,
-            codex_model=None,
-            codex_reasoning_effort=None,
-            codex_sandbox_mode=None,
-            orchestration=None,
-            instructions=template["instructions"],
-        )
-
-
 def _bootstrap_from_current(repo_root: Path, registry_root: Path) -> None:
-    _bootstrap_repo_agents(repo_root, registry_root)
-    _bootstrap_codex_builtins(registry_root)
-    _bootstrap_planning_roles(registry_root)
-    print(f"ok  {registry_root}")
+    from bootstrap_registry import bootstrap_from_current
+
+    print(
+        "warning: --bootstrap-from-current is deprecated; use python3 scripts/bootstrap_registry.py",
+        file=sys.stderr,
+    )
+    bootstrap_from_current(repo_root, registry_root)
 
 
 def main() -> int:
@@ -730,6 +486,13 @@ def main() -> int:
 
     repo_root = Path(__file__).resolve().parents[1]
     registry_root = repo_root / "agent-registry"
+
+    if args.bootstrap_from_current and args.check:
+        print(
+            "sync-agents: --bootstrap-from-current cannot be combined with --check",
+            file=sys.stderr,
+        )
+        return 2
 
     if args.bootstrap_from_current:
         _bootstrap_from_current(repo_root, registry_root)

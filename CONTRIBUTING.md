@@ -1,84 +1,54 @@
 # Working In This Repo
 
-이 문서는 이 레포에서 작업하는 AI 에이전트와 유지보수자를 위한 작업 안내서다.
-핵심은 "generated 파일을 직접 고치지 말고, source of truth만 수정한 뒤 projection을 재생성한다"는 것이다.
+핵심 규칙은 단순하다. generated 파일은 직접 수정하지 않고, source of truth를 고친 뒤 sync와 check를 돌린다.
 
-## Source Of Truth
+## Pick The Right Source
 
-| 변경 대상 | 실제 수정 위치 | 직접 수정 금지 |
-|-----------|----------------|----------------|
-| 에이전트 정의 | `agent-registry/<agent-id>/agent.toml`, `agent-registry/<agent-id>/instructions.md` | `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml` |
-| 글로벌 정책 | `INSTRUCTIONS.md` | `AGENTS.md`, `CLAUDE.md` |
-| 스킬 | `skills/<skill-name>/...` | 설치된 `~/.claude/skills`, `~/.codex/skills` |
+| 작업 | 수정 위치 | 직접 수정 금지 |
+|------|-----------|----------------|
+| 정책 수정 | `docs/policy/*.md` | `INSTRUCTIONS.md`, `AGENTS.md`, `CLAUDE.md` |
+| agent 수정 | `agent-registry/<agent-id>/agent.toml`, `agent-registry/<agent-id>/instructions.md` | `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml` |
+| skill 수정 | `skills/<skill-name>/...` | `skills/INDEX.md`, `skills/manifest.json`, 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
-`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`의 생명주기 메타데이터는 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)이 SSOT다.
-설치되는 agent projection에서 writable 예외는 `worker` 하나뿐이다. 나머지 generated agent는 read-only helper/reviewer만 유지한다.
-`monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection을 만들지 않는다.
-작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
-advisory helper close preflight에서는 `result가 더 이상 필요 없음`과 `wait timed_out -> status running -> no result -> close`를 종료 근거로 인정하지 않는다.
+`skills/`가 canonical source다. `.agents/skills`는 기본 source가 아니라 설치 호환을 위한 legacy overlay로만 취급한다.
 
-## Do Not Edit Directly
+## Runbook
 
-- `agents/*.md`
-- `dist/codex/agents/*.toml`
-- `dist/codex/config.managed-agents.toml`
-- `AGENTS.md`
-- `CLAUDE.md`
+### 정책 수정
 
-위 파일들은 생성물이므로 직접 수정하면 다음 sync에서 덮어써진다.
-
-## Common Workflows
-
-### 1. 에이전트 추가/수정
-
-1. `agent-registry/<agent-id>/agent.toml`을 수정한다.
-2. `agent-registry/<agent-id>/instructions.md`를 수정한다.
-3. `python3 scripts/sync_instructions.py`
-4. `python3 scripts/sync_agents.py`
-5. `python3 scripts/sync_instructions.py --check`
-6. `python3 scripts/sync_agents.py --check`
-7. 실제 설치가 필요하면 `python3 scripts/install_assets.py --target all --link`
-
-주의:
-
-- `id`, `codex.agent_key`, `codex.config_file`는 충돌하면 안 된다.
-- 현재는 `scripts/sync_agents.py --check`가 중복 충돌을 hard fail로 막는다.
-- built-in Codex agent는 registry에 있어도 managed config에는 다시 쓰지 않는다.
-- long-running task public surface는 `design-task`, `implement-task`만 유지한다.
-- planning role은 internal fan-out 전용이며 user-facing install/projection 대상에서 제외한다.
-
-### 2. 글로벌 정책 수정
-
-1. `INSTRUCTIONS.md`를 수정한다.
+1. `docs/policy/*.md`를 수정한다.
 2. `python3 scripts/sync_instructions.py`
 3. `python3 scripts/sync_instructions.py --check`
 
-`AGENTS.md`, `CLAUDE.md`는 projection이므로 직접 수정하지 않는다.
+### agent 수정
 
-### 3. 스킬 수정
+1. `agent-registry/<agent-id>/agent.toml`을 수정한다.
+2. `agent-registry/<agent-id>/instructions.md`를 수정한다.
+3. `python3 scripts/sync_agents.py`
+4. `python3 scripts/sync_agents.py --check`
+
+### skill 수정
 
 1. `skills/<skill-name>/SKILL.md` 또는 내부 `scripts/`, `references/`, `agents/`를 수정한다.
-2. 스킬이 다른 source of truth를 참조하면 그 source를 먼저 갱신한다.
-3. 관련 검증을 실행한다.
-
-예:
-
-- `design-task` 변경 시 planning role, role card, agent prompt를 함께 확인
-- 설치 동작 변경 시 `install_assets.py --dry-run`으로 Claude/Codex 모두 확인
+2. `python3 scripts/sync_skills_index.py`
+3. `python3 scripts/sync_skills_index.py --check`
+4. 스킬이 다른 source를 참조하면 그 source를 먼저 갱신한다.
+5. 관련 검증을 실행한다.
 
 ## Standard Validation
 
-일반적으로 아래 순서면 충분하다.
+보통 아래 순서면 충분하다.
 
 ```bash
 python3 scripts/sync_instructions.py --check
 python3 scripts/sync_agents.py --check
+python3 scripts/sync_skills_index.py --check
 python3 scripts/validate_workflow_contracts.py
 python3 scripts/install_assets.py --dry-run --target all
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-설치 로직을 건드렸다면 추가로 확인한다.
+설치 로직을 건드렸다면 실제 설정 파일도 파싱해 본다.
 
 ```bash
 python3 - <<'PY'
@@ -90,36 +60,18 @@ print("codex config parse ok")
 PY
 ```
 
-## Installation Notes
+## Install Notes
 
-- 실제 설치 진입점은 `python3 scripts/install_assets.py`다.
-- legacy wrapper는 유지되지만 기준 구현은 Python이다.
+- 기준 설치 진입점은 `python3 scripts/install_assets.py`다.
 - `--link`가 기본 권장 모드다.
-- `--dry-run`으로 먼저 확인하는 편이 안전하다.
-
-예:
-
-```bash
-python3 scripts/install_assets.py --target claude --link
-python3 scripts/install_assets.py --target codex --link
-python3 scripts/install_assets.py --target all --dry-run
-```
-
-## Repo-Specific Gotchas
-
-- `agents/*.md`가 source처럼 보여도 이제는 projection이다.
-- `dist/codex/config.managed-agents.toml`은 `~/.codex/config.toml`의 managed block으로만 들어간다.
-- install 단계에서는 generated marker가 있는 agent 파일만 prune한다.
-- skill은 generated manifest 기반으로 stale 항목만 prune한다(수동 디렉터리 보존).
-- broken symlink도 install 단계에서 정리된다.
-- `codex` 대상 설치는 managed runtime agent preflight를 통과해야 진행된다.
-- `design-task`는 planning role을 직접 또는 fallback overlay로 사용한다. planning role을 바꾸면 `skills/design-task/SKILL.md`와 `skills/design-task/references/`도 같이 확인한다.
+- 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
+- `.agents/skills`가 존재하면 legacy overlay로 추가 설치되며, source of truth로 간주하지 않는다.
+- shell wrapper는 legacy 호환용이다.
+- generated drift를 먼저 해소한 뒤 설치한다.
 
 ## When Unsure
 
-다음 우선순위로 판단한다.
-
-1. source of truth를 찾는다.
-2. generated projection은 재생성으로 해결한다.
-3. 설치 문제는 `--dry-run`과 Codex config parse로 먼저 확인한다.
-4. 그래도 모호하면 `README.md`, `INSTRUCTIONS.md`, 이 문서를 다시 확인한다.
+1. 어떤 파일이 source of truth인지 먼저 확인한다.
+2. generated 파일은 재생성으로 맞춘다.
+3. 설치 문제는 `--dry-run`으로 먼저 확인한다.
+4. 그래도 모호하면 [README.md](/Users/choegihwan/Documents/Projects/claude-setup/README.md)와 `docs/policy/*.md`를 다시 읽는다.

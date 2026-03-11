@@ -69,11 +69,13 @@ def run_sync(repo_root: Path, dry_run: bool) -> None:
     scripts_dir = repo_root / "scripts"
     sync_instructions = scripts_dir / "sync_instructions.py"
     sync_agents = scripts_dir / "sync_agents.py"
+    sync_skills_index = scripts_dir / "sync_skills_index.py"
     python = sys.executable
 
     commands = [
         [python, str(sync_instructions), "--check" if dry_run else ""],
         [python, str(sync_agents), "--check" if dry_run else ""],
+        [python, str(sync_skills_index), "--check" if dry_run else ""],
     ]
     for command in commands:
         cmd = [part for part in command if part]
@@ -128,15 +130,82 @@ def install_entries(
         install_path(source, destination_dir / source.name, mode, dry_run)
 
 
+def _is_installable_skill_dir(path: Path) -> bool:
+    return path.is_dir() and (path / "SKILL.md").exists()
+
+
+def _iter_installable_skill_dirs(source_dir: Path) -> list[Path]:
+    if not source_dir.exists():
+        return []
+    return sorted(
+        path
+        for path in source_dir.iterdir()
+        if _is_installable_skill_dir(path)
+    )
+
+
+def _iter_internal_skill_asset_dirs(source_dir: Path) -> list[Path]:
+    if not source_dir.exists():
+        return []
+    # Internal asset dirs such as skills/_shared are shipped for relative references
+    # but must stay out of the generated skill catalog and prune surface.
+    return sorted(
+        path
+        for path in source_dir.iterdir()
+        if path.is_dir() and path.name.startswith("_") and not _is_installable_skill_dir(path)
+    )
+
+
 def expected_generated_skill_names(*source_dirs: Path) -> set[str]:
     names: set[str] = set()
     for source_dir in source_dirs:
-        if not source_dir.exists():
-            continue
-        for source in source_dir.iterdir():
-            if source.is_dir():
-                names.add(source.name)
+        for source in _iter_installable_skill_dirs(source_dir):
+            names.add(source.name)
     return names
+
+
+def _legacy_overlay_message(source_dir: Path) -> str:
+    return f"legacy overlay detected: {source_dir} (canonical source remains skills/)"
+
+
+def _print_skill_source_summary(
+    *,
+    canonical_skills_src: Path,
+    legacy_overlay_src: Path,
+    dry_run: bool,
+) -> None:
+    mode = "[dry-run] " if dry_run else ""
+    print(f"{mode}skill canonical source: {canonical_skills_src}")
+    if legacy_overlay_src.exists():
+        print(f"{mode}{_legacy_overlay_message(legacy_overlay_src)}")
+
+
+def _install_skill_sources(
+    *,
+    canonical_skills_src: Path,
+    legacy_overlay_src: Path,
+    destination: Path,
+    mode: str,
+    dry_run: bool,
+) -> None:
+    for source in _iter_installable_skill_dirs(canonical_skills_src):
+        install_path(source, destination / source.name, mode, dry_run)
+    for source in _iter_installable_skill_dirs(legacy_overlay_src):
+        install_path(source, destination / source.name, mode, dry_run)
+
+
+def _install_internal_skill_assets(
+    *,
+    canonical_skills_src: Path,
+    destination: Path,
+    mode: str,
+    dry_run: bool,
+) -> None:
+    # Copy/link internal assets separately so they do not appear as runnable skills.
+    for source in _iter_internal_skill_asset_dirs(canonical_skills_src):
+        prefix = "[dry-run] " if dry_run else ""
+        print(f"{prefix}internal skill asset: {source}")
+        install_path(source, destination / source.name, mode, dry_run)
 
 
 def _skill_manifest_path(skills_dir: Path) -> Path:
@@ -490,26 +559,38 @@ def main() -> int:
     run_sync(repo_root, dry_run=args.dry_run)
 
     skills_src = repo_root / "skills"
-    agent_skills_src = repo_root / ".agents" / "skills"
+    legacy_overlay_skills_src = repo_root / ".agents" / "skills"
     repo_agents_src = repo_root / "agents"
     codex_agents_src = repo_root / "dist" / "codex" / "agents"
     codex_managed_src = repo_root / "dist" / "codex" / "config.managed-agents.toml"
-    expected_skill_names = expected_generated_skill_names(skills_src, agent_skills_src)
+    expected_skill_names = expected_generated_skill_names(
+        skills_src,
+        legacy_overlay_skills_src,
+    )
     expected_repo_agent_names = {path.name for path in repo_agents_src.glob("*.md")}
     expected_codex_agent_names = {path.name for path in codex_agents_src.glob("*.toml")}
+
+    _print_skill_source_summary(
+        canonical_skills_src=skills_src,
+        legacy_overlay_src=legacy_overlay_skills_src,
+        dry_run=args.dry_run,
+    )
 
     if args.dest:
         destination = Path(args.dest)
         previous_skill_names = read_generated_skill_manifest(destination)
-        install_entries(
-            skills_src, destination, mode=mode, dry_run=args.dry_run, include_dirs=True
-        )
-        install_entries(
-            agent_skills_src,
-            destination,
+        _install_skill_sources(
+            canonical_skills_src=skills_src,
+            legacy_overlay_src=legacy_overlay_skills_src,
+            destination=destination,
             mode=mode,
             dry_run=args.dry_run,
-            include_dirs=True,
+        )
+        _install_internal_skill_assets(
+            canonical_skills_src=skills_src,
+            destination=destination,
+            mode=mode,
+            dry_run=args.dry_run,
         )
         prune_generated_skills(
             skills_dir=destination,
@@ -537,15 +618,18 @@ def main() -> int:
         home = resolve_home(target)
         skills_dest = home / "skills"
         previous_skill_names = read_generated_skill_manifest(skills_dest)
-        install_entries(
-            skills_src, skills_dest, mode=mode, dry_run=args.dry_run, include_dirs=True
-        )
-        install_entries(
-            agent_skills_src,
-            skills_dest,
+        _install_skill_sources(
+            canonical_skills_src=skills_src,
+            legacy_overlay_src=legacy_overlay_skills_src,
+            destination=skills_dest,
             mode=mode,
             dry_run=args.dry_run,
-            include_dirs=True,
+        )
+        _install_internal_skill_assets(
+            canonical_skills_src=skills_src,
+            destination=skills_dest,
+            mode=mode,
+            dry_run=args.dry_run,
         )
         prune_generated_skills(
             skills_dir=skills_dest,

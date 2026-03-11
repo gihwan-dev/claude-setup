@@ -1,3 +1,6 @@
+<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->
+<!-- Run: python3 scripts/sync_instructions.py -->
+
 # 멀티 에이전트 오케스트레이션 정책
 
 ## 핵심 목표
@@ -13,7 +16,28 @@
 - delegated lane의 code diff는 단일 writer만 허용하고 writable projection은 `worker`만 사용한다.
 - 서브 에이전트 결과는 하나의 의사결정 가능한 요약으로 통합한다.
 
-## 하드 라우팅 규칙 (필수)
+## 역할-실행 매핑
+
+| 작업 성격 | 워크플로우 역할 | 보조 수단 |
+|-----------|----------------|-----------|
+| 코드 탐색/분석 | explorer | — |
+| React UI 구현 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 테스트 작성 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 코드 품질 리뷰 | reviewer | code-reviewer |
+| 아키텍처 리뷰 | reviewer | architecture-reviewer |
+| 리팩터링 실행 | main-thread | 관련 skill/레퍼런스만 사용 |
+| TypeScript 타입 설계 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 인터페이스 품질 점검 | reviewer | interface-inspector |
+| 정량 복잡도 분석 | reviewer | complexity-analyst |
+| 공통 모듈 구조 분해 계획(구현 전) | reviewer | structure-planner |
+| 공통 구조 게이트 리뷰(구현 후) | reviewer | module-structure-gatekeeper |
+| React 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
+| 장기 작업 설계/실행 | main-thread | `design-task`, `implement-task` |
+| Storybook/디자인 검증 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 프롬프트 최적화 | main-thread | 관련 skill/레퍼런스만 사용 |
+| 검증/결과 분석 | verifier | — |
+
+## 하드 라우팅 규칙
 
 ### Triage first
 
@@ -38,7 +62,7 @@
 - TS/JS/React 기존 코드는 quality preflight에서 `explorer`를 기본으로 사용한다.
 - 구조 냄새가 보이면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 
-### Fast lane: direct edit in main thread
+### Fast lane
 
 - 아래 조건을 모두 만족하면 메인 스레드가 직접 수정한다.
   - 변경이 1개 파일 범위로 제한됨
@@ -47,7 +71,7 @@
   - 원인과 대상 파일이 명확함
   - 검증을 1개 집중 체크로 마무리할 수 있음
 
-### Deep solo lane: direct non-trivial edit in main thread
+### Deep solo lane
 
 - 변경이 크더라도 아래 조건이면 메인 스레드가 계속 직접 구현할 수 있다.
   - 메인 스레드가 이미 충분한 맥락을 확보함
@@ -64,13 +88,13 @@
   - 공유 경계 또는 public surface 변경이 포함됨
   - 검증 로그가 noisy하거나 multi-step임
 
-### Single-writer rule (delegated lane only)
+### Single-writer rule
 
 - delegated lane의 code diff는 정확히 하나의 `worker`만 적용한다.
 - 같은 실행 단위에서 두 번째 writer를 투입하지 않는다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 
-## 필수 실행 흐름
+## 실행 흐름
 
 ### Fast lane
 
@@ -116,9 +140,8 @@
 - interrupt/close 요청 시 helper는 새 작업 시작을 중지하고 `final` 또는 최소 `checkpoint/preliminary`를 1회 flush한 뒤 마지막 줄에 다음 행동 또는 차단 사유를 남긴다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
 - 메인 스레드는 helper 요약을 통합해 `STATUS.md`를 갱신하고 다음 slice 진행/중단을 결정한다.
-- planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
-- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
+
+## 리뷰와 planning role
 
 ## 워크플로우 역할
 
@@ -129,27 +152,6 @@
 | explorer | 읽기 전용 | 레포지토리 탐색 및 증거 수집 |
 | reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |
-
-## 역할-실행 매핑
-
-| 작업 성격 | 워크플로우 역할 | 보조 수단 |
-|-----------|----------------|-----------|
-| 코드 탐색/분석 | explorer | — |
-| React UI 구현 | main-thread | 관련 skill/레퍼런스만 사용 |
-| 테스트 작성 | main-thread | 관련 skill/레퍼런스만 사용 |
-| 코드 품질 리뷰 | reviewer | code-reviewer |
-| 아키텍처 리뷰 | reviewer | architecture-reviewer |
-| 리팩토링 실행 | main-thread | 관련 skill/레퍼런스만 사용 |
-| TypeScript 타입 설계 | main-thread | 관련 skill/레퍼런스만 사용 |
-| 인터페이스 품질 점검 | reviewer | interface-inspector |
-| 정량 복잡도 분석 | reviewer | complexity-analyst |
-| 공통 모듈 구조 분해 계획(구현 전) | reviewer | structure-planner |
-| 공통 구조 게이트 리뷰(구현 후) | reviewer | module-structure-gatekeeper |
-| React 구조 게이트 리뷰(구현 후) | reviewer | frontend-structure-gatekeeper |
-| 장기 작업 설계/실행 | main-thread | `design-task`, `implement-task` |
-| Storybook/디자인 검증 | main-thread | 관련 skill/레퍼런스만 사용 |
-| 프롬프트 최적화 | main-thread | 관련 skill/레퍼런스만 사용 |
-| 검증/결과 분석 | verifier | — |
 
 ## Internal Planning Roles
 
@@ -173,7 +175,6 @@
   - 모듈/패키지 경계 2개 이상 변경
   - public surface 변경 (export, entrypoint, 핵심 설정)
 - `structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.
-  - 도메인과 무관하게 아래 조건 중 하나면 실행한다.
   - 예상 diff가 150 LOC 이상인 경우
   - 예상 변경 파일이 2개 이상인 경우
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과해 분해 설계가 필요한 경우
@@ -186,25 +187,31 @@
 
 ## 서브 에이전트 응답 가이드라인
 
-서브 에이전트는 간결하고 의사결정 가능한 요약을 우선한다.
-quality preflight/reviewer helper는 `품질판정: keep-local | promote-refactor | promote-architecture`를 포함한다.
+- quality preflight/reviewer helper는 `품질판정: keep-local | promote-refactor | promote-architecture`를 포함한다.
+- 필수 항목은 `핵심결론`, `근거`다.
+- 선택 항목은 `리스크`, `권장 다음 행동`, `추가 확인 필요`다.
+- 원문 출력이 필요하면 최소 발췌만 포함하고 소스 경로를 명시한다.
 
-**필수 항목:**
-1. 핵심결론
-2. 근거 (`file:line` 또는 `error-id`)
+## Source of Truth
 
-**선택 항목 (관련 시):**
-3. 리스크
-4. 권장 다음 행동
-5. 추가 확인 필요 (불확실성/차단 요인)
+- 정책 authoring source: `docs/policy/*.md`
+- compiled source doc: `INSTRUCTIONS.md`
+- Codex projection: `AGENTS.md`
+- Claude projection: `CLAUDE.md`
+- agent contract: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
+- generated projections: `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml`
+- skill canonical source: `skills/`
+- skill index + manifest: `skills/INDEX.md`, `skills/manifest.json`
+- `skills/_shared` 같은 internal asset은 catalog/index/generated skill set에는 포함하지 않고, consuming skill의 상대경로 참조를 위해 install-time에만 별도 배포한다.
+- legacy skill overlay: `.agents/skills` (설치 호환용, 기본 source 아님)
+- long-running task public surface: `design-task`, `implement-task`
 
-원문 출력이 필요하면 최소 발췌만 포함하고 소스 경로를 명시한다.
+## 세부 규칙
 
-## 에이전트 정의 소스
-
-에이전트의 단일 진실원은 `agent-registry/<agent-id>/agent.toml` + `instructions.md`다.
-`agents/*.md`는 수기 파일이 아니라 registry에서 생성되는 projection이다.
-Codex 런타임용 프로파일은 registry에서 `dist/codex/agents/*.toml`과 `dist/codex/config.managed-agents.toml`로 생성한다.
+- planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
+- `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
+- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
+- generated projection과 compiled doc은 직접 수정하지 않고 sync로 재생성한다.
 
 ## 언어 및 스타일
 
