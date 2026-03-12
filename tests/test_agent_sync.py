@@ -102,10 +102,10 @@ class AgentSyncTests(RepoTestCase):
             orchestration={
                 "blocking_class": "advisory",
                 "result_contract": "preliminary-or-final",
-                "close_protocol": "interrupt-drain-ack-close",
+                "close_protocol": "explicit-cancel-or-terminal-close",
                 "late_result_policy": "merge-if-relevant",
                 "timeout_policy": "background-no-close",
-                "allowed_close_reasons": ["explicit-cancel", "hard-deadline", "blocked"],
+                "allowed_close_reasons": ["explicit-cancel"],
             },
         )
         payload = tomllib.loads(serialized)
@@ -113,12 +113,12 @@ class AgentSyncTests(RepoTestCase):
         self.assertIsInstance(orchestration, dict)
         self.assertEqual(orchestration.get("blocking_class"), "advisory")
         self.assertEqual(orchestration.get("result_contract"), "preliminary-or-final")
-        self.assertEqual(orchestration.get("close_protocol"), "interrupt-drain-ack-close")
+        self.assertEqual(orchestration.get("close_protocol"), "explicit-cancel-or-terminal-close")
         self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
         self.assertEqual(orchestration.get("timeout_policy"), "background-no-close")
         self.assertEqual(
             orchestration.get("allowed_close_reasons"),
-            ["explicit-cancel", "hard-deadline", "blocked"],
+            ["explicit-cancel"],
         )
 
     def test_deprecated_bootstrap_shim_delegates_to_bootstrap_registry(self) -> None:
@@ -240,7 +240,7 @@ class AgentSyncTests(RepoTestCase):
             )
             self.assertEqual(orchestration.get("blocking_class"), "blocking")
             self.assertEqual(orchestration.get("result_contract"), "final-or-checkpoint")
-            self.assertEqual(orchestration.get("close_protocol"), "interrupt-drain-ack-close")
+            self.assertEqual(orchestration.get("close_protocol"), "explicit-cancel-or-terminal-close")
             self.assertEqual(orchestration.get("late_result_policy"), "not-applicable")
             self.assertEqual(
                 orchestration.get("timeout_policy"),

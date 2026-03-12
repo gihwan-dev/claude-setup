@@ -379,7 +379,7 @@ def _default_helper_orchestration(
         return {
             "blocking_class": "blocking",
             "result_contract": "final-or-checkpoint",
-            "close_protocol": "interrupt-drain-ack-close",
+            "close_protocol": "explicit-cancel-or-terminal-close",
             "late_result_policy": "not-applicable",
             "timeout_policy": non_advisory_timeout_policy,
             "allowed_close_reasons": list(strong_close_reasons),
@@ -388,7 +388,7 @@ def _default_helper_orchestration(
         return {
             "blocking_class": "semi-blocking",
             "result_contract": "final-or-checkpoint",
-            "close_protocol": "interrupt-drain-ack-close",
+            "close_protocol": "explicit-cancel-or-terminal-close",
             "late_result_policy": "merge-if-relevant",
             "timeout_policy": non_advisory_timeout_policy,
             "allowed_close_reasons": list(strong_close_reasons),
@@ -396,7 +396,7 @@ def _default_helper_orchestration(
     return {
         "blocking_class": "advisory",
         "result_contract": "preliminary-or-final",
-        "close_protocol": "interrupt-drain-ack-close",
+        "close_protocol": "explicit-cancel-or-terminal-close",
         "late_result_policy": "merge-if-relevant",
         "timeout_policy": advisory_timeout_policy,
         "allowed_close_reasons": list(strong_close_reasons),

@@ -64,7 +64,7 @@
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
-- `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 - advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.

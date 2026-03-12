@@ -78,8 +78,25 @@ class InstallAssetsTests(RepoTestCase):
                 msg=f"install_assets dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
             )
             self.assertIn("skill canonical source:", completed.stdout)
-            self.assertIn("legacy overlay detected:", completed.stdout)
+            # overlay 안내는 실제 overlay가 존재할 때만 출력된다(환경 의존). 항상 기대하지 않는다.
             self.assertIn("internal skill asset:", completed.stdout)
+
+    def test_codex_managed_block_contains_required_helpers(self) -> None:
+        # managed config를 실제 파일로 사용해 업데이트 결과에 필수 helper가 포함되는지 확인
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            codex_home = root / ".codex"
+            codex_home.mkdir(parents=True)
+            (codex_home / "config.toml").write_text('model = "gpt-5.4"\n', encoding="utf-8")
+
+            managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
+            updated = update_codex_config(codex_home, managed_path, dry_run=True)
+
+            parsed = tomllib.loads(updated)
+            agents = parsed.get("agents")
+            self.assertIsInstance(agents, dict)
+            self.assertIn("worker", agents)
+            self.assertIn("verification-worker", agents)
 
     def test_run_sync_includes_sync_skills_index(self) -> None:
         calls: list[list[str]] = []

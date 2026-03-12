@@ -7,7 +7,7 @@
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
-- `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - 메인 검증이 끝났다는 사실만으로 close하지 않는다. 요약 결과 전달 또는 강한 종료 근거가 있어야 close를 판단한다.
 - interrupt/close 요청을 받으면 새 로그 분석 시작을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `checkpoint`를 정확히 1회 flush한다.

@@ -41,11 +41,11 @@ expected_reasoning_effort = "xhigh"
 worker = "workspace-write"
 
 [helper_close]
-strong_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]
+strong_close_reasons = ["explicit-cancel"]
 advisory_timeout_policy = "background-no-close"
 non_advisory_timeout_policy = "observe-and-status-ping"
 invalid_close_reason = "result-no-longer-needed"
-helper_close_ack_definition = "interrupt 이후 관측된 `preliminary`/`checkpoint`/`final` 출력 또는 drain grace 뒤 terminal runtime status transition"
+helper_close_ack_definition = "final/preliminary/checkpoint 결과 또는 terminal runtime status 관측"
 terminal_runtime_statuses = [
   "blocked",
   "cancelled",

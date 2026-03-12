@@ -39,7 +39,7 @@ description: >
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
-- `explicit cancel`, `hard deadline`, `상태: blocked`만 강한 종료 근거다.
+- `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 - advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.
@@ -65,7 +65,7 @@ description: >
 - 연속 실행 중 아래 조건이면 즉시 중단하고 `STATUS.md`만 갱신한다.
   - 검증 실패(커밋 시도 없음)
   - 커밋 실패(`--no-verify` 재시도 실패 포함)
-  - `worker`가 `상태: blocked`를 보고함
+  - `worker`가 `상태: blocked`를 보고함 → stop이 아니라 replan으로 전환
   - `liveness gate` 점검과 `drain grace` 이후에도 `final/checkpoint`를 받지 못함
   - bundle `SPEC_VALIDATION.md`의 blocking issue가 해소되지 않음
   - legacy `PLAN.md` 또는 bundle `EXECUTION_PLAN.md`의 stop/replan 조건 충족

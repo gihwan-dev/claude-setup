@@ -10,10 +10,10 @@ codex = true
 [orchestration]
 blocking_class = "advisory"
 result_contract = "preliminary-or-final"
-close_protocol = "interrupt-drain-ack-close"
+close_protocol = "explicit-cancel-or-terminal-close"
 late_result_policy = "merge-if-relevant"
 timeout_policy = "background-no-close"
-allowed_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]
+allowed_close_reasons = ["explicit-cancel"]
 
 [repo]
 model = "sonnet"

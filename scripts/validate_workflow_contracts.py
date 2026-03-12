@@ -236,7 +236,7 @@ def _validate_policy_functions(errors: list[str]) -> None:
         helper_id="explorer",
         blocking_class="advisory",
         result_contract="preliminary-or-final",
-        close_protocol="interrupt-drain-ack-close",
+        close_protocol="explicit-cancel-or-terminal-close",
         late_result_policy="merge-if-relevant",
         timeout_policy=ADVISORY_TIMEOUT_POLICY,
         runtime_status="running",

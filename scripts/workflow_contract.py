@@ -152,6 +152,23 @@ TERMINAL_RUNTIME_STATUSES = _require_str_list(
     HELPER_CLOSE_POLICY, "terminal_runtime_statuses", path=WORKFLOW_POLICY_PATH
 )
 
+# Policy-derived constants/predicates to avoid scattering string literals.
+EXPLICIT_CANCEL_CLOSE_REASON: str = (
+    STRONG_CLOSE_REASONS[0] if len(STRONG_CLOSE_REASONS) >= 1 else "explicit-cancel"
+)
+
+def _is_explicit_cancel(reason: str | None) -> bool:
+    return reason == EXPLICIT_CANCEL_CLOSE_REASON
+
+def _has_natural_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
+    # Allow natural close only when terminal or stronger-than-preliminary signals exist.
+    return (
+        snapshot.has_final
+        or snapshot.has_checkpoint
+        or snapshot.has_terminal_runtime_ack
+        or snapshot.runtime_status in TERMINAL_RUNTIME_STATUSES
+    )
+
 PLAN_SECTION_ORDER = _require_str_list(
     TASK_DOCUMENTS_POLICY, "plan_section_order", path=WORKFLOW_POLICY_PATH
 )
@@ -406,8 +423,8 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             "running helper requires status ping before interrupt/close",
         )
 
-    if (has_strong_reason or snapshot.has_ack()) and (
-        not snapshot.interrupt_sent or not snapshot.drain_grace_elapsed
+    if _is_explicit_cancel(close_reason) and (
+        (not snapshot.interrupt_sent or not snapshot.drain_grace_elapsed)
     ):
         return _decision(
             "interrupt-and-drain",
@@ -416,7 +433,7 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             "close requires interrupt flush and drain grace before close judgment",
         )
 
-    if has_strong_reason and not snapshot.has_ack():
+    if _is_explicit_cancel(close_reason) and not snapshot.has_ack():
         action = "background" if snapshot.blocking_class == "advisory" else "observe"
         return _decision(
             action,
@@ -425,12 +442,22 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             f"strong close reason requires protocol completion ack ({HELPER_CLOSE_ACK_DEFINITION})",
         )
 
-    if has_strong_reason and _has_protocol_completion(snapshot):
+    if _is_explicit_cancel(close_reason) and _has_protocol_completion(snapshot):
         return _decision(
             "allow-close",
             snapshot,
             True,
             f"strong close reason and ack satisfied ({HELPER_CLOSE_ACK_DEFINITION}): {close_reason}",
+        )
+
+        # Natural terminal/result path: no synthetic interrupt when not explicit-cancel.
+        # Only allow when terminal or stronger-than-preliminary signals exist.
+    if (not _is_explicit_cancel(close_reason)) and _has_natural_close_ack(snapshot):
+        return _decision(
+            "allow-close",
+            snapshot,
+            True,
+            "natural terminal/result ack; no synthetic interrupt",
         )
 
     if snapshot.blocking_class == "advisory" and snapshot.timeout_policy == ADVISORY_TIMEOUT_POLICY:
