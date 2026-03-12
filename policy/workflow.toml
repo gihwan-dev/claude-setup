@@ -127,6 +127,7 @@ bundle_task_yaml_required_keys = [
   "required_docs",
   "source_of_truth",
   "ids",
+  "delivery_strategy",
   "validation_gate",
   "current_phase",
 ]
@@ -152,6 +153,9 @@ bundle_impact_flags = [
   "operability_changed",
   "high_user_risk",
 ]
+bundle_delivery_strategies = ["standard", "ui-first"]
+bundle_ui_first_work_types = ["feature", "bugfix", "refactor", "prototype"]
+bundle_ui_first_flags = ["ui_surface_changed", "workflow_changed"]
 bundle_validation_gate_values = ["advisory", "blocking"]
 bundle_blocking_validation_flags = [
   "ui_surface_changed",

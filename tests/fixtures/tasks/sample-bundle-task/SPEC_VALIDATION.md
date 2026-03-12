@@ -2,11 +2,13 @@
 
 - `REQ-001` -> `SCR-001` -> `AC-001` -> `SLICE-1`
 - `REQ-002` -> `SCR-002` -> `AC-002` -> `SLICE-2`
+- `REQ-003` -> `FLOW-001` -> `AC-003` -> `SLICE-3`
 
 # UX/state gaps
 
-- empty/error state copy가 정의되어 있다.
-- keyboard focus 이동 규칙이 정리되어 있다.
+- empty/error/loading/permission state copy가 정의되어 있다.
+- keyboard focus 이동 규칙과 responsive fallback이 정리되어 있다.
+- local state와 mock strategy가 `SLICE-2` 기준으로 정리되어 있다.
 
 # Architecture/operability risks
 
@@ -14,7 +16,8 @@
 
 # Slice dependency risks
 
-- `SLICE-2`는 `SLICE-1` ingest schema가 고정돼야 진행 가능하다.
+- `SLICE-2`는 `SLICE-1` UI 방향과 정보 구조가 고정돼야 진행 가능하다.
+- `SLICE-3`는 `SLICE-2` local state 모델과 mock strategy가 고정돼야 진행 가능하다.
 
 # Blocking issues
 

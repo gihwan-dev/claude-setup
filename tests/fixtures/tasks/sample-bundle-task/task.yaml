@@ -35,5 +35,6 @@ ids:
   acceptance_prefix: AC
   slice_prefix: SLICE
   risk_prefix: RISK
+delivery_strategy: ui-first
 validation_gate: blocking
 current_phase: design

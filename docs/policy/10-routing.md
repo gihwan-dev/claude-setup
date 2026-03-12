@@ -19,7 +19,9 @@
   - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
   - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
-- `orchestrated-task`면 `design-task`가 `work_type + impact_flags`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
+- `orchestrated-task`면 `design-task`가 `work_type + impact_flags + delivery_strategy`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
+- `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
+- AI/agent workflow planning이면 `web-researcher` 또는 메인 스레드 직접 웹 조사로 official vendor docs를 우선 확인한다.
 - 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.
 - 기존 코드의 long-running `design-task`/`implement-task` 경로는 refactor/architecture에 한정하지 않고 non-trivial task 전반(`feature`, `bugfix`, `refactor`, `migration`, `prototype`, `ops`)에 사용한다.
 - 리뷰 요청은 findings-first를 유지한다. `orchestrated-task` 판정이면 같은 턴에 구조 개선 또는 bundle 설계 방향을 함께 제공한다.

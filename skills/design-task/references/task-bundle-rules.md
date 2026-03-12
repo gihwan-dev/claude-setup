@@ -30,12 +30,14 @@
 - `required_docs`
 - `source_of_truth`
 - `ids`
+- `delivery_strategy`
 - `validation_gate`
 - `current_phase`
 
 `required_docs`는 `task.yaml` 자신을 제외한 실제 bundle 문서/디렉터리 집합을 적는다.
 `source_of_truth`는 실제 파일 경로만 가리킨다.
 `success_criteria`와 `major_boundaries`는 continuity gate 비교에 직접 사용한다.
+`delivery_strategy`도 continuity gate 비교에 직접 사용한다.
 
 ## Work Types
 
@@ -45,6 +47,17 @@
 - `migration`
 - `prototype`
 - `ops`
+
+## Delivery Strategies
+
+- `standard`
+- `ui-first`
+
+파생 규칙:
+
+- `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `ui-first`
+- 그 외는 `standard`
+- `ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 UX 방향, 상태 모델, mock 전략이 정리되기 전에는 integration slice를 만들지 않는다.
 
 ## Impact Flags
 
@@ -178,6 +191,13 @@ gate 규칙:
 - Focused validation plan
 - Stop / Replan trigger
 
+`delivery_strategy=ui-first`면 추가 규칙:
+
+- `SLICE-1`: static/visual UI, information architecture, copy, navigation, visual shell만 다룬다. real API/integration 금지.
+- `SLICE-2`: local interaction, mock data, loading/empty/error/permission/responsive/a11y state만 다룬다. real API/integration 금지.
+- `SLICE-3+`: real API/backend/data contract/integration과 회귀 보강을 다룬다.
+- `SLICE-1` 미승인 또는 `SLICE-2` 상태 모델 미정이면 다음 slice 진입을 stop/replan으로 막는다.
+
 ## `README.md`
 
 한 페이지로 유지한다.
@@ -187,6 +207,8 @@ gate 규칙:
 - Key decisions
 - Validation gate status
 - Implementation slice order
+
+`delivery_strategy=ui-first`면 `Implementation slice order`는 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 그대로 반영한다.
 
 ## `STATUS.md`
 

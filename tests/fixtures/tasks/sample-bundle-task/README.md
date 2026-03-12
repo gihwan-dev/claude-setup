@@ -24,6 +24,7 @@ Codex long-running task execution을 timeline-first UI로 분석한다.
 
 - local-first index DB를 둔다.
 - timeline-first UI를 기본 뷰로 둔다.
+- UI-first delivery strategy를 사용한다.
 
 ## Validation gate status
 
@@ -32,6 +33,6 @@ Codex long-running task execution을 timeline-first UI로 분석한다.
 
 ## Implementation slices
 
-- `SLICE-1` ingest session events
-- `SLICE-2` normalize timeline spans
-- `SLICE-3` render overview and detail lanes
+- `SLICE-1` static timeline overview UI shell
+- `SLICE-2` local interaction + mock states
+- `SLICE-3` real ingestion/normalization integration

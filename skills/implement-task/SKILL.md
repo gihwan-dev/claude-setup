@@ -4,7 +4,8 @@ description: >
   Implementation execution skill for long-running tasks. Use when the user says "구현해줘",
   "다음 단계 진행해", "계속해", or asks to execute based on an existing design.
   Read tasks/{task-path}/task.yaml + EXECUTION_PLAN.md + STATUS.md for new bundle tasks,
-  fall back to legacy PLAN.md + STATUS.md only for older tasks, and execute the next slice.
+  honor `delivery_strategy`, fall back to legacy PLAN.md + STATUS.md only for older tasks,
+  and execute the next slice.
 ---
 
 # Workflow: Implement Task
@@ -18,10 +19,12 @@ description: >
 
 - 항상 `STATUS.md`를 먼저 읽는다.
 - 새 bundle task면 `task.yaml`, `EXECUTION_PLAN.md`, `STATUS.md`를 먼저 읽는다.
-- 새 bundle task의 `task.yaml.success_criteria`와 `task.yaml.major_boundaries`는 continuity에서 확정된 계약으로 취급하고 임의 변경하지 않는다.
+- 새 bundle task의 `task.yaml.success_criteria`, `task.yaml.major_boundaries`, `task.yaml.delivery_strategy`는 continuity에서 확정된 계약으로 취급하고 임의 변경하지 않는다.
 - legacy task에 한해서만 `PLAN.md`, `STATUS.md` fallback을 사용한다.
 - mixed mode(`task.yaml`와 `PLAN.md` 공존)는 구현하지 않고 중단한다.
 - 새 bundle task에서 `validation_gate: blocking`인데 `SPEC_VALIDATION.md`의 blocking issue가 해소되지 않았으면 구현을 시작하지 않는다.
+- `delivery_strategy=ui-first`면 `SLICE-1`/`SLICE-2`를 병합하거나 건너뛰지 않는다.
+- `delivery_strategy=ui-first`인 early UI slice에서는 real API/backend/data contract/integration diff를 허용하지 않는다.
 - 여러 active task 폴더가 공존하는 것은 정상 경로다.
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
@@ -84,7 +87,7 @@ description: >
 1. 대상 task를 선택한다.
 2. task mode를 판정한다. 새 bundle이면 `task.yaml + EXECUTION_PLAN.md + STATUS.md`, legacy면 `PLAN.md + STATUS.md`를 읽는다.
 3. 새 bundle이면 `SPEC_VALIDATION.md`를 확인해 `validation_gate`와 blocking issue 상태를 판정한다.
-4. 새 bundle의 `EXECUTION_PLAN.md`가 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 따르는지 전제로 slice를 읽는다.
+4. 새 bundle의 `EXECUTION_PLAN.md`가 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 따르는지 전제로 slice를 읽는다. `delivery_strategy=ui-first`면 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 고정된 구현 계약으로 읽는다.
 5. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
 6. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
 7. phase 1 시작 시 `worker`는 대상 파일 역할, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
@@ -130,6 +133,7 @@ description: >
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
 - phase 1을 수행한 same `worker`가 commit-only를 수행한다.
 - 같은 slice에는 phase 1을 수행한 same `worker`만 commit-only를 수행한다.
+- `delivery_strategy=ui-first`면 early UI slice에 real API/integration diff를 섞지 않고 다음 slice로 넘긴다.
 - `wait timeout`은 stalled와 동일하지 않으며 replacement writer를 트리거하지 않는다.
 - `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.

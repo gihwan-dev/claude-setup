@@ -27,11 +27,15 @@ from workflow_contract import (
     STRUCTURE_ROLE_LIMITS,
     STRUCTURE_SOFT_LIMIT_BEHAVIOR,
     STRUCTURE_SPLIT_ROLES,
+    TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
     TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
     TASK_BUNDLE_TRACEABILITY_IDS,
+    TASK_BUNDLE_UI_FIRST_FLAGS,
+    TASK_BUNDLE_UI_FIRST_WORK_TYPES,
     TASK_BUNDLE_WORK_TYPES,
+    decide_task_bundle_delivery_strategy,
     decide_helper_close_action,
     decide_spec_validation_gate,
     derive_task_bundle_required_docs,
@@ -313,6 +317,11 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("required_docs", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
         self.assertIn("success_criteria", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
         self.assertIn("major_boundaries", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertIn("delivery_strategy", TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS)
+        self.assertEqual(("standard", "ui-first"), TASK_BUNDLE_DELIVERY_STRATEGIES)
+        self.assertIn("feature", TASK_BUNDLE_UI_FIRST_WORK_TYPES)
+        self.assertIn("bugfix", TASK_BUNDLE_UI_FIRST_WORK_TYPES)
+        self.assertEqual(("ui_surface_changed", "workflow_changed"), TASK_BUNDLE_UI_FIRST_FLAGS)
         self.assertEqual("REQ", TASK_BUNDLE_TRACEABILITY_IDS["requirement_prefix"])
         self.assertEqual("RISK", TASK_BUNDLE_TRACEABILITY_IDS["risk_prefix"])
         self.assertEqual(
@@ -365,6 +374,23 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertIn("openapi.yaml", docs)
         self.assertIn("schema.json", docs)
+
+    def test_task_bundle_delivery_strategy_derivation(self) -> None:
+        ui_first = decide_task_bundle_delivery_strategy(
+            "feature",
+            ("ui_surface_changed",),
+        )
+        workflow_ui_first = decide_task_bundle_delivery_strategy(
+            "bugfix",
+            ("workflow_changed",),
+        )
+        standard = decide_task_bundle_delivery_strategy(
+            "ops",
+            tuple(),
+        )
+        self.assertEqual("ui-first", ui_first)
+        self.assertEqual("ui-first", workflow_ui_first)
+        self.assertEqual("standard", standard)
 
     def test_spec_validation_gate_defaults_to_advisory_for_low_risk(self) -> None:
         gate = decide_spec_validation_gate(
@@ -442,6 +468,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("SPEC_VALIDATION.md", skill_content)
         self.assertIn("success_criteria", skill_content)
         self.assertIn("major_boundaries", skill_content)
+        self.assertIn("delivery_strategy", skill_content)
         self.assertIn("Not started.", skill_content)
 
     def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
@@ -454,6 +481,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("PLAN.md", skill_content)
         self.assertIn("blocking", skill_content)
         self.assertIn("EXECUTION_PLAN.md", skill_content)
+        self.assertIn("delivery_strategy", skill_content)
 
     def test_structure_first_instruction_drift_is_guarded(self) -> None:
         worker_content = (
@@ -526,6 +554,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("ambiguous case", reference_content)
         self.assertIn("success_criteria", reference_content)
         self.assertIn("major_boundaries", reference_content)
+        self.assertIn("delivery_strategy", reference_content)
 
     def test_task_bundle_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "task-bundle-rules.md"
@@ -537,4 +566,5 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("Traceability", reference_content)
         self.assertIn("success_criteria", reference_content)
         self.assertIn("Execution slices", reference_content)
+        self.assertIn("delivery_strategy", reference_content)
         self.assertIn("Not started.", reference_content)

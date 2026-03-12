@@ -240,6 +240,15 @@ TASK_BUNDLE_WORK_TYPES = _require_str_list(
 TASK_BUNDLE_IMPACT_FLAGS = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_impact_flags", path=WORKFLOW_POLICY_PATH
 )
+TASK_BUNDLE_DELIVERY_STRATEGIES = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_delivery_strategies", path=WORKFLOW_POLICY_PATH
+)
+TASK_BUNDLE_UI_FIRST_WORK_TYPES = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_ui_first_work_types", path=WORKFLOW_POLICY_PATH
+)
+TASK_BUNDLE_UI_FIRST_FLAGS = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_ui_first_flags", path=WORKFLOW_POLICY_PATH
+)
 TASK_BUNDLE_VALIDATION_GATES = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_validation_gate_values", path=WORKFLOW_POLICY_PATH
 )
@@ -401,6 +410,7 @@ class TaskBundleManifest:
     required_docs: tuple[str, ...]
     source_of_truth: dict[str, str]
     ids: dict[str, str]
+    delivery_strategy: str
     validation_gate: str
     current_phase: str
 
@@ -705,11 +715,17 @@ def load_task_bundle_manifest(path: Path) -> TaskBundleManifest:
     required_docs = parsed["required_docs"]
     source_of_truth = parsed["source_of_truth"]
     ids = parsed["ids"]
+    delivery_strategy = parsed["delivery_strategy"]
     validation_gate = parsed["validation_gate"]
     current_phase = parsed["current_phase"]
 
-    if not all(isinstance(value, str) and value.strip() for value in (task, goal, work_type, validation_gate, current_phase)):
-        raise ValueError(f"{path}: task, goal, work_type, validation_gate, current_phase must be non-empty strings")
+    if not all(
+        isinstance(value, str) and value.strip()
+        for value in (task, goal, work_type, delivery_strategy, validation_gate, current_phase)
+    ):
+        raise ValueError(
+            f"{path}: task, goal, work_type, delivery_strategy, validation_gate, current_phase must be non-empty strings"
+        )
     if not isinstance(success_criteria, list) or not all(
         isinstance(item, str) and item.strip() for item in success_criteria
     ):
@@ -743,9 +759,21 @@ def load_task_bundle_manifest(path: Path) -> TaskBundleManifest:
         required_docs=tuple(required_docs),
         source_of_truth={key: value for key, value in source_of_truth.items()},
         ids={key: value for key, value in ids.items()},
+        delivery_strategy=delivery_strategy,
         validation_gate=validation_gate,
         current_phase=current_phase,
     )
+
+
+def decide_task_bundle_delivery_strategy(work_type: str, impact_flags: tuple[str, ...]) -> str:
+    if work_type not in TASK_BUNDLE_WORK_TYPES:
+        raise ValueError(f"unsupported work_type: {work_type}")
+    if any(flag not in TASK_BUNDLE_IMPACT_FLAGS for flag in impact_flags):
+        unknown_flags = sorted(flag for flag in impact_flags if flag not in TASK_BUNDLE_IMPACT_FLAGS)
+        raise ValueError(f"unsupported impact_flags: {unknown_flags}")
+    if work_type in TASK_BUNDLE_UI_FIRST_WORK_TYPES and set(impact_flags) & set(TASK_BUNDLE_UI_FIRST_FLAGS):
+        return "ui-first"
+    return "standard"
 
 
 def derive_task_bundle_required_docs(work_type: str, impact_flags: tuple[str, ...]) -> tuple[str, ...]:
@@ -829,6 +857,8 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
     if any(flag not in TASK_BUNDLE_IMPACT_FLAGS for flag in manifest.impact_flags):
         unknown_flags = sorted(flag for flag in manifest.impact_flags if flag not in TASK_BUNDLE_IMPACT_FLAGS)
         errors.append(f"{task_root}: unsupported impact_flags: {unknown_flags}")
+    if manifest.delivery_strategy not in TASK_BUNDLE_DELIVERY_STRATEGIES:
+        errors.append(f"{task_root}: unsupported delivery_strategy: {manifest.delivery_strategy}")
     if manifest.validation_gate not in TASK_BUNDLE_VALIDATION_GATES:
         errors.append(f"{task_root}: unsupported validation_gate: {manifest.validation_gate}")
     if manifest.ids != TASK_BUNDLE_TRACEABILITY_IDS:
@@ -850,6 +880,15 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
     missing_expected_docs = sorted(expected_docs - set(manifest.required_docs))
     if missing_expected_docs:
         errors.append(f"{task_root}: required_docs missing derived docs: {missing_expected_docs}")
+
+    expected_delivery_strategy = decide_task_bundle_delivery_strategy(
+        manifest.work_type,
+        manifest.impact_flags,
+    )
+    if manifest.delivery_strategy != expected_delivery_strategy:
+        errors.append(
+            f"{task_root}: delivery_strategy mismatch: expected={expected_delivery_strategy!r} actual={manifest.delivery_strategy!r}"
+        )
 
     expected_gate = decide_spec_validation_gate(manifest.impact_flags, manifest.required_docs)
     if manifest.validation_gate != expected_gate:

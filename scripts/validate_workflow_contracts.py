@@ -38,12 +38,16 @@ from workflow_contract import (
     STRUCTURE_SOFT_LIMIT_BEHAVIOR,
     STRUCTURE_SPLIT_ROLES,
     TASK_BUNDLE_CORE_DOCS,
+    TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
     TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
     TASK_BUNDLE_TRACEABILITY_IDS,
+    TASK_BUNDLE_UI_FIRST_FLAGS,
+    TASK_BUNDLE_UI_FIRST_WORK_TYPES,
     TASK_BUNDLE_WORK_TYPES,
     WRITABLE_PROJECTION_AGENT_IDS,
+    decide_task_bundle_delivery_strategy,
     decide_spec_validation_gate,
     decide_helper_close_action,
     derive_task_bundle_required_docs,
@@ -421,10 +425,18 @@ def _validate_policy_functions(errors: list[str]) -> None:
         errors.append("task bundle task.yaml required keys drifted")
     if "success_criteria" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS or "major_boundaries" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS:
         errors.append("task bundle continuity keys drifted")
+    if "delivery_strategy" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS:
+        errors.append("task bundle delivery_strategy key drifted")
     if "feature" not in TASK_BUNDLE_WORK_TYPES or "ops" not in TASK_BUNDLE_WORK_TYPES:
         errors.append("task bundle work types drifted")
     if "workflow_changed" not in TASK_BUNDLE_IMPACT_FLAGS or "high_user_risk" not in TASK_BUNDLE_IMPACT_FLAGS:
         errors.append("task bundle impact flags drifted")
+    if set(TASK_BUNDLE_DELIVERY_STRATEGIES) != {"standard", "ui-first"}:
+        errors.append("task bundle delivery strategies drifted")
+    if "feature" not in TASK_BUNDLE_UI_FIRST_WORK_TYPES or "bugfix" not in TASK_BUNDLE_UI_FIRST_WORK_TYPES:
+        errors.append("task bundle ui-first work types drifted")
+    if set(TASK_BUNDLE_UI_FIRST_FLAGS) != {"ui_surface_changed", "workflow_changed"}:
+        errors.append("task bundle ui-first flags drifted")
     if TASK_BUNDLE_TRACEABILITY_IDS.get("risk_prefix") != "RISK":
         errors.append("task bundle traceability ids drifted")
     if TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER != (
@@ -465,6 +477,20 @@ def _validate_policy_functions(errors: list[str]) -> None:
     )
     if "openapi.yaml" not in contract_docs or "schema.json" not in contract_docs:
         errors.append("contract-changing bundle must require openapi.yaml and schema.json defaults")
+
+    ui_first_strategy = decide_task_bundle_delivery_strategy(
+        "feature",
+        ("ui_surface_changed",),
+    )
+    if ui_first_strategy != "ui-first":
+        errors.append("ui-surface feature bundle must derive ui-first delivery strategy")
+
+    standard_strategy = decide_task_bundle_delivery_strategy(
+        "ops",
+        tuple(),
+    )
+    if standard_strategy != "standard":
+        errors.append("ops bundle must derive standard delivery strategy")
 
     advisory_gate = decide_spec_validation_gate(tuple(), ("README.md", "EXECUTION_PLAN.md", "STATUS.md"))
     if advisory_gate != "advisory":
