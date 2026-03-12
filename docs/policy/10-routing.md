@@ -58,3 +58,10 @@
 - delegated lane의 code diff는 정확히 하나의 `worker`만 적용한다.
 - 같은 실행 단위에서 두 번째 writer를 투입하지 않는다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
+
+### Exit documentation review
+
+- 모든 lane은 종료 전에 메인 스레드가 실질 영향이 있는 문서만 다시 탐색하고 검토한다.
+- 기본 대상 예시는 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
+- 문서 영향 대상이 불명확할 때만 read-only helper로 후보를 좁힌다.
+- `docs/policy`, `skills`, `agent-registry` 같은 SSOT가 바뀌면 관련 generated projection sync와 대응 `--check`를 통과시킨 뒤 종료한다.

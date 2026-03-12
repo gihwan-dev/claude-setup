@@ -101,6 +101,13 @@
 - 같은 실행 단위에서 두 번째 writer를 투입하지 않는다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 
+### Exit documentation review
+
+- 모든 lane은 종료 전에 메인 스레드가 실질 영향이 있는 문서만 다시 탐색하고 검토한다.
+- 기본 대상 예시는 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
+- 문서 영향 대상이 불명확할 때만 read-only helper로 후보를 좁힌다.
+- `docs/policy`, `skills`, `agent-registry` 같은 SSOT가 바뀌면 관련 generated projection sync와 대응 `--check`를 통과시킨 뒤 종료한다.
+
 ## Structure-First Authoring
 
 ### Structure preflight
@@ -140,15 +147,18 @@
 1. 메인 스레드에서 필요한 최소 파일만 확인한다.
 2. 메인 스레드에서 최소 diff를 직접 적용한다.
 3. 검증 1개를 집중 실행한다.
-4. 변경 요약, 검증 결과, 잔여 리스크를 보고한다.
+4. 종료 전 메인 스레드가 실질 영향 문서만 재탐색/검토하고 필요한 sync/check를 마무리한다.
+5. 변경 요약, 검증 결과, 잔여 리스크를 보고한다.
 
 ### Standard delegated flow
 
 1. 탐색/증거 수집이 필요할 때만 `explorer`를 사용한다.
 2. 메인 스레드에서 의사결정을 확정한다.
 3. 정확히 하나의 `worker`가 필요한 code diff를 적용한다.
-4. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
-5. 메인 스레드가 결과를 통합해 최종 응답한다.
+4. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
+5. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
+6. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
+7. 메인 스레드가 결과를 통합해 최종 응답한다.
 
 ### Long-running `implement-task` path
 
@@ -157,10 +167,14 @@
 - `design-task`와 `implement-task`는 각 slice에 `split decision`을 기록하고 target-file append 금지 trigger를 명시한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
+- 문서 영향 판정은 메인 스레드 기본 책임이다.
+- 종료 전 메인 스레드는 실질 영향 문서만 다시 탐색/검토한다. 기본 대상은 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
+- 문서 대상이 불명확할 때만 read-only helper를 사용한다.
 - path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
 - 후보가 2개 이상이면 사용자 확인 전까지 자동 실행하지 않는다.
 - writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
-- 각 slice는 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
+- 각 slice는 `worker edit(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
+- 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
 - 새 task bundle core docs는 `task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`다.
@@ -175,8 +189,13 @@
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경일 때만 full-repo validation을 허용한다.
 - noisy/multi-step validation log는 `verification-worker`가 메인 검증 로그를 해석한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
+- `STATUS.md`의 구현 요약에는 문서 영향 판단을 남기고, `Verification results`에는 관련 sync/check 명령과 pass/fail을 남긴다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
+- `docs/policy`가 바뀌면 `python3 scripts/sync_instructions.py` 후 `python3 scripts/sync_instructions.py --check`를 통과해야 한다.
+- `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다.
+- `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다.
+- 문서 diff도 slice budget에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
 - slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.

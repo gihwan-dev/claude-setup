@@ -12,7 +12,7 @@ description: >
 ## Goal
 
 선택된 task bundle 또는 legacy plan 기준으로 다음 실행 slice를 구현하고 해당 `STATUS.md`를 갱신한다.
-새 bundle task의 구현 계약은 `task.yaml + EXECUTION_PLAN.md + STATUS.md -> worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
+새 bundle task의 구현 계약은 `task.yaml + EXECUTION_PLAN.md + STATUS.md -> worker edit(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision`이다.
 
 ## Hard Rules
 
@@ -28,6 +28,11 @@ description: >
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
 - 각 slice 실행 전에는 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
 - split-first trigger가 켜지면 target file append를 금지하고 같은 slice 내 추출 또는 `blocked + exact split proposal`만 허용한다.
+- 종료 전 메인 스레드는 실질 영향 문서만 다시 탐색/검토한다. 기본 대상은 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
+- 문서 영향 대상이 불명확할 때만 read-only helper로 후보를 좁힌다.
+- 문서 변경이 필요하면 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
+- `docs/policy`, `skills`, `agent-registry` 같은 SSOT를 바꿨다면 관련 generated projection sync와 대응 `--check`가 통과하기 전에는 종료하지 않는다.
+- 문서 diff도 slice hard guardrail에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
 - 기본 실행 단위는 다음 slice 1개다.
 - focused validation은 메인 스레드가 수행한다.
 - verification-worker는 메인 검증 로그가 noisy/multi-step일 때만 사용한다.
@@ -84,16 +89,18 @@ description: >
 6. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
 7. phase 1 시작 시 `worker`는 대상 파일 역할, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
 8. split-first trigger가 켜지면 same `worker`는 기존 파일 append 대신 새 모듈 추출 또는 `blocked + exact split proposal`로 되돌린다.
-9. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
-10. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
-11. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-12. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-13. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-14. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
-15. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-16. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-17. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-18. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
+9. 메인 스레드는 실질 영향 문서를 판정하고 다시 탐색/검토한다. 대상이 불명확할 때만 read-only helper를 사용한다.
+10. 필요한 문서 diff나 SSOT 관련 generated projection sync는 phase 1을 수행한 same `worker`가 focused validation 전에 마무리한다.
+11. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
+12. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
+13. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+14. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+15. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+16. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+17. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+18. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+19. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+20. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -107,14 +114,19 @@ description: >
 - Python repo 추론: `pyproject.toml` 또는 `tests/`/`test_*.py`를 기준으로 `python3 -m unittest discover`를 후보로 본다.
 - 추론된 manager/도구에서 존재하는 스크립트(예: `typecheck`, `lint`, `test`)만 실행한다.
 - 안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.
+- SSOT sync/check가 필요한 경우 아래 repo-aware fallback을 사용한다.
+- `docs/policy` 변경 시 `python3 scripts/sync_instructions.py` 후 `python3 scripts/sync_instructions.py --check`를 사용한다.
+- `skills` 변경 시 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 사용한다.
+- `agent-registry` 변경 시 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 사용한다.
 
 ## Lane and Agent Rules
 
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
-- 오케스트레이터는 slice 선택, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
-- read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용한다.
+- 오케스트레이터는 slice 선택, 문서 영향 판정, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
+- read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용하고, 문서 영향 대상이 불명확할 때만 문서 검토 보조로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
+- 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 반영한다.
 - noisy validation일 때만 `verification-worker`를 사용하고, 메인 검증 raw log 해석은 verifier가 담당한다.
 - phase 1을 수행한 same `worker`가 commit-only를 수행한다.
 - 같은 slice에는 phase 1을 수행한 same `worker`만 commit-only를 수행한다.
@@ -139,8 +151,8 @@ description: >
 
 - `# Current slice`: 이번 실행 대상 slice를 적는다.
 - `# Done`: 구현 세부 나열 대신 완료된 결과와 사용자/시스템 영향만 요약한다.
-- `# Decisions made during implementation`: 다음 slice 또는 공개 경계에 영향을 주는 의사결정만 적는다.
-- `# Verification results`: 검증 명령, pass/fail, 커밋 시도 결과(기본 커밋/`--no-verify` 재시도 여부), 핵심 실패 원인만 적는다. raw log를 붙이지 않는다.
+- `# Decisions made during implementation`: 다음 slice 또는 공개 경계에 영향을 주는 의사결정만 적고, 문서 영향 판단 결과도 함께 남긴다.
+- `# Verification results`: 검증 명령, pass/fail, 문서/SSOT sync-check 결과, 커밋 시도 결과(기본 커밋/`--no-verify` 재시도 여부), 핵심 실패 원인만 적는다. raw log를 붙이지 않는다.
 - `# Known issues / residual risk`: 남은 위험과 미해결 이슈를 적는다.
 - `# Next slice`: 바로 실행할 수 있도록 목표, 선행조건, 먼저 볼 경계를 적는다.
 - `STATUS.md`를 최초 생성한 실행에서는 템플릿 생성 사실을 `# Done` 또는 `# Decisions made during implementation`에 기록한다.

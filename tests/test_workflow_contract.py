@@ -495,6 +495,26 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("split-first trigger", implement_content)
         self.assertIn("exact split proposal", implement_content)
 
+    def test_documentation_recheck_contract_is_documented(self) -> None:
+        routing_content = (REPO_ROOT / "docs" / "policy" / "10-routing.md").read_text(encoding="utf-8")
+        long_running_content = (REPO_ROOT / "docs" / "policy" / "20-long-running.md").read_text(encoding="utf-8")
+        skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("실질 영향이 있는 문서만 다시 탐색하고 검토", routing_content)
+        self.assertIn("문서 영향 대상이 불명확할 때만 read-only helper", routing_content)
+        self.assertIn("phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영", long_running_content)
+        self.assertIn("python3 scripts/sync_instructions.py --check", long_running_content)
+        self.assertIn("문서 diff도 slice budget에 포함", long_running_content)
+        self.assertIn("python3 scripts/sync_skills_index.py --check", skill_content)
+        self.assertIn("python3 scripts/sync_agents.py --check", skill_content)
+        self.assertIn("실질 영향 문서를 다시 확인", prompt_content)
+        self.assertIn("python3 scripts/sync_instructions.py", prompt_content)
+        self.assertIn("python3 scripts/sync_skills_index.py", prompt_content)
+        self.assertIn("python3 scripts/sync_agents.py", prompt_content)
+
     def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"
         self.assertTrue(reference_path.exists(), msg=f"missing continuity reference: {reference_path}")
