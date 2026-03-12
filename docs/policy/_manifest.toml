@@ -2,6 +2,7 @@ title = "멀티 에이전트 오케스트레이션 정책"
 sections = [
   "00-overview.md",
   "10-routing.md",
+  "15-structure-first.md",
   "20-long-running.md",
   "30-reviews.md",
   "40-sources.md",

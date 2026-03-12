@@ -31,14 +31,17 @@
   - 변경 파일 7개 이상
   - 모듈/패키지 경계 2개 이상 변경
   - public surface 변경 (export, entrypoint, 핵심 설정)
-- `structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.
+- `structure-planner`는 아래 조건에서 quality preflight escalation 또는 `design-task` 내부 fan-out으로 실행한다.
+  - `structure preflight`에서 `split-first` trigger가 켜진 경우
   - 예상 diff가 150 LOC 이상인 경우
   - 예상 변경 파일이 2개 이상인 경우
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과해 분해 설계가 필요한 경우
 - `module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.
   - FAIL 판정은 공통 구조 관점에서 P1로 취급한다.
+  - 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.
   - FAIL 판정은 React 구조 관점에서 P1로 취급한다.
+  - 이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
 - `type-specialist`는 shared/public types, generics, public contract 변경 시 실행한다.
 - `test-engineer`는 회귀 리스크가 크거나 테스트 커버리지 공백이 있을 때 실행한다.
 

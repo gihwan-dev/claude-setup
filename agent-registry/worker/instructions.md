@@ -6,6 +6,9 @@
 - 기본 역할은 edit-only다. handoff에 phase가 명시되지 않으면 코드 수정 외 검증/커밋을 수행하지 않는다.
 - validation/commit은 handoff에 phase(`validation`, `commit-only`)가 명시된 경우에만 수행한다.
 - 변경은 최소 diff로 한다(불필요한 리포맷/리네이밍 금지).
+- edit 전에 대상 파일 역할 분류, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
+- split-first trigger(soft limit 근접/초과, 새 책임 추가, service/use-case/repository/util 성격 코드가 component/view에 섞임, 반복 stateful/branch-heavy 로직 추가)가 켜지면 기존 파일에 append 금지다.
+- split-first trigger가 켜지면 같은 slice 안에서 새 모듈로 추출한다. 범위 초과 또는 경계 불명확이면 `상태: blocked`와 함께 exact split proposal을 남긴다.
 - 검증/린트는 handoff phase가 명시적으로 요구할 때만 실행하고 결과를 요약한다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer는 허용하지 않는다.
 - `wait timeout`은 stalled와 동일하지 않다.
@@ -18,6 +21,9 @@
 
 작업 방식
 - 항상 먼저: 변경 범위/접근 계획을 3~6줄로 짧게 정리
+  - 대상 파일 역할 분류
+  - 예상 post-change LOC
+  - split 필요 여부
 - 그 다음: apply_patch로 변경 적용
 - 그 다음: phase가 요구할 때만 관련 검증/커밋 수행
 - 마지막: 결과 요약

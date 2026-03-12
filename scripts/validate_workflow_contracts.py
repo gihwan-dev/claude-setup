@@ -30,6 +30,13 @@ from workflow_contract import (
     REQUIRED_HELPER_AGENT_IDS,
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    STRUCTURE_EXCEPTIONS,
+    STRUCTURE_HARD_LIMIT_BEHAVIOR,
+    STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+    STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR,
+    STRUCTURE_ROLE_LIMITS,
+    STRUCTURE_SOFT_LIMIT_BEHAVIOR,
+    STRUCTURE_SPLIT_ROLES,
     TASK_BUNDLE_CORE_DOCS,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
@@ -183,6 +190,151 @@ def _validate_helper_orchestration(errors: list[str]) -> None:
 
         if orchestration != expected:
             errors.append(f"helper orchestration cache drifted for {agent_id}")
+
+
+def _expect_substrings(path: Path, substrings: tuple[str, ...], errors: list[str]) -> None:
+    content = path.read_text(encoding="utf-8")
+    for substring in substrings:
+        if substring not in content:
+            errors.append(f"{path}: missing required contract snippet: {substring}")
+
+
+def _validate_structure_policy(repo_root: Path, errors: list[str]) -> None:
+    workflow_path = repo_root / "policy" / "workflow.toml"
+    payload = _load_toml(workflow_path)
+    structure_policy = payload.get("structure_policy")
+    if not isinstance(structure_policy, dict):
+        errors.append(f"missing [structure_policy]: {workflow_path}")
+        return
+
+    role_limits = structure_policy.get("role_limits")
+    if not isinstance(role_limits, dict):
+        errors.append(f"missing [structure_policy.role_limits]: {workflow_path}")
+    else:
+        expected_limits = {
+            "component_view": (220, 300),
+            "react_hook_provider_view_model": (150, 220),
+            "hook_composable_middleware": (150, 220),
+            "service_use_case_controller_repository_util_module": (200, 260),
+            "function": (40, 60),
+        }
+        if set(role_limits) != set(expected_limits):
+            errors.append("structure_policy.role_limits keys drifted")
+        for key, expected in expected_limits.items():
+            raw_value = role_limits.get(key)
+            if not isinstance(raw_value, dict):
+                errors.append(f"structure_policy.role_limits.{key} must be a table")
+                continue
+            target = raw_value.get("target")
+            hard = raw_value.get("hard")
+            if (target, hard) != expected:
+                errors.append(
+                    f"structure_policy.role_limits.{key} drifted: expected={expected!r} actual={(target, hard)!r}"
+                )
+
+    if STRUCTURE_SOFT_LIMIT_BEHAVIOR != "split-first":
+        errors.append("soft_limit_behavior must remain split-first")
+    if STRUCTURE_HARD_LIMIT_BEHAVIOR != "block":
+        errors.append("hard_limit_behavior must remain block")
+    if STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR != "block":
+        errors.append("responsibility_mix_behavior must remain block")
+    if STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR != "allow-only-without-additive-growth":
+        errors.append("legacy_oversized_file_behavior drifted")
+
+    expected_exceptions = (
+        "*.generated.*",
+        "route manifest",
+        "icon registry",
+        "schema declaration files",
+        "migration snapshot",
+        "vendored third-party",
+    )
+    if STRUCTURE_EXCEPTIONS != expected_exceptions:
+        errors.append("structure exceptions drifted")
+
+    expected_split_roles = (
+        "component",
+        "view",
+        "hook",
+        "provider",
+        "view-model",
+        "composable",
+        "middleware",
+        "service",
+        "use-case",
+        "repository",
+        "controller",
+        "util",
+        "adapter",
+    )
+    if STRUCTURE_SPLIT_ROLES != expected_split_roles:
+        errors.append("structure split roles drifted")
+
+
+def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    worker_path = registry_root / "worker" / "instructions.md"
+    module_gate_path = registry_root / "module-structure-gatekeeper" / "instructions.md"
+    frontend_gate_path = registry_root / "frontend-structure-gatekeeper" / "instructions.md"
+    project_planner_path = registry_root / "project-planner" / "instructions.md"
+    project_planner_contract = registry_root / "project-planner" / "agent.toml"
+
+    _expect_substrings(
+        worker_path,
+        (
+            "대상 파일 역할 분류",
+            "예상 post-change LOC",
+            "split 필요 여부",
+            "split-first",
+            "append 금지",
+            "exact split proposal",
+        ),
+        errors,
+    )
+
+    component_target, component_hard = STRUCTURE_ROLE_LIMITS["component_view"]
+    react_hook_target, react_hook_hard = STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"]
+    module_hook_target, module_hook_hard = STRUCTURE_ROLE_LIMITS["hook_composable_middleware"]
+    service_target, service_hard = STRUCTURE_ROLE_LIMITS["service_use_case_controller_repository_util_module"]
+    function_target, function_hard = STRUCTURE_ROLE_LIMITS["function"]
+
+    _expect_substrings(
+        module_gate_path,
+        (
+            f"component/view file: target <= {component_target} LOC, hard limit {component_hard}",
+            f"hook/composable/middleware file: target <= {module_hook_target} LOC, hard limit {module_hook_hard}",
+            f"service/use-case/controller/repository/util/module file: target <= {service_target} LOC, hard limit {service_hard}",
+            f"any function/method: target <= {function_target} LOC, hard limit {function_hard}",
+            "이미 soft limit를 넘긴 파일에 additive diff를 더하면 `fail`이다.",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        frontend_gate_path,
+        (
+            f"React component/view file: target <= {component_target} LOC, hard limit {component_hard}",
+            f"React hook/provider/view-model file: target <= {react_hook_target} LOC, hard limit {react_hook_hard}",
+            f"Any function: target <= {function_target} LOC, hard limit {function_hard}",
+            "이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 `FAIL`이다.",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        project_planner_path,
+        (
+            "`task.yaml` bundle",
+            "legacy fallback compatibility",
+            "`PLAN.md`는 legacy fallback",
+            "split-first",
+        ),
+        errors,
+    )
+
+    project_planner_contract_text = project_planner_contract.read_text(encoding="utf-8")
+    if "PLAN.md 및 STATUS.md를 단일 진실원" in project_planner_contract_text:
+        errors.append("project-planner agent description still treats PLAN.md as primary source")
 
 
 def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
@@ -382,6 +534,8 @@ def main() -> int:
     _validate_agent_projection(repo_root, errors)
     _validate_registry_codex_contract(repo_root, errors)
     _validate_helper_orchestration(errors)
+    _validate_structure_policy(repo_root, errors)
+    _validate_structure_instruction_drift(repo_root, errors)
     _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(errors)
     _validate_documentation_only_builtins(repo_root, errors)

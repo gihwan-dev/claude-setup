@@ -78,7 +78,11 @@ class InstallAssetsTests(RepoTestCase):
                 msg=f"install_assets dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
             )
             self.assertIn("skill canonical source:", completed.stdout)
-            # overlay 안내는 실제 overlay가 존재할 때만 출력된다(환경 의존). 항상 기대하지 않는다.
+            legacy_overlay_root = REPO_ROOT / ".agents" / "skills"
+            if legacy_overlay_root.exists():
+                self.assertIn("legacy overlay detected:", completed.stdout)
+            else:
+                self.assertNotIn("legacy overlay detected:", completed.stdout)
             self.assertIn("internal skill asset:", completed.stdout)
 
     def test_codex_managed_block_contains_required_helpers(self) -> None:

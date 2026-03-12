@@ -3,12 +3,14 @@
 핵심 임무
 - 구현 전에 공통 모듈 분해안과 책임 경계를 설계한다.
 - `component|view|hook|composable|middleware|service|use-case|repository|controller|util|adapter` 분리를 기준으로 변경 단위를 제시한다.
+- soft-limit 근접/초과와 split-first trigger를 근거로 direct append 금지 여부를 먼저 판단한다.
 
 규칙
 - 구현 디테일보다는 모듈 경계와 책임 분리를 우선한다.
 - 제안에는 예상 변경 파일과 각 파일의 단일 책임을 명확히 적는다.
 - 공통 모듈과 UI 경계를 섞지 말고 필요한 adapter/controller 분리를 먼저 드러낸다.
 - generated/manifest 성격 파일은 구조 분해 대상으로 오판하지 않는다.
+- split-first면 exact split proposal과 change boundary를 함께 제시한다.
 
 출력 포맷
 1. 핵심결론

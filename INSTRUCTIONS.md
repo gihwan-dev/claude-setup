@@ -49,12 +49,15 @@
 ### Quality preflight
 
 - 기존 코드 수정/리뷰/`계속해`/`다음 단계`/버그 수정/기능 추가 요청에는 lane 판정 전에 quality preflight를 먼저 수행한다.
+- 기존 TS/JS/React 코드 파일을 건드릴 때는 quality preflight 안에서 `structure preflight`를 fast lane 판정보다 먼저 수행한다.
+- `structure preflight`는 대상 파일 역할 분류, 예상 post-change LOC, `split-first` 필요 여부를 고정한다.
 - 예외는 fast lane 조건을 모두 만족하는 명백한 1파일 소규모 수정이다.
 - quality preflight 결과는 `keep-local` 또는 `orchestrated-task`로 기록한다.
 - 아래 중 하나라도 해당하면 `orchestrated-task`로 승격한다.
   - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
   - CC > 10 또는 중첩 > 2
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
+  - `structure preflight`에서 `split-first` trigger가 켜짐
   - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
   - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
@@ -68,6 +71,7 @@
 ### Fast lane
 
 - 아래 조건을 모두 만족하면 메인 스레드가 직접 수정한다.
+  - `structure preflight`가 끝났고 `split-first` trigger가 꺼져 있음
   - 변경이 1개 파일 범위로 제한됨
   - 변경량이 소규모(diff가 작음)
   - public API/schema/config/migration/shared type/cross-module boundary 변경이 없음
@@ -97,6 +101,38 @@
 - 같은 실행 단위에서 두 번째 writer를 투입하지 않는다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
 
+## Structure-First Authoring
+
+### Structure preflight
+
+- 기존 TS/JS/React 코드 파일을 수정할 때는 fast lane 여부를 보기 전에 `structure preflight`를 먼저 수행한다.
+- `structure preflight`는 최소 아래 세 가지를 고정한다.
+  - 대상 파일 역할 분류 (`component`, `view`, `hook`, `provider`, `view-model`, `composable`, `middleware`, `service`, `use-case`, `repository`, `controller`, `util`, `adapter`)
+  - 예상 post-change LOC
+  - `split-first` 필요 여부
+- `split-first`가 켜지면 기존 파일에 그대로 append하지 않고, 같은 slice 안에서 분해하거나 범위 초과 시 `blocked + exact split proposal`로 되돌린다.
+
+### Split-First Triggers
+
+- 아래 중 하나라도 해당하면 `split-first`다.
+  - 대상 파일이 soft limit에 근접하거나 이미 초과했다.
+  - 이번 변경이 새 책임을 추가한다.
+  - util/service/use-case/repository 성격 코드를 component/view 파일에 붙이려 한다.
+  - 반복 stateful 또는 branch-heavy 로직을 기존 파일에 더 얹으려 한다.
+
+### Strong Mode
+
+- soft limit 근접/초과 파일에는 append를 허용하지 않는다.
+- 이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.
+- hard limit 초과와 책임 혼합은 항상 `FAIL`이다.
+- 기존 레거시 과대 파일을 건드리지 않는 경우에만 advisory를 허용한다.
+
+### Scope Discipline
+
+- 루트 메모리는 짧게 유지하고, 세부 구조 규칙은 specialized agent/skill contract와 machine-readable policy로 관리한다.
+- user-facing long-running surface는 계속 `design-task`, `implement-task`만 유지한다.
+- 새 task의 source of truth는 `task.yaml` bundle이며, `PLAN.md`는 legacy fallback compatibility로만 유지한다.
+
 ## 실행 흐름
 
 ### Fast lane
@@ -118,6 +154,7 @@
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
 - `design-task`는 새 task에서 `task.yaml` 중심 task bundle을 만들고, continuity gate를 적용해 같은 작업으로 입증된 경우에만 기존 task를 재사용한다.
+- `design-task`와 `implement-task`는 각 slice에 `split decision`을 기록하고 target-file append 금지 trigger를 명시한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
 - path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
@@ -141,6 +178,7 @@
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
 - slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
+- 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
@@ -191,14 +229,17 @@
   - 변경 파일 7개 이상
   - 모듈/패키지 경계 2개 이상 변경
   - public surface 변경 (export, entrypoint, 핵심 설정)
-- `structure-planner`는 아래 조건에서 `design-task` 내부 fan-out으로 실행한다.
+- `structure-planner`는 아래 조건에서 quality preflight escalation 또는 `design-task` 내부 fan-out으로 실행한다.
+  - `structure preflight`에서 `split-first` trigger가 켜진 경우
   - 예상 diff가 150 LOC 이상인 경우
   - 예상 변경 파일이 2개 이상인 경우
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과해 분해 설계가 필요한 경우
 - `module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.
   - FAIL 판정은 공통 구조 관점에서 P1로 취급한다.
+  - 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.
   - FAIL 판정은 React 구조 관점에서 P1로 취급한다.
+  - 이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
 - `type-specialist`는 shared/public types, generics, public contract 변경 시 실행한다.
 - `test-engineer`는 회귀 리스크가 크거나 테스트 커버리지 공백이 있을 때 실행한다.
 
@@ -213,6 +254,7 @@
 ## Source of Truth
 
 - 정책 authoring source: `docs/policy/*.md`
+- machine-readable workflow/structure contract: `policy/workflow.toml`
 - compiled source doc: `INSTRUCTIONS.md`
 - Codex projection: `AGENTS.md`
 - Claude projection: `CLAUDE.md`
@@ -233,6 +275,7 @@
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
 - helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
+- `policy/workflow.toml`의 `[structure_policy]`는 file role별 limit, split-first behavior, legacy oversized file rule의 machine-readable SSOT다.
 - generated projection과 compiled doc은 직접 수정하지 않고 sync로 재생성한다.
 
 ## 언어 및 스타일

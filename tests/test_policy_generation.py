@@ -35,6 +35,7 @@ class PolicyGenerationTests(RepoTestCase):
     def test_docs_policy_generates_current_instruction_files(self) -> None:
         policy_root = REPO_ROOT / "docs" / "policy"
         manifest = load_manifest(policy_root)
+        self.assertIn("15-structure-first.md", manifest["sections"])
         sections = load_sections(policy_root, list(manifest["sections"]))
 
         expected_instructions = build_instructions_content(str(manifest["title"]), sections)
@@ -66,6 +67,12 @@ class PolicyGenerationTests(RepoTestCase):
             self.assertIn(f"@docs/policy/{section_name}", content)
         self.assertIn("@CONTRIBUTING.md", content)
 
+    def test_structure_first_policy_section_is_exposed_in_generated_docs(self) -> None:
+        agents_content = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        instructions_content = (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8")
+        self.assertIn("15-structure-first.md", agents_content)
+        self.assertIn("## Structure-First Authoring", instructions_content)
+
     def test_skills_index_and_manifest_match_skill_frontmatter(self) -> None:
         entries = _collect_skill_entries(REPO_ROOT / "skills")
         expected_index = _render_index(entries)
@@ -83,4 +90,3 @@ class PolicyGenerationTests(RepoTestCase):
         self.assertNotIn("skills/_shared", actual_index)
         self.assertEqual(manifest_payload["canonical_source_root"], "skills")
         self.assertEqual(manifest_payload["legacy_overlay_root"], ".agents/skills")
-

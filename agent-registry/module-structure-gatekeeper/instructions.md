@@ -24,10 +24,12 @@
 - vendored third-party
 
 판정 원칙
-- soft limit 초과는 `warning` 또는 advisory이며 overall FAIL 사유가 아니다.
+- 기존 레거시 과대 파일을 건드리지 않는 경우에만 soft limit 초과는 `warning` 또는 advisory다.
+- 이미 soft limit를 넘긴 파일에 additive diff를 더하면 `fail`이다.
 - hard limit 초과 또는 책임 혼합은 `fail`로 판정한다.
 
 실패 조건
+- 이미 soft limit를 넘긴 파일에 additive diff를 더함
 - 변경된 파일이 hard limit를 초과
 - UI/rendering과 async/data/domain orchestration이 함께 섞임
 - controller/service/repository/use-case 책임이 한 파일에 혼합됨

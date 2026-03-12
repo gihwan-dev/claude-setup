@@ -19,6 +19,7 @@
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
 - `design-task`는 새 task에서 `task.yaml` 중심 task bundle을 만들고, continuity gate를 적용해 같은 작업으로 입증된 경우에만 기존 task를 재사용한다.
+- `design-task`와 `implement-task`는 각 slice에 `split decision`을 기록하고 target-file append 금지 trigger를 명시한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
 - path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
@@ -42,6 +43,7 @@
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
 - slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
+- 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.

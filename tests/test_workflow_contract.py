@@ -20,6 +20,13 @@ from workflow_contract import (
     REQUIRED_HELPER_AGENT_IDS,
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    STRUCTURE_EXCEPTIONS,
+    STRUCTURE_HARD_LIMIT_BEHAVIOR,
+    STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+    STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR,
+    STRUCTURE_ROLE_LIMITS,
+    STRUCTURE_SOFT_LIMIT_BEHAVIOR,
+    STRUCTURE_SPLIT_ROLES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
     TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
@@ -57,6 +64,23 @@ class WorkflowContractTests(RepoTestCase):
             self.assertIn(agent_id, AGENT_CONTRACTS_BY_ID)
             orchestration = AGENT_CONTRACTS_BY_ID[agent_id].get("orchestration")
             self.assertEqual(orchestration, CORE_HELPER_ORCHESTRATION_EXPECTED[agent_id])
+
+    def test_structure_policy_constants_cover_strong_mode_contract(self) -> None:
+        self.assertEqual("split-first", STRUCTURE_SOFT_LIMIT_BEHAVIOR)
+        self.assertEqual("block", STRUCTURE_HARD_LIMIT_BEHAVIOR)
+        self.assertEqual("block", STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR)
+        self.assertEqual(
+            "allow-only-without-additive-growth",
+            STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+        )
+        self.assertEqual((220, 300), STRUCTURE_ROLE_LIMITS["component_view"])
+        self.assertEqual((150, 220), STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"])
+        self.assertEqual((150, 220), STRUCTURE_ROLE_LIMITS["hook_composable_middleware"])
+        self.assertEqual((200, 260), STRUCTURE_ROLE_LIMITS["service_use_case_controller_repository_util_module"])
+        self.assertEqual((40, 60), STRUCTURE_ROLE_LIMITS["function"])
+        self.assertIn("component", STRUCTURE_SPLIT_ROLES)
+        self.assertIn("adapter", STRUCTURE_SPLIT_ROLES)
+        self.assertIn("migration snapshot", STRUCTURE_EXCEPTIONS)
 
     def test_fixture_plan_and_status_section_order(self) -> None:
         fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-task"
@@ -430,6 +454,46 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("PLAN.md", skill_content)
         self.assertIn("blocking", skill_content)
         self.assertIn("EXECUTION_PLAN.md", skill_content)
+
+    def test_structure_first_instruction_drift_is_guarded(self) -> None:
+        worker_content = (
+            REPO_ROOT / "agent-registry" / "worker" / "instructions.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("대상 파일 역할 분류", worker_content)
+        self.assertIn("예상 post-change LOC", worker_content)
+        self.assertIn("split 필요 여부", worker_content)
+        self.assertIn("split-first", worker_content)
+        self.assertIn("append 금지", worker_content)
+        self.assertIn("exact split proposal", worker_content)
+
+        module_gate_content = (
+            REPO_ROOT / "agent-registry" / "module-structure-gatekeeper" / "instructions.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `fail`이다.", module_gate_content)
+
+        frontend_gate_content = (
+            REPO_ROOT / "agent-registry" / "frontend-structure-gatekeeper" / "instructions.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 `FAIL`이다.", frontend_gate_content)
+
+        project_planner_content = (
+            REPO_ROOT / "agent-registry" / "project-planner" / "instructions.md"
+        ).read_text(encoding="utf-8")
+        self.assertIn("`task.yaml` bundle", project_planner_content)
+        self.assertIn("legacy fallback", project_planner_content)
+        self.assertNotIn("`tasks/<task-path>/PLAN.md`", project_planner_content)
+
+    def test_design_and_implement_skills_capture_split_decision_contract(self) -> None:
+        design_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        implement_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("structure preflight", design_content)
+        self.assertIn("split decision", design_content)
+        self.assertIn("target-file append 금지", design_content)
+
+        self.assertIn("structure preflight", implement_content)
+        self.assertIn("split-first trigger", implement_content)
+        self.assertIn("exact split proposal", implement_content)
 
     def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"

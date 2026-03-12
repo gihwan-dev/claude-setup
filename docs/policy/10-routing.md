@@ -7,12 +7,15 @@
 ### Quality preflight
 
 - 기존 코드 수정/리뷰/`계속해`/`다음 단계`/버그 수정/기능 추가 요청에는 lane 판정 전에 quality preflight를 먼저 수행한다.
+- 기존 TS/JS/React 코드 파일을 건드릴 때는 quality preflight 안에서 `structure preflight`를 fast lane 판정보다 먼저 수행한다.
+- `structure preflight`는 대상 파일 역할 분류, 예상 post-change LOC, `split-first` 필요 여부를 고정한다.
 - 예외는 fast lane 조건을 모두 만족하는 명백한 1파일 소규모 수정이다.
 - quality preflight 결과는 `keep-local` 또는 `orchestrated-task`로 기록한다.
 - 아래 중 하나라도 해당하면 `orchestrated-task`로 승격한다.
   - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
   - CC > 10 또는 중첩 > 2
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
+  - `structure preflight`에서 `split-first` trigger가 켜짐
   - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
   - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
@@ -26,6 +29,7 @@
 ### Fast lane
 
 - 아래 조건을 모두 만족하면 메인 스레드가 직접 수정한다.
+  - `structure preflight`가 끝났고 `split-first` trigger가 꺼져 있음
   - 변경이 1개 파일 범위로 제한됨
   - 변경량이 소규모(diff가 작음)
   - public API/schema/config/migration/shared type/cross-module boundary 변경이 없음

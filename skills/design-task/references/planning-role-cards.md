@@ -31,6 +31,7 @@
 핵심 임무:
 - 구현 전에 공통 모듈 분해안과 책임 경계를 설계한다.
 - component/view/hook/composable/middleware/service/use-case/repository/controller/util/adapter 분리와 파일 비대화 위험을 점검한다.
+- soft-limit 근접/초과, 새 책임 추가, component/view에 service성 코드 혼합이 보이면 split-first와 exact split proposal을 먼저 정리한다.
 
 출력:
 1. 핵심결론

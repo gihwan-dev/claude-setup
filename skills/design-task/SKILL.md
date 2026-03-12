@@ -27,7 +27,10 @@ description: >
 - `keep-local`이면 기존 fast/deep-solo/delegated lane으로 되돌리고 여기서 장기 실행 계획을 시작하지 않는다.
 - 기존 task 재사용은 예외다. 새 task 생성이 기본이다.
 - 후보가 2개 이상이면 자동 재사용하지 않는다. 사용자 확인 필요를 `Task continuity`에 기록한다.
+- 기존 TS/JS/React 코드 작업이면 structure preflight(대상 파일 역할, 예상 post-change LOC, split-first 필요 여부)를 quality preflight에 포함한다.
+- split-first trigger가 켜지면 기존 파일 append 전제 설계를 금지하고 분해안을 먼저 만든다.
 - 각 execution slice는 변경 경계, 예상 파일 수, validation owner, focused validation plan, stop/replan 조건을 포함한다.
+- 각 execution slice는 `split decision`과 target-file append 금지 trigger를 함께 포함한다.
 - slice 설계 기본 guardrail은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
 
@@ -61,19 +64,20 @@ description: >
 
 1. 요청의 목표/제약/성공 기준을 추출한다.
 2. 관련 코드, 문서, 기존 `tasks/` 문서를 read-only로 조사하고 quality preflight 근거를 수집한다.
-3. quality preflight verdict와 후속 경로를 기록한다.
-4. `orchestrated-task`가 아니면 여기서 종료하고 기존 lane으로 되돌린다.
-5. continuation 표현 또는 관련 task 흔적이 있으면 continuity gate를 수행한다.
-6. `Task continuity`에 `decision`, `compared tasks`, `reason`, `chosen task path`를 기록한다.
-7. `work_type`를 `feature`, `bugfix`, `refactor`, `migration`, `prototype`, `ops` 중 하나로 결정한다.
-8. 핵심 `impact_flags`를 고정하고 `${SKILL_DIR}/references/task-bundle-rules.md` 기준으로 `required_docs`를 결정한다.
-9. `task.yaml`을 machine entry point로 작성한다.
-10. `README.md`를 사람용 landing 문서로 작성한다.
-11. `EXECUTION_PLAN.md`에 `Execution slices`, `Verification`, `Stop / Replan conditions` level-1 section을 유지하며 bounded slice와 focused validation을 작성한다.
-12. `SPEC_VALIDATION.md`를 항상 생성하고 `blocking` 또는 `advisory` verdict를 기록한다.
-13. `STATUS.md`를 초기 템플릿으로 만들고 `Current slice`는 `Not started.`, `Next slice`는 `SLICE-1`로 채운다.
-14. `source_of_truth`와 traceability IDs를 문서에 반영한다.
-15. legacy task를 재사용할 때만 기존 `PLAN.md`를 갱신하고, 새 task에는 bundle 문서만 사용한다.
+3. 기존 코드 작업이면 structure preflight를 수행하고 `split-first` 여부를 기록한다.
+4. quality preflight verdict와 후속 경로를 기록한다.
+5. `orchestrated-task`가 아니면 여기서 종료하고 기존 lane으로 되돌린다.
+6. continuation 표현 또는 관련 task 흔적이 있으면 continuity gate를 수행한다.
+7. `Task continuity`에 `decision`, `compared tasks`, `reason`, `chosen task path`를 기록한다.
+8. `work_type`를 `feature`, `bugfix`, `refactor`, `migration`, `prototype`, `ops` 중 하나로 결정한다.
+9. 핵심 `impact_flags`를 고정하고 `${SKILL_DIR}/references/task-bundle-rules.md` 기준으로 `required_docs`를 결정한다.
+10. `task.yaml`을 machine entry point로 작성한다.
+11. `README.md`를 사람용 landing 문서로 작성한다.
+12. `EXECUTION_PLAN.md`에 `Execution slices`, `Verification`, `Stop / Replan conditions` level-1 section을 유지하며 bounded slice, focused validation, split decision을 작성한다.
+13. `SPEC_VALIDATION.md`를 항상 생성하고 `blocking` 또는 `advisory` verdict를 기록한다.
+14. `STATUS.md`를 초기 템플릿으로 만들고 `Current slice`는 `Not started.`, `Next slice`는 `SLICE-1`로 채운다.
+15. `source_of_truth`와 traceability IDs를 문서에 반영한다.
+16. legacy task를 재사용할 때만 기존 `PLAN.md`를 갱신하고, 새 task에는 bundle 문서만 사용한다.
 
 ## Multi-Agent Usage (Optional)
 
@@ -93,7 +97,7 @@ user-facing install/projection 대상으로 취급하지 않는다.
 - `prompt-systems-designer`
 
 기존 TS/JS/React 코드의 quality preflight는 `explorer`를 기본으로 사용한다.
-구조 냄새가 보이면 `structure-planner`, `complexity-analyst`, `test-engineer`를 추가해 분해 경계를 먼저 정리한다.
+구조 냄새나 `split-first`가 보이면 `structure-planner`, `complexity-analyst`, `test-engineer`를 추가해 분해 경계를 먼저 정리한다.
 public/shared boundary 리스크가 보이면 `architecture-reviewer`를 fan-out해 boundary 결정을 먼저 고정한다.
 
 ### Fallback Rules (Runtime Unavailable)
@@ -141,4 +145,5 @@ public/shared boundary 리스크가 보이면 `architecture-reviewer`를 fan-out
 - `required_docs`가 실제 bundle 구조와 일치하는가?
 - `SPEC_VALIDATION.md` verdict가 `blocking` 또는 `advisory`로 명확한가?
 - 각 slice에 change boundary / file budget / validation owner / stop-replan trigger가 있는가?
+- 각 slice에 `split decision`과 target-file append 금지 trigger가 있는가?
 - traceability ID가 `REQ`, `SCR`, `FLOW`, `ADR`, `AC`, `SLICE`, `RISK` 체계를 따르는가?

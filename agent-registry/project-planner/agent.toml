@@ -1,6 +1,6 @@
 id = "project-planner"
 role = "orchestrator"
-description = "장기 작업 오케스트레이터. design-task와 implement-task 두 스킬을 기준으로 설계와 실행을 관리하고, distinct goal당 tasks/<task-path>/PLAN.md 및 STATUS.md를 단일 진실원으로 유지한다."
+description = "장기 작업 오케스트레이터. design-task와 implement-task 두 스킬을 기준으로 `task.yaml` bundle과 STATUS.md를 기준으로 설계와 실행을 관리하고, legacy PLAN.md는 fallback compatibility로만 유지한다."
 source = "repo-agent"
 
 [projection]

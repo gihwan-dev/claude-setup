@@ -26,6 +26,8 @@ description: >
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
+- 각 slice 실행 전에는 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
+- split-first trigger가 켜지면 target file append를 금지하고 같은 slice 내 추출 또는 `blocked + exact split proposal`만 허용한다.
 - 기본 실행 단위는 다음 slice 1개다.
 - focused validation은 메인 스레드가 수행한다.
 - verification-worker는 메인 검증 로그가 noisy/multi-step일 때만 사용한다.
@@ -80,16 +82,18 @@ description: >
 4. 새 bundle의 `EXECUTION_PLAN.md`가 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 따르는지 전제로 slice를 읽는다.
 5. `STATUS.md`가 없으면 고정 템플릿 섹션으로 파일을 생성한다.
 6. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
-7. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
-8. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
-9. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-10. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-11. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-12. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
-13. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-14. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-15. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-16. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
+7. phase 1 시작 시 `worker`는 대상 파일 역할, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
+8. split-first trigger가 켜지면 same `worker`는 기존 파일 append 대신 새 모듈 추출 또는 `blocked + exact split proposal`로 되돌린다.
+9. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
+10. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
+11. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+12. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+13. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+14. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+15. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+16. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+17. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+18. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -117,6 +121,7 @@ description: >
 - `wait timeout`은 stalled와 동일하지 않으며 replacement writer를 트리거하지 않는다.
 - `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.
+- `EXECUTION_PLAN.md`의 각 slice는 `split decision`과 target-file append 금지 trigger를 포함해야 한다.
 - `code-quality-reviewer`, `architecture-reviewer`, `type-specialist`, `test-engineer`는 기존 AGENTS 트리거를 따른다.
 
 ## STATUS Template (Fixed Sections)

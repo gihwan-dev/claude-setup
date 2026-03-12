@@ -54,6 +54,42 @@ terminal_runtime_statuses = [
   "interrupted",
 ]
 
+[structure_policy]
+soft_limit_behavior = "split-first"
+hard_limit_behavior = "block"
+responsibility_mix_behavior = "block"
+legacy_oversized_file_behavior = "allow-only-without-additive-growth"
+exceptions = [
+  "*.generated.*",
+  "route manifest",
+  "icon registry",
+  "schema declaration files",
+  "migration snapshot",
+  "vendored third-party",
+]
+split_roles = [
+  "component",
+  "view",
+  "hook",
+  "provider",
+  "view-model",
+  "composable",
+  "middleware",
+  "service",
+  "use-case",
+  "repository",
+  "controller",
+  "util",
+  "adapter",
+]
+
+[structure_policy.role_limits]
+component_view = { target = 220, hard = 300 }
+react_hook_provider_view_model = { target = 150, hard = 220 }
+hook_composable_middleware = { target = 150, hard = 220 }
+service_use_case_controller_repository_util_module = { target = 200, hard = 260 }
+function = { target = 40, hard = 60 }
+
 [task_documents]
 plan_section_order = [
   "Goal",

@@ -3,57 +3,45 @@
 ## 핵심 원칙
 
 1. **2-스킬 표면 유지** — 사용자에게는 `design-task`, `implement-task`만 노출한다.
-2. **문서 단일화** — 장기 작업 문서는 distinct goal당 `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md`만 사용한다.
+2. **문서 단일화** — 새 장기 작업 문서는 distinct goal당 `task.yaml` bundle(`tasks/<task-path>/task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`)을 사용한다. `PLAN.md`는 legacy fallback compatibility로만 유지한다.
 3. **strategy-only 오케스트레이션** — 오케스트레이터는 전략/결정/통합을 담당하며 직접 code diff를 적용하지 않는다.
 4. **non-mutating validation 허용** — phase 2 focused validation과 `STATUS.md` 갱신은 오케스트레이터가 직접 수행할 수 있다.
 5. **single-writer 유지** — writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
 6. **read-only helper fan-out only** — helper는 탐색/리뷰/검증 로그 해석에만 사용한다.
-7. **한국어 보고 유지** — 설명/요약은 한국어로 작성한다.
+7. **structure-first 유지** — 기존 파일 수정 전에는 항상 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
+8. **한국어 보고 유지** — 설명/요약은 한국어로 작성한다.
 
 ## 운영 모델
 
 ### 1) 설계 단계 (`design-task`)
 
 - 코드 수정 없이 read-only 탐색으로 설계를 완료한다.
-- 결과물은 continuity gate 결과에 따라 선택되거나 새로 만들어진 `tasks/<task-path>/PLAN.md`다.
-- 설계는 실행 슬라이스와 검증 기준을 반드시 포함한다.
-- 기존 `PLAN.md`는 continuity gate를 통과한 경우에만 히스토리를 반영해 갱신한다.
-- 기존 코드 작업이면 intent triage 성격의 quality preflight로 `keep-local` / `promote-refactor` / `promote-architecture`를 먼저 판정한다.
-- 이 long-running planning path는 `promote-refactor` 또는 `promote-architecture`가 확정된 경우에만 진행한다.
-- `keep-local`이면 기존 fast/deep-solo/delegated lane으로 되돌리고 long-running path를 시작하지 않는다.
-- 예외는 fast lane 조건을 모두 만족하는 명백한 1파일 소규모 수정이다.
-- 아래 중 하나라도 해당하면 자동 승격한다.
-  - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
-  - CC > 10 또는 중첩 > 2
-  - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
-  - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
-  - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
+- 결과물은 continuity gate 결과에 따라 선택되거나 새로 만들어진 `tasks/<task-path>/task.yaml` bundle이다.
+- 기존 코드 작업이면 quality preflight와 structure preflight로 `keep-local` / `orchestrated-task`를 먼저 판정한다.
+- structure preflight에서 soft limit 근접/초과, 새 책임 추가, component/view에 service성 코드 혼합, 반복 stateful/branch-heavy 로직 추가가 보이면 `split-first`다.
+- `split-first`면 direct append를 허용하지 않고 `structure-planner`를 escalation 기본값으로 사용한다.
 - TS/JS/React 기존 코드는 `explorer`를 기본 fan-out으로 사용한다.
-- 구조 냄새가 보이면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
-- 기존 코드에 구조 냄새가 있으면 기능 구현보다 refactor 설계를 먼저 만든다.
-- `promote-refactor` 설계는 제거할 로직/유지할 로직, 모듈 분리 경계, 허용 추상화/금지 추상화, 테스트 삭제/축소/이동/유지 기준, slice 순서와 slice별 focused verification 1개를 반드시 포함한다.
-- `promote-architecture`면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향 결정을 먼저 고정한다.
-- 설계 시 필요하면 planning role fan-out은 internal-only(`web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`)로 사용한다.
+- 구조 냄새나 `split-first`가 보이면 `structure-planner`, `complexity-analyst`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 - distinct goal이면 같은 도메인이라도 새 task path를 만든다.
-- 도메인과 무관하게 예상 diff가 150 LOC 이상이거나 예상 변경 파일이 2개 이상이거나 대상 기존 코드 파일이 soft limit 근접/초과면 `structure-planner`를 포함해 파일 분해안을 먼저 확정한다.
-- planning role은 user-facing install/projection 대상이 아니다.
+- 각 slice는 change boundary, file budget, validation owner, focused validation과 함께 `split decision`을 기록한다.
+- 새 task bundle의 source of truth는 `task.yaml`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`다.
 - custom planning role이 런타임에서 직접 실행되지 않으면 `design-task`의 overlay fallback 규칙을 따른다.
 
 ### 2) 구현 단계 (`implement-task`)
 
-- `PLAN.md` 기반으로 slice 단위 구현을 수행한다.
-- 이 구현 단계는 승인된 `PLAN.md` 기반 long-running 실행만 다룬다.
-- 기존 코드 대상 구현은 promoted planning path와 `PLAN.md` 없이 즉시 시작하지 않는다.
+- `task.yaml + EXECUTION_PLAN.md + STATUS.md` 기반으로 slice 단위 구현을 수행한다.
+- legacy `PLAN.md + STATUS.md`는 새 bundle이 없을 때만 fallback으로 다룬다.
 - 기본값은 다음 slice 1개다.
 - `계속해` 요청은 다음 slice 1개로 해석한다.
 - `끝까지`/`stop condition까지` 요청은 slice loop로 해석한다.
 - 각 slice는 `worker edit -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
 - phase 1은 fresh `worker`의 edit-only 단계다.
-- slice가 refactor/test/type-contract 성격을 가질 수 있어도 code diff를 적용하는 protocol-level writer는 항상 `worker`다.
+- phase 1에서 `split-first` trigger가 켜지면 same `worker`는 기존 파일에 append하지 않고, 같은 slice 안에서 새 모듈로 추출하거나 범위 초과 시 `blocked + exact split proposal`로 되돌린다.
 - phase 2 focused validation은 메인 스레드가 수행한다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경 시에만 full-repo validation을 허용한다.
 - 비trivial code diff slice면 `module-structure-gatekeeper`를 focused validation reviewer로 기본 포함한다.
 - frontend slice면 `frontend-structure-gatekeeper`를 추가한다.
+- 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 실패로 본다.
 - phase 2 로그가 noisy/multi-step일 때만 `verification-worker`를 사용해 해석한다.
 - phase 3은 phase 1을 수행한 same writer가 commit-only로 재개한다.
 - focused validation 실패 시 해당 slice는 커밋하지 않고 즉시 중단한다.
@@ -88,25 +76,20 @@
 
 ## 문서 계약
 
-### PLAN.md
+### task bundle
 
-아래 섹션 순서를 유지한다.
-- `# Goal`
-- `# Task Type`
-- `# Scope / Non-goals`
-- `# Keep / Change / Don't touch`
-- `# Evidence`
-- `# Decisions / Open questions`
-- `# Execution slices`
-- `# Verification`
-- `# Stop / Replan conditions`
+- `task.yaml`은 machine entry point다.
+- `EXECUTION_PLAN.md`는 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를 유지한다.
+- `SPEC_VALIDATION.md`는 `blocking`/`advisory` gate와 blocking issue 상태를 기록한다.
+- `STATUS.md`는 메타 상태 기록이며 아래 섹션 순서를 유지한다.
+  - `# Current slice`
+  - `# Done`
+  - `# Decisions made during implementation`
+  - `# Verification results`
+  - `# Known issues / residual risk`
+  - `# Next slice`
 
-### STATUS.md
+### legacy fallback
 
-아래 섹션 순서를 유지한다.
-- `# Current slice`
-- `# Done`
-- `# Decisions made during implementation`
-- `# Verification results`
-- `# Known issues / residual risk`
-- `# Next slice`
+- `PLAN.md`는 legacy compatibility에서만 source of truth로 유지한다.
+- 새 task bundle이 있는 경우 `PLAN.md` 기준으로 실행을 시작하지 않는다.

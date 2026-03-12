@@ -32,8 +32,16 @@ model: sonnet
 - route manifest
 - icon registry
 - schema declaration files
+- migration snapshot
+- vendored third-party
+
+판정 원칙
+- 기존 레거시 과대 파일을 건드리지 않는 경우에만 soft limit 초과는 advisory다.
+- 이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 `FAIL`이다.
+- hard limit 초과와 책임 혼합은 `FAIL`이다.
 
 실패 조건
+- 이미 soft limit를 넘긴 component/view/hook/provider/view-model 파일에 additive diff를 더함
 - 변경된 component/view 파일이 hard limit를 초과
 - 변경된 hook/provider/view-model 파일이 hard limit를 초과
 - component가 rendering + async/data/domain orchestration을 함께 포함

@@ -39,6 +39,13 @@ def _require_str(table: TomlDict, key: str, *, path: Path) -> str:
     return value
 
 
+def _require_int(table: TomlDict, key: str, *, path: Path) -> int:
+    value = table.get(key)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"missing integer '{key}' in {path}")
+    return value
+
+
 def _require_str_list(table: TomlDict, key: str, *, path: Path) -> tuple[str, ...]:
     value = table.get(key)
     if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
@@ -73,6 +80,27 @@ def _require_str_list_map(table: TomlDict, key: str, *, path: Path) -> dict[str,
     return parsed
 
 
+def _require_structure_role_limits(
+    table: TomlDict, key: str, *, path: Path
+) -> dict[str, tuple[int, int]]:
+    value = table.get(key)
+    if not isinstance(value, dict):
+        raise ValueError(f"missing table [{key}] in {path}")
+
+    parsed: dict[str, tuple[int, int]] = {}
+    for role, limits in value.items():
+        if not isinstance(role, str) or not role.strip():
+            raise ValueError(f"invalid role key in '{key}' for {path}")
+        if not isinstance(limits, dict):
+            raise ValueError(f"invalid role limit table '{key}.{role}' in {path}")
+        target = _require_int(limits, "target", path=path)
+        hard = _require_int(limits, "hard", path=path)
+        if target <= 0 or hard <= 0 or hard < target:
+            raise ValueError(f"invalid role limits '{key}.{role}' in {path}")
+        parsed[role] = (target, hard)
+    return parsed
+
+
 def _parse_orchestration_table(path: Path, table: object) -> dict[str, OrchestrationValue]:
     if not isinstance(table, dict):
         raise ValueError(f"missing [orchestration] in {path}")
@@ -103,6 +131,7 @@ PUBLIC_SURFACE_POLICY = _require_table(WORKFLOW_POLICY, "public_surface", path=W
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
 HELPER_CLOSE_POLICY = _require_table(WORKFLOW_POLICY, "helper_close", path=WORKFLOW_POLICY_PATH)
+STRUCTURE_POLICY = _require_table(WORKFLOW_POLICY, "structure_policy", path=WORKFLOW_POLICY_PATH)
 TASK_DOCUMENTS_POLICY = _require_table(WORKFLOW_POLICY, "task_documents", path=WORKFLOW_POLICY_PATH)
 
 LONG_RUNNING_PUBLIC_SURFACE = _require_str_list(
@@ -169,6 +198,27 @@ def _has_natural_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
         or snapshot.runtime_status in TERMINAL_RUNTIME_STATUSES
     )
 
+STRUCTURE_SOFT_LIMIT_BEHAVIOR = _require_str(
+    STRUCTURE_POLICY, "soft_limit_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_HARD_LIMIT_BEHAVIOR = _require_str(
+    STRUCTURE_POLICY, "hard_limit_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR = _require_str(
+    STRUCTURE_POLICY, "responsibility_mix_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR = _require_str(
+    STRUCTURE_POLICY, "legacy_oversized_file_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_EXCEPTIONS = _require_str_list(
+    STRUCTURE_POLICY, "exceptions", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_SPLIT_ROLES = _require_str_list(
+    STRUCTURE_POLICY, "split_roles", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_ROLE_LIMITS = _require_structure_role_limits(
+    STRUCTURE_POLICY, "role_limits", path=WORKFLOW_POLICY_PATH
+)
 PLAN_SECTION_ORDER = _require_str_list(
     TASK_DOCUMENTS_POLICY, "plan_section_order", path=WORKFLOW_POLICY_PATH
 )

@@ -40,6 +40,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 
 - [00-overview.md](docs/policy/00-overview.md)
 - [10-routing.md](docs/policy/10-routing.md)
+- [15-structure-first.md](docs/policy/15-structure-first.md)
 - [20-long-running.md](docs/policy/20-long-running.md)
 - [30-reviews.md](docs/policy/30-reviews.md)
 - [40-sources.md](docs/policy/40-sources.md)
