@@ -64,6 +64,7 @@ PY
 
 - 기준 설치 진입점은 `python3 scripts/install_assets.py`다.
 - `--link`가 기본 권장 모드다.
+- 다만 linked git worktree에서 실행하면 현재 워크트리 변경분으로 sync한 뒤 설치 mode는 자동으로 `copy`로 강등된다.
 - 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
 - `.agents/skills`가 존재하면 legacy overlay로 추가 설치되며, source of truth로 간주하지 않는다.
 - shell wrapper는 legacy 호환용이다.

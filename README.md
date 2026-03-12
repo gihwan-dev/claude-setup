@@ -57,6 +57,8 @@ python3 scripts/install_assets.py --target claude --link
 python3 scripts/install_assets.py --target codex --link
 ```
 
+linked git worktree에서 실행하면 현재 워크트리 변경분으로 sync한 뒤 설치는 자동으로 `copy`로 강등한다. 이렇게 해야 설치 결과가 `~/.codex/worktrees/...` 같은 임시 경로에 종속되지 않는다.
+
 ## Notes
 
 - generated 파일은 직접 수정하지 않는다.

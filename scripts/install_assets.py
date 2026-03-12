@@ -65,6 +65,46 @@ def detect_targets() -> list[str]:
     return result
 
 
+def _git_rev_parse(repo_root: Path, *args: str) -> str | None:
+    completed = subprocess.run(
+        ["git", "rev-parse", "--path-format=absolute", *args],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        return None
+    output = completed.stdout.strip()
+    return output or None
+
+
+def is_linked_git_worktree(repo_root: Path) -> bool:
+    top_level = _git_rev_parse(repo_root, "--show-toplevel")
+    git_common_dir = _git_rev_parse(repo_root, "--git-common-dir")
+    if not top_level or not git_common_dir:
+        return False
+
+    primary_root = Path(git_common_dir).parent
+    if not (primary_root / "scripts" / "install_assets.py").exists():
+        return False
+    return Path(top_level) != primary_root
+
+
+def resolve_install_mode(repo_root: Path, requested_mode: str, *, dry_run: bool) -> str:
+    if requested_mode != "link":
+        return requested_mode
+    if not is_linked_git_worktree(repo_root):
+        return requested_mode
+
+    prefix = "[dry-run] " if dry_run else ""
+    print(
+        f"{prefix}linked git worktree detected; forcing install mode: copy "
+        f"(source stays in {repo_root})"
+    )
+    return "copy"
+
+
 def run_sync(repo_root: Path, dry_run: bool) -> None:
     scripts_dir = repo_root / "scripts"
     sync_instructions = scripts_dir / "sync_instructions.py"
@@ -555,6 +595,7 @@ def main() -> int:
     args = parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     mode = "copy" if args.copy else "link"
+    effective_mode = resolve_install_mode(repo_root, mode, dry_run=args.dry_run)
 
     run_sync(repo_root, dry_run=args.dry_run)
 
@@ -583,13 +624,13 @@ def main() -> int:
             canonical_skills_src=skills_src,
             legacy_overlay_src=legacy_overlay_skills_src,
             destination=destination,
-            mode=mode,
+            mode=effective_mode,
             dry_run=args.dry_run,
         )
         _install_internal_skill_assets(
             canonical_skills_src=skills_src,
             destination=destination,
-            mode=mode,
+            mode=effective_mode,
             dry_run=args.dry_run,
         )
         prune_generated_skills(
@@ -622,13 +663,13 @@ def main() -> int:
             canonical_skills_src=skills_src,
             legacy_overlay_src=legacy_overlay_skills_src,
             destination=skills_dest,
-            mode=mode,
+            mode=effective_mode,
             dry_run=args.dry_run,
         )
         _install_internal_skill_assets(
             canonical_skills_src=skills_src,
             destination=skills_dest,
-            mode=mode,
+            mode=effective_mode,
             dry_run=args.dry_run,
         )
         prune_generated_skills(
@@ -647,7 +688,7 @@ def main() -> int:
             install_entries(
                 repo_agents_src,
                 home / "agents",
-                mode=mode,
+                mode=effective_mode,
                 dry_run=args.dry_run,
                 include_dirs=False,
                 suffix=".md",
@@ -665,7 +706,7 @@ def main() -> int:
             install_entries(
                 codex_agents_src,
                 home / "agents",
-                mode=mode,
+                mode=effective_mode,
                 dry_run=args.dry_run,
                 include_dirs=False,
                 suffix=".toml",

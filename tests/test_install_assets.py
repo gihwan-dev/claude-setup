@@ -3,8 +3,10 @@ from __future__ import annotations
 import io
 import json
 import subprocess
+import sys
 import tempfile
 import tomllib
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -15,8 +17,10 @@ from install_assets import (
     _iter_internal_skill_asset_dirs,
     _iter_installable_skill_dirs,
     _remove_managed_agent_sections,
+    install_path,
     expected_generated_skill_names,
     prune_generated_skills,
+    resolve_install_mode,
     run_sync,
     update_codex_config,
     write_generated_skill_manifest,
@@ -24,6 +28,74 @@ from install_assets import (
 
 
 class InstallAssetsTests(RepoTestCase):
+    def test_resolve_install_mode_keeps_link_for_primary_checkout(self) -> None:
+        outputs = iter(
+            [
+                f"{REPO_ROOT}\n",
+                f"{REPO_ROOT / '.git'}\n",
+            ]
+        )
+
+        def fake_run(
+            command: list[str],
+            cwd: Path,
+            check: bool = False,
+            capture_output: bool = False,
+            text: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            self.assertEqual(command[:3], ["git", "rev-parse", "--path-format=absolute"])
+            return subprocess.CompletedProcess(command, 0, stdout=next(outputs))
+
+        with patch("install_assets.subprocess.run", side_effect=fake_run):
+            with redirect_stdout(io.StringIO()) as stdout:
+                mode = resolve_install_mode(REPO_ROOT, "link", dry_run=True)
+
+        self.assertEqual(mode, "link")
+        self.assertEqual(stdout.getvalue(), "")
+
+    def test_resolve_install_mode_forces_copy_for_linked_worktree(self) -> None:
+        worktree_root = Path("/tmp/claude-setup-worktree")
+        outputs = iter(
+            [
+                f"{worktree_root}\n",
+                f"{REPO_ROOT / '.git'}\n",
+            ]
+        )
+
+        def fake_run(
+            command: list[str],
+            cwd: Path,
+            check: bool = False,
+            capture_output: bool = False,
+            text: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            self.assertEqual(command[:3], ["git", "rev-parse", "--path-format=absolute"])
+            return subprocess.CompletedProcess(command, 0, stdout=next(outputs))
+
+        with patch("install_assets.subprocess.run", side_effect=fake_run):
+            with redirect_stdout(io.StringIO()) as stdout:
+                mode = resolve_install_mode(REPO_ROOT, "link", dry_run=True)
+
+        self.assertEqual(mode, "copy")
+        self.assertIn("linked git worktree detected; forcing install mode: copy", stdout.getvalue())
+
+    def test_resolve_install_mode_keeps_link_when_git_detection_fails(self) -> None:
+        def fake_run(
+            command: list[str],
+            cwd: Path,
+            check: bool = False,
+            capture_output: bool = False,
+            text: bool = False,
+        ) -> subprocess.CompletedProcess[str]:
+            return subprocess.CompletedProcess(command, 128, stdout="")
+
+        with patch("install_assets.subprocess.run", side_effect=fake_run):
+            with redirect_stdout(io.StringIO()) as stdout:
+                mode = resolve_install_mode(REPO_ROOT, "link", dry_run=True)
+
+        self.assertEqual(mode, "link")
+        self.assertEqual(stdout.getvalue(), "")
+
     def test_repo_shared_assets_are_internal_only(self) -> None:
         manifest_payload = json.loads(
             (REPO_ROOT / "skills" / "manifest.json").read_text(encoding="utf-8")
@@ -223,6 +295,65 @@ class InstallAssetsTests(RepoTestCase):
             )
             self.assertIn("[dry-run] update skill manifest", completed.stdout)
 
+    def test_install_assets_dry_run_target_forces_copy_in_linked_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            claude_home = root / ".claude"
+            codex_home = root / ".codex"
+            (claude_home / "skills").mkdir(parents=True)
+            (codex_home / "agents").mkdir(parents=True)
+            (codex_home / "config.toml").write_text(
+                'model = "gpt-5.4"\n[features]\napps = true\n',
+                encoding="utf-8",
+            )
+
+            with patch("install_assets.is_linked_git_worktree", return_value=True):
+                with patch.object(
+                    sys,
+                    "argv",
+                    ["install_assets.py", "--dry-run", "--target", "all"],
+                ):
+                    with patch.dict(
+                        "os.environ",
+                        {
+                            "CLAUDE_HOME": str(claude_home),
+                            "CODEX_HOME": str(codex_home),
+                        },
+                        clear=False,
+                    ):
+                        with redirect_stdout(io.StringIO()) as stdout:
+                            import install_assets
+
+                            exit_code = install_assets.main()
+
+        output = stdout.getvalue()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("linked git worktree detected; forcing install mode: copy", output)
+        self.assertIn("[dry-run] copy ", output)
+        self.assertNotIn("[dry-run] link ", output)
+
+    def test_install_assets_dry_run_dest_forces_copy_in_linked_worktree(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            destination = Path(tmpdir) / "skills"
+            destination.mkdir(parents=True)
+
+            with patch("install_assets.is_linked_git_worktree", return_value=True):
+                with patch.object(
+                    sys,
+                    "argv",
+                    ["install_assets.py", "--dry-run", "--dest", str(destination)],
+                ):
+                    with redirect_stdout(io.StringIO()) as stdout:
+                        import install_assets
+
+                        exit_code = install_assets.main()
+
+        output = stdout.getvalue()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("linked git worktree detected; forcing install mode: copy", output)
+        self.assertIn("[dry-run] copy ", output)
+        self.assertNotIn("[dry-run] link ", output)
+
     def test_skill_prune_uses_generated_manifest_scope_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             skills_dir = Path(tmpdir) / "skills"
@@ -312,6 +443,22 @@ class InstallAssetsTests(RepoTestCase):
             )
 
             self.assertTrue((destination / "_shared" / "storybook-screenshot-guidelines.md").exists())
+
+    def test_install_path_copy_replaces_broken_symlink(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            source = root / "source-skill"
+            destination = root / "dest" / "source-skill"
+            source.mkdir(parents=True)
+            (source / "SKILL.md").write_text("---\nname: source-skill\n---\n", encoding="utf-8")
+            destination.parent.mkdir(parents=True)
+            destination.symlink_to(root / "missing-skill-target")
+
+            install_path(source, destination, mode="copy", dry_run=False)
+
+            self.assertTrue(destination.exists())
+            self.assertFalse(destination.is_symlink())
+            self.assertTrue((destination / "SKILL.md").exists())
 
     def test_skill_filters_use_skill_md_instead_of_directory_existence(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
