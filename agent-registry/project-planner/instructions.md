@@ -23,6 +23,7 @@
 - structure preflight에서 soft limit 근접/초과, 새 책임 추가, component/view에 service성 코드 혼합, 반복 stateful/branch-heavy 로직 추가가 보이면 `split-first`다.
 - `split-first`면 direct append를 허용하지 않고 `structure-planner`를 escalation 기본값으로 사용한다.
 - TS/JS/React 기존 코드는 `explorer`를 기본 fan-out으로 사용한다.
+- live browser reproduction, DOM/visual evidence, Electron/window behavior 확인이 필요할 때는 `browser-explorer`를 선택적으로 fan-out한다. 이때 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 - 구조 냄새나 `split-first`가 보이면 `structure-planner`, `complexity-analyst`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 - distinct goal이면 같은 도메인이라도 새 task path를 만든다.
 - 각 slice는 change boundary, file budget, validation owner, focused validation과 함께 `split decision`을 기록한다.
@@ -44,6 +45,7 @@
 - phase 1에서 `split-first` trigger가 켜지면 same `worker`는 기존 파일에 append하지 않고, 같은 slice 안에서 새 모듈로 추출하거나 범위 초과 시 `blocked + exact split proposal`로 되돌린다.
 - phase 2 focused validation은 메인 스레드가 수행한다.
 - phase 2 기본 검증은 `타깃 검증 1개 + 저비용 체크 1개`다. shared/public boundary 변경 시에만 full-repo validation을 허용한다.
+- 브라우저 재현이나 시각 증거 수집이 필요할 때는 `browser-explorer`를 선택적으로 fan-out하고, `explorer`는 레포 탐색용으로만 유지한다.
 - 비trivial code diff slice면 `module-structure-gatekeeper`를 focused validation reviewer로 기본 포함한다.
 - frontend slice면 `frontend-structure-gatekeeper`를 추가한다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 실패로 본다.
@@ -71,7 +73,7 @@
 
 1. `implement-task` 실행은 delegated team lane으로 고정한다.
 2. 오케스트레이터는 현재 slice 선택, writer handoff brief 작성, phase 2 검증 실행, stop/replan 판정, 상태 기록을 수행한다.
-3. writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `timeout_policy`, `allowed_close_reasons`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다.
+3. writer handoff brief에는 phase, file budget, validation owner, `blocking_class`, `result_contract`, `close_protocol`, `timeout_policy`, `allowed_close_reasons`, `liveness_signals`, commit requirement/timing/fallback policy를 포함한다. 브라우저 helper handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 추가한다.
 4. noisy 검증 로그는 `verification-worker`가 해석하고 오케스트레이터는 요약만 받는다.
 5. helper fan-out은 read-only만 허용한다.
 6. 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.

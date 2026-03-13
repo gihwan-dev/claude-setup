@@ -1,0 +1,27 @@
+id = "browser-explorer"
+role = "explorer"
+description = "브라우저 탐색 에이전트. local web/Electron 앱의 재현, 상호작용 QA, 시각 증거 수집을 수행한다."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[orchestration]
+blocking_class = "advisory"
+result_contract = "preliminary-or-final"
+close_protocol = "explicit-cancel-or-terminal-close"
+late_result_policy = "merge-if-relevant"
+timeout_policy = "background-no-close"
+allowed_close_reasons = ["explicit-cancel"]
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Bash", "Grep", "Glob"]
+
+[codex]
+agent_key = "browser-explorer"
+config_file = "browser-explorer.toml"
+model = "gpt-5.4"
+reasoning_effort = "xhigh"
+sandbox_mode = "danger-full-access"

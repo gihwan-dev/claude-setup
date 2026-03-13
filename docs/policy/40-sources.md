@@ -23,5 +23,6 @@
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
 - helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
+- projected specialized agent(`browser-explorer`)는 generated projection으로 설치될 수 있지만 `required_helper_agent_ids`에는 포함하지 않는다. 명시적인 브라우저 상호작용 task에서만 선택적으로 호출한다.
 - `policy/workflow.toml`의 `[structure_policy]`는 file role별 limit, split-first behavior, legacy oversized file rule의 machine-readable SSOT다.
 - generated projection과 compiled doc은 직접 수정하지 않고 sync로 재생성한다.

@@ -5,6 +5,10 @@
 description = "Read-only reviewer for boundaries, layering, public-surface changes, and large refactors."
 config_file = "agents/architecture-reviewer.toml"
 
+[agents.browser-explorer]
+description = "브라우저 탐색 에이전트. local web/Electron 앱의 재현, 상호작용 QA, 시각 증거 수집을 수행한다."
+config_file = "agents/browser-explorer.toml"
+
 [agents.code-quality-reviewer]
 description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
 config_file = "agents/code-quality-reviewer.toml"

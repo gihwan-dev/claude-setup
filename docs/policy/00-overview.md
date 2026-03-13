@@ -16,6 +16,7 @@
 | 작업 성격 | 워크플로우 역할 | 보조 수단 |
 |-----------|----------------|-----------|
 | 코드 탐색/분석 | explorer | — |
+| 브라우저 탐색/재현 | explorer | browser-explorer |
 | React UI 구현 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 테스트 작성 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 코드 품질 리뷰 | reviewer | code-reviewer |

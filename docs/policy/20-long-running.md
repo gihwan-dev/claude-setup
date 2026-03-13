@@ -11,12 +11,13 @@
 ### Standard delegated flow
 
 1. 탐색/증거 수집이 필요할 때만 `explorer`를 사용한다.
-2. 메인 스레드에서 의사결정을 확정한다.
-3. 정확히 하나의 `worker`가 필요한 code diff를 적용한다.
-4. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
-5. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
-6. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
-7. 메인 스레드가 결과를 통합해 최종 응답한다.
+2. live browser reproduction, visual evidence, Electron/window behavior 확인이 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
+3. 메인 스레드에서 의사결정을 확정한다.
+4. 정확히 하나의 `worker`가 필요한 code diff를 적용한다.
+5. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
+6. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
+7. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
+8. 메인 스레드가 결과를 통합해 최종 응답한다.
 
 ### Long-running `implement-task` path
 
@@ -35,6 +36,7 @@
 - 각 slice는 `worker edit(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
 - 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
+- live browser reproduction, DOM/visual QA, screenshot evidence가 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 - UI 영향 planning은 `ux-journey-critic`를 우선하고 scope가 모호할 때만 `product-planner`, 구조 분해가 필요할 때만 `structure-planner`를 추가한다.
 - AI/agent workflow planning은 `web-researcher`를 official vendor docs 우선 조사 용도로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.

@@ -39,6 +39,7 @@ description: >
 - 기본 실행 단위는 다음 slice 1개다.
 - focused validation은 메인 스레드가 수행한다.
 - verification-worker는 메인 검증 로그가 noisy/multi-step일 때만 사용한다.
+- live browser reproduction, DOM/visual QA, screenshot evidence가 필요할 때만 `browser-explorer`를 선택적으로 사용한다. 이때 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다. `explorer`는 레포 탐색용으로만 유지한다.
 - focused validation이 실패하면 해당 slice는 커밋하지 않고 즉시 중단한다.
 - 각 slice는 커밋을 정확히 1회 남겨야 하며, 커밋 메시지는 한국어 conventional commit 한 줄을 사용한다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.

@@ -341,6 +341,120 @@ def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) ->
         errors.append("project-planner agent description still treats PLAN.md as primary source")
 
 
+def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    overview_path = repo_root / "docs" / "policy" / "00-overview.md"
+    routing_path = repo_root / "docs" / "policy" / "10-routing.md"
+    long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
+    sources_path = repo_root / "docs" / "policy" / "40-sources.md"
+    browser_agent_config = registry_root / "browser-explorer" / "agent.toml"
+    browser_agent_instructions = registry_root / "browser-explorer" / "instructions.md"
+    project_planner_path = registry_root / "project-planner" / "instructions.md"
+    implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
+
+    if not browser_agent_config.exists():
+        errors.append(f"missing browser explorer config: {browser_agent_config}")
+        return
+
+    payload = _load_toml(browser_agent_config)
+    if payload.get("role") != "explorer":
+        errors.append("browser-explorer role must remain explorer")
+    if payload.get("source") != "repo-agent":
+        errors.append("browser-explorer source must remain repo-agent")
+
+    projection = payload.get("projection")
+    if not isinstance(projection, dict):
+        errors.append(f"missing [projection]: {browser_agent_config}")
+    else:
+        if projection.get("repo") is not True or projection.get("codex") is not True:
+            errors.append("browser-explorer projection must stay enabled for repo/codex")
+
+    codex = payload.get("codex")
+    if not isinstance(codex, dict):
+        errors.append(f"missing [codex]: {browser_agent_config}")
+    else:
+        if codex.get("agent_key") != "browser-explorer":
+            errors.append("browser-explorer codex.agent_key drifted")
+        if codex.get("config_file") != "browser-explorer.toml":
+            errors.append("browser-explorer codex.config_file drifted")
+        if codex.get("sandbox_mode") != "danger-full-access":
+            errors.append("browser-explorer sandbox_mode must remain danger-full-access")
+
+    if "browser-explorer" in REQUIRED_HELPER_AGENT_IDS:
+        errors.append("browser-explorer must not be added to required_helper_agent_ids")
+
+    _expect_substrings(
+        browser_agent_instructions,
+        (
+            "`playwright-interactive`",
+            "`target URL 또는 Electron entry`",
+            "`상태: final|preliminary`",
+            "자동 실행 금지",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        project_planner_path,
+        (
+            "`browser-explorer`",
+            "`target URL 또는 Electron entry`",
+            "`scenario checklist`",
+            "`evidence checklist`",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        implement_task_skill_path,
+        (
+            "`browser-explorer`",
+            "`target URL 또는 Electron entry`",
+            "`scenario checklist`",
+            "`evidence checklist`",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        overview_path,
+        (
+            "브라우저 탐색/재현",
+            "browser-explorer",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        routing_path,
+        (
+            "`browser-explorer`",
+            "`explorer`는 레포 탐색용으로 유지한다.",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        long_running_path,
+        (
+            "`browser-explorer`",
+            "`target URL 또는 Electron entry`",
+            "`scenario checklist`",
+            "`evidence checklist`",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        sources_path,
+        (
+            "`browser-explorer`",
+            "`required_helper_agent_ids`",
+        ),
+        errors,
+    )
+
+
 def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     entries = _read_agent_entries(registry_root)
@@ -562,6 +676,7 @@ def main() -> int:
     _validate_helper_orchestration(errors)
     _validate_structure_policy(repo_root, errors)
     _validate_structure_instruction_drift(repo_root, errors)
+    _validate_browser_explorer_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(errors)
     _validate_documentation_only_builtins(repo_root, errors)

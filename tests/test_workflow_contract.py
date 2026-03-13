@@ -422,7 +422,15 @@ class WorkflowContractTests(RepoTestCase):
             config_file = entry.get("config_file")
             self.assertIsInstance(config_file, str, msg=f"missing config_file for {agent_id}")
             profile = tomllib.loads((REPO_ROOT / "dist" / "codex" / config_file).read_text(encoding="utf-8"))
-            expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")
+            registry_payload = tomllib.loads(
+                (REPO_ROOT / "agent-registry" / agent_id / "agent.toml").read_text(encoding="utf-8")
+            )
+            codex = registry_payload.get("codex")
+            self.assertIsInstance(codex, dict, msg=f"missing [codex] for {agent_id}")
+            expected_sandbox = codex.get(
+                "sandbox_mode",
+                EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only"),
+            )
             self.assertEqual(
                 profile.get("sandbox_mode"),
                 expected_sandbox,

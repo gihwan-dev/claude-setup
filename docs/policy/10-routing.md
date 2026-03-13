@@ -26,6 +26,7 @@
 - 기존 코드의 long-running `design-task`/`implement-task` 경로는 refactor/architecture에 한정하지 않고 non-trivial task 전반(`feature`, `bugfix`, `refactor`, `migration`, `prototype`, `ops`)에 사용한다.
 - 리뷰 요청은 findings-first를 유지한다. `orchestrated-task` 판정이면 같은 턴에 구조 개선 또는 bundle 설계 방향을 함께 제공한다.
 - TS/JS/React 기존 코드는 quality preflight에서 `explorer`를 기본으로 사용한다.
+- live browser reproduction, DOM/visual QA, screenshot evidence가 필요한 task는 메인 스레드 대신 `browser-explorer`를 선택적 fan-out으로 사용한다. `explorer`는 레포 탐색용으로 유지한다.
 - 구조 냄새가 보이면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 
 ### Fast lane
