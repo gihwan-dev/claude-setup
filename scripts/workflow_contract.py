@@ -171,6 +171,15 @@ ADVISORY_TIMEOUT_POLICY = _require_str(
 NON_ADVISORY_TIMEOUT_POLICY = _require_str(
     HELPER_CLOSE_POLICY, "non_advisory_timeout_policy", path=WORKFLOW_POLICY_PATH
 )
+NON_CANCEL_STATUS_PING_MODE = _require_str(
+    HELPER_CLOSE_POLICY, "non_cancel_status_ping_mode", path=WORKFLOW_POLICY_PATH
+)
+SYNTHETIC_INTERRUPT_REASON = _require_str(
+    HELPER_CLOSE_POLICY, "synthetic_interrupt_reason", path=WORKFLOW_POLICY_PATH
+)
+FALLBACK_REQUIRES_ACK = _require_str(
+    HELPER_CLOSE_POLICY, "fallback_requires_ack", path=WORKFLOW_POLICY_PATH
+)
 INVALID_CLOSE_REASON = _require_str(
     HELPER_CLOSE_POLICY, "invalid_close_reason", path=WORKFLOW_POLICY_PATH
 )
@@ -182,20 +191,34 @@ TERMINAL_RUNTIME_STATUSES = _require_str_list(
 )
 
 # Policy-derived constants/predicates to avoid scattering string literals.
-EXPLICIT_CANCEL_CLOSE_REASON: str = (
-    STRONG_CLOSE_REASONS[0] if len(STRONG_CLOSE_REASONS) >= 1 else "explicit-cancel"
-)
+if NON_CANCEL_STATUS_PING_MODE != "non-interrupt-only":
+    raise ValueError(
+        f"helper_close.non_cancel_status_ping_mode must be 'non-interrupt-only', got {NON_CANCEL_STATUS_PING_MODE!r}"
+    )
+if FALLBACK_REQUIRES_ACK != "terminal-or-background":
+    raise ValueError(
+        f"helper_close.fallback_requires_ack must be 'terminal-or-background', got {FALLBACK_REQUIRES_ACK!r}"
+    )
+if SYNTHETIC_INTERRUPT_REASON not in STRONG_CLOSE_REASONS:
+    raise ValueError(
+        "helper_close.synthetic_interrupt_reason must be included in helper_close.strong_close_reasons"
+    )
+
+EXPLICIT_CANCEL_CLOSE_REASON: str = SYNTHETIC_INTERRUPT_REASON
 
 def _is_explicit_cancel(reason: str | None) -> bool:
     return reason == EXPLICIT_CANCEL_CLOSE_REASON
 
+def _has_terminal_runtime_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
+    return snapshot.has_terminal_runtime_ack and snapshot.runtime_status in TERMINAL_RUNTIME_STATUSES
+
+
 def _has_natural_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
-    # Allow natural close only when terminal or stronger-than-preliminary signals exist.
+    # Close/fallback ack excludes preliminary-only output and raw runtime status notifications.
     return (
         snapshot.has_final
-        or snapshot.has_checkpoint
-        or snapshot.has_terminal_runtime_ack
-        or snapshot.runtime_status in TERMINAL_RUNTIME_STATUSES
+        or (snapshot.has_checkpoint and snapshot.drain_grace_elapsed)
+        or (snapshot.drain_grace_elapsed and _has_terminal_runtime_close_ack(snapshot))
     )
 
 STRUCTURE_SOFT_LIMIT_BEHAVIOR = _require_str(
@@ -359,16 +382,17 @@ class HelperCloseSnapshot:
     has_checkpoint: bool = False
     has_final: bool = False
     has_terminal_runtime_ack: bool = False
+    backgrounded: bool = False
+    fallback_requested: bool = False
 
     def has_result(self) -> bool:
         return self.has_preliminary or self.has_checkpoint or self.has_final
 
     def has_ack(self) -> bool:
-        return (
-            self.has_result()
-            or self.has_terminal_runtime_ack
-            or self.runtime_status in TERMINAL_RUNTIME_STATUSES
-        )
+        return _has_natural_close_ack(self)
+
+    def has_fallback_ack(self) -> bool:
+        return self.backgrounded or self.has_ack()
 
 
 @dataclass(frozen=True)
@@ -451,6 +475,22 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             rationale=f"`{INVALID_CLOSE_REASON}` is not a valid close reason",
         )
 
+    if snapshot.interrupt_sent and not _is_explicit_cancel(close_reason):
+        return _decision(
+            "invalid",
+            snapshot,
+            False,
+            f"non-cancel status ping mode is `{NON_CANCEL_STATUS_PING_MODE}`; synthetic interrupt is reserved for `{SYNTHETIC_INTERRUPT_REASON}`",
+        )
+
+    if snapshot.fallback_requested and not snapshot.has_fallback_ack():
+        return _decision(
+            "invalid",
+            snapshot,
+            False,
+            f"parent fallback requires {FALLBACK_REQUIRES_ACK} ack before close/deep-solo handoff",
+        )
+
     if not snapshot.observed:
         return _decision("observe", snapshot, False, "close preflight starts with observe")
 
@@ -468,11 +508,18 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
                 False,
                 "timed-out advisory helper must be status-pinged before any close decision",
             )
+        if not snapshot.drain_grace_elapsed:
+            return _decision(
+                "observe",
+                snapshot,
+                False,
+                "non-cancel observe path stays in observe/drain until terminal or background ack",
+            )
         return _decision(
             "background",
             snapshot,
             False,
-            "advisory nonresponse stays background/advisory until strong close reason or ack",
+            "advisory nonresponse may move to background only after observe/drain on the non-cancel path",
         )
 
     if snapshot.runtime_status == "running" and not snapshot.status_pinged:
@@ -494,9 +541,8 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
         )
 
     if _is_explicit_cancel(close_reason) and not snapshot.has_ack():
-        action = "background" if snapshot.blocking_class == "advisory" else "observe"
         return _decision(
-            action,
+            "observe",
             snapshot,
             False,
             f"strong close reason requires protocol completion ack ({HELPER_CLOSE_ACK_DEFINITION})",
@@ -510,9 +556,8 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             f"strong close reason and ack satisfied ({HELPER_CLOSE_ACK_DEFINITION}): {close_reason}",
         )
 
-        # Natural terminal/result path: no synthetic interrupt when not explicit-cancel.
-        # Only allow when terminal or stronger-than-preliminary signals exist.
-    if (not _is_explicit_cancel(close_reason)) and _has_natural_close_ack(snapshot):
+    # Natural terminal/result path: no synthetic interrupt when not explicit-cancel.
+    if (not _is_explicit_cancel(close_reason)) and snapshot.has_ack():
         return _decision(
             "allow-close",
             snapshot,

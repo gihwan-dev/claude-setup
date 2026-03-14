@@ -11,7 +11,13 @@ from unittest.mock import patch
 from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
-from workflow_contract import REQUIRED_HELPER_AGENT_IDS, WRITABLE_PROJECTION_AGENT_IDS
+from workflow_contract import (
+    FALLBACK_REQUIRES_ACK,
+    NON_CANCEL_STATUS_PING_MODE,
+    REQUIRED_HELPER_AGENT_IDS,
+    SYNTHETIC_INTERRUPT_REASON,
+    WRITABLE_PROJECTION_AGENT_IDS,
+)
 
 
 class AgentSyncTests(RepoTestCase):
@@ -63,6 +69,23 @@ class AgentSyncTests(RepoTestCase):
             self.assertIsInstance(config_file, str, msg=f"missing config_file for {agent_id}")
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
+
+    def test_helper_close_policy_defaults_include_blocking_writer_guard(self) -> None:
+        policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
+        helper_close = policy.get("helper_close")
+        self.assertIsInstance(helper_close, dict)
+        self.assertEqual(
+            helper_close.get("non_cancel_status_ping_mode"),
+            NON_CANCEL_STATUS_PING_MODE,
+        )
+        self.assertEqual(
+            helper_close.get("synthetic_interrupt_reason"),
+            SYNTHETIC_INTERRUPT_REASON,
+        )
+        self.assertEqual(
+            helper_close.get("fallback_requires_ack"),
+            FALLBACK_REQUIRES_ACK,
+        )
 
     def test_browser_explorer_is_projected_with_danger_full_access_profile(self) -> None:
         self.assertNotIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)

@@ -13,9 +13,11 @@ from workflow_contract import (
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
+    FALLBACK_REQUIRES_ACK,
     HelperCloseSnapshot,
     INVALID_CLOSE_REASON,
     LONG_RUNNING_PUBLIC_SURFACE,
+    NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
     SPEC_VALIDATION_SECTION_ORDER,
@@ -27,6 +29,7 @@ from workflow_contract import (
     STRUCTURE_ROLE_LIMITS,
     STRUCTURE_SOFT_LIMIT_BEHAVIOR,
     STRUCTURE_SPLIT_ROLES,
+    SYNTHETIC_INTERRUPT_REASON,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
@@ -162,6 +165,25 @@ class WorkflowContractTests(RepoTestCase):
         self.assertFalse(decision.close_allowed)
         self.assertEqual(decision.action, "status-ping")
 
+    def test_decide_helper_close_action_timeout_running_after_status_ping_stays_observe_until_drain(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="explorer",
+            blocking_class="advisory",
+            result_contract="preliminary-or-final",
+            close_protocol="explicit-cancel-or-terminal-close",
+            late_result_policy="merge-if-relevant",
+            timeout_policy=ADVISORY_TIMEOUT_POLICY,
+            runtime_status="running",
+            observed=True,
+            status_pinged=True,
+            wait_timed_out_count=1,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "observe")
+
     def test_decide_helper_close_action_explicit_cancel_requires_interrupt_and_drain_before_close(self) -> None:
         snapshot = HelperCloseSnapshot(
             helper_id="verification-worker",
@@ -180,6 +202,28 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertFalse(decision.close_allowed)
         self.assertEqual(decision.action, "interrupt-and-drain")
+
+    def test_decide_helper_close_action_rejects_non_cancel_interrupt_sequence(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="worker",
+            blocking_class="blocking",
+            result_contract="final-or-checkpoint",
+            close_protocol="explicit-cancel-or-terminal-close",
+            late_result_policy="not-applicable",
+            timeout_policy="observe-and-status-ping",
+            runtime_status="running",
+            observed=True,
+            status_pinged=True,
+            interrupt_sent=True,
+            close_reason=None,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "invalid")
+        self.assertIn(NON_CANCEL_STATUS_PING_MODE, decision.rationale)
+        self.assertIn(SYNTHETIC_INTERRUPT_REASON, decision.rationale)
 
     def test_decide_helper_close_action_rejects_blocked_and_hard_deadline_on_running_helper(self) -> None:
         # blocked reason should not trigger interrupt on running helper
@@ -216,7 +260,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertFalse(hd_decision.close_allowed)
         self.assertIn(hd_decision.action, {"observe", "status-ping"})
 
-    def test_decide_helper_close_action_allows_close_with_strong_reason_and_ack(self) -> None:
+    def test_decide_helper_close_action_allows_close_with_late_checkpoint_after_drain(self) -> None:
         snapshot = HelperCloseSnapshot(
             helper_id="explorer",
             blocking_class="advisory",
@@ -230,7 +274,7 @@ class WorkflowContractTests(RepoTestCase):
             interrupt_sent=True,
             drain_grace_elapsed=True,
             close_reason="explicit-cancel",
-            has_preliminary=True,
+            has_checkpoint=True,
         )
 
         decision = decide_helper_close_action(snapshot)
@@ -238,8 +282,9 @@ class WorkflowContractTests(RepoTestCase):
         self.assertTrue(decision.close_allowed)
         self.assertEqual(decision.action, "allow-close")
         self.assertIn("strong close reason", decision.rationale)
+        self.assertTrue(decision.accept_late_result)
 
-    def test_decide_helper_close_action_allows_close_with_terminal_status_only_ack(self) -> None:
+    def test_decide_helper_close_action_rejects_interrupted_status_without_terminal_runtime_ack(self) -> None:
         snapshot = HelperCloseSnapshot(
             helper_id="explorer",
             blocking_class="advisory",
@@ -249,9 +294,30 @@ class WorkflowContractTests(RepoTestCase):
             timeout_policy=ADVISORY_TIMEOUT_POLICY,
             runtime_status="interrupted",
             observed=True,
+            status_pinged=True,
             interrupt_sent=True,
             drain_grace_elapsed=True,
-            close_reason=None,
+            close_reason="explicit-cancel",
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "observe")
+
+    def test_decide_helper_close_action_allows_close_with_terminal_runtime_ack_after_drain(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="worker",
+            blocking_class="blocking",
+            result_contract="final-or-checkpoint",
+            close_protocol="explicit-cancel-or-terminal-close",
+            late_result_policy="not-applicable",
+            timeout_policy="observe-and-status-ping",
+            runtime_status="completed",
+            observed=True,
+            status_pinged=True,
+            drain_grace_elapsed=True,
+            has_terminal_runtime_ack=True,
         )
 
         decision = decide_helper_close_action(snapshot)
@@ -278,6 +344,29 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertFalse(decision.close_allowed)
         self.assertIn(decision.action, {"background", "status-ping", "observe"})
+
+    def test_decide_helper_close_action_rejects_parent_fallback_before_ack(self) -> None:
+        snapshot = HelperCloseSnapshot(
+            helper_id="worker",
+            blocking_class="blocking",
+            result_contract="final-or-checkpoint",
+            close_protocol="explicit-cancel-or-terminal-close",
+            late_result_policy="not-applicable",
+            timeout_policy="observe-and-status-ping",
+            runtime_status="interrupted",
+            observed=True,
+            status_pinged=True,
+            interrupt_sent=True,
+            close_reason="explicit-cancel",
+            fallback_requested=True,
+        )
+
+        decision = decide_helper_close_action(snapshot)
+
+        self.assertFalse(decision.close_allowed)
+        self.assertEqual(decision.action, "invalid")
+        self.assertIn(FALLBACK_REQUIRES_ACK, decision.rationale)
+
     def test_should_spawn_advisory_helper_skips_small_low_risk_slice(self) -> None:
         context = AdvisorySliceContext(
             helper_id="code-quality-reviewer",

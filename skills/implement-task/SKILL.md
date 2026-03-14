@@ -29,7 +29,10 @@ description: >
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
+- `worker` handoff 기본값은 minimal handoff다. 기본 내용은 `slice goal`, `write scope`, `acceptance checks`, `current diff state`만 포함한다.
 - 각 slice 실행 전에는 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
+- pre-edit 상태 보고는 1회 structure preflight만 허용하고 첫 edit 전 추가 checkpoint 요청은 금지한다.
+- full-history/forked-context는 정확한 thread-local reasoning 또는 uncommitted local state lineage가 꼭 필요할 때만 허용한다.
 - split-first trigger가 켜지면 target file append를 금지하고 같은 slice 내 추출 또는 `blocked + exact split proposal`만 허용한다.
 - 종료 전 메인 스레드는 실질 영향 문서만 다시 탐색/검토한다. 기본 대상은 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
 - 문서 영향 대상이 불명확할 때만 read-only helper로 후보를 좁힌다.
@@ -49,7 +52,9 @@ description: >
 - full-repo validation은 shared/public boundary 변경 시에만 허용한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
-- close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
+- `non-cancel observe path`는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 허용한다.
+- `explicit cancel path`는 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`만 허용한다.
+- non-cancel 경로에서는 synthetic interrupt를 보내지 않는다.
 - `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
@@ -96,15 +101,16 @@ description: >
 9. 메인 스레드는 실질 영향 문서를 판정하고 다시 탐색/검토한다. 대상이 불명확할 때만 read-only helper를 사용한다.
 10. 필요한 문서 diff나 SSOT 관련 generated projection sync는 phase 1을 수행한 same `worker`가 focused validation 전에 마무리한다.
 11. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
-12. 진행이 멈춘 것처럼 보이면 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서로만 처리한다.
-13. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-14. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-15. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-16. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
-17. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-18. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-19. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-20. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
+12. 진행이 멈춘 것처럼 보여도 non-cancel 경로에서는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 사용한다.
+13. 종료가 꼭 필요할 때만 explicit cancel 경로의 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`을 사용한다.
+14. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+15. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+16. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+17. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+18. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+19. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+20. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+21. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 6번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 

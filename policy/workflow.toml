@@ -44,8 +44,11 @@ worker = "workspace-write"
 strong_close_reasons = ["explicit-cancel"]
 advisory_timeout_policy = "background-no-close"
 non_advisory_timeout_policy = "observe-and-status-ping"
+non_cancel_status_ping_mode = "non-interrupt-only"
+synthetic_interrupt_reason = "explicit-cancel"
+fallback_requires_ack = "terminal-or-background"
 invalid_close_reason = "result-no-longer-needed"
-helper_close_ack_definition = "final/preliminary/checkpoint 결과 또는 terminal runtime status 관측"
+helper_close_ack_definition = "final 또는 drain grace 이후 checkpoint/terminal runtime ack"
 terminal_runtime_statuses = [
   "blocked",
   "cancelled",
