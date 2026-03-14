@@ -38,6 +38,9 @@
 `source_of_truth`는 실제 파일 경로만 가리킨다.
 `success_criteria`와 `major_boundaries`는 continuity gate 비교에 직접 사용한다.
 `delivery_strategy`도 continuity gate 비교에 직접 사용한다.
+post-design bootstrap이 적용되면 `required_docs`에 `IMPLEMENTATION_CONTRACT.md`가 추가될 수 있고,
+`source_of_truth.implementation`이 optional pointer로 생길 수 있다.
+reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap supplement는 삭제하지 않고 보존한다.
 
 ## Work Types
 
@@ -175,6 +178,11 @@ gate 규칙:
 - 위 플래그가 없어도 설계 문서가 3종 이상이면 `blocking`
 - 그 외는 `advisory`
 
+추가 규칙:
+
+- greenfield/new-project 설계인데 repo baseline implementation rules(`docs/ai/ENGINEERING_RULES.md`)가 아직 없으면 `Blocking issues`에 `$bootstrap-project-rules` 실행 요구를 남긴다.
+- 이 blocking issue는 design 단계에서 자동 해소하지 않는다. post-design bootstrap이 완료된 뒤에만 cleared로 바꾼다.
+
 ## `EXECUTION_PLAN.md`
 
 아래 level-1 heading 순서를 유지한다.
@@ -207,6 +215,10 @@ gate 규칙:
 - Key decisions
 - Validation gate status
 - Implementation slice order
+
+greenfield/new-project 설계라면 `Document map` 또는 `Validation gate status`에 post-design bootstrap handoff를 함께 남긴다.
+bootstrap 이후에는 `IMPLEMENTATION_CONTRACT.md`가 document map에 추가될 수 있다.
+reuse-existing 경로에서 bootstrap supplement를 유지했다면 `Task continuity` 또는 `Key decisions`에 preserved 사실을 남긴다.
 
 `delivery_strategy=ui-first`면 `Implementation slice order`는 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 그대로 반영한다.
 

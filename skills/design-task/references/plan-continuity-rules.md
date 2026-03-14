@@ -12,10 +12,20 @@
 | Success criteria | 동일한 `task.yaml.success_criteria` | 다르면 새 task |
 | Work type | 동일한 `feature`/`bugfix`/`refactor`/`migration`/`prototype`/`ops` | 다르면 새 task |
 | Impact flags | 동일한 핵심 영향 플래그 | 다르면 새 task |
-| Required docs | 동일한 bundle 구성이 필요함 | 다르면 새 task |
+| Required docs | bootstrap supplement를 normalize한 뒤 동일한 bundle 구성이 필요함 | normalize 후에도 다르면 새 task |
 | Major boundaries | 동일한 `task.yaml.major_boundaries` | 다르면 새 task |
 | Delivery strategy | 동일한 `task.yaml.delivery_strategy` | 다르면 새 task |
 | Candidate count | 정확히 1개 | 2개 이상이면 ambiguous case |
+
+## Bootstrap Supplement Normalization
+
+continuity 비교에서는 post-design bootstrap이 추가한 아래 항목을 task identity 차이로 보지 않는다.
+
+- `required_docs`의 `IMPLEMENTATION_CONTRACT.md`
+- `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`
+
+즉 `required_docs` 비교는 bootstrap supplement를 제거한 normalized set 기준으로 수행한다.
+`source_of_truth` 비교는 기존 identity signal이 아니며, optional `implementation` pointer가 생겼더라도 continuity를 깨지 않는다.
 
 ## Decision Rules
 
@@ -23,9 +33,11 @@
 2. continuation 표현이 없더라도 관련 task가 보이면 continuity gate를 적용한다.
 3. 새 bundle 후보가 있으면 `task.yaml`을 우선 사용한다.
 4. legacy `PLAN.md` 후보는 새 bundle 후보가 없을 때만 fallback 비교 대상으로 사용한다.
-5. 새 bundle은 `goal + success_criteria + work_type + impact_flags + required_docs + major_boundaries + delivery_strategy`가 모두 같은 단일 후보일 때만 `reuse-existing`를 선택한다.
-6. 하나라도 다르면 `create-new`를 선택한다.
-7. 후보가 2개 이상이면 자동 선택하지 않고 `Need user decision`에 남긴다.
+5. 새 bundle은 `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy`가 모두 같은 단일 후보일 때만 `reuse-existing`를 선택한다.
+6. `reuse-existing`로 기존 bundle을 갱신할 때 기존 `IMPLEMENTATION_CONTRACT.md`와 `source_of_truth.implementation`은 bootstrap supplement로 보존한다.
+7. `Task continuity`에는 필요할 때 `bootstrap supplement preserved`를 함께 기록한다.
+8. 하나라도 다르면 `create-new`를 선택한다.
+9. 후보가 2개 이상이면 자동 선택하지 않고 `Need user decision`에 남긴다.
 
 ## Examples
 
@@ -33,6 +45,7 @@
 
 - 현재 요청이 기존 목표를 더 잘게 쪼개거나 acceptance criteria만 구체화한다.
 - work type, impact flags, required docs, `success_criteria`, `major_boundaries`가 유지된다.
+- 차이가 post-design bootstrap으로 추가된 `IMPLEMENTATION_CONTRACT.md`와 `source_of_truth.implementation`뿐이면 같은 task로 본다.
 
 ### Create new
 

@@ -1,8 +1,8 @@
-task: sample-bundle-task
+task: sample-pending-bootstrap-task
 goal: Visualize long-running task execution in a timeline-first monitor.
 success_criteria:
   - Overview 화면에서 대표 병목 thread를 식별할 수 있다.
-  - Timeline 진입 전 blocking spec issue가 모두 해소돼야 한다.
+  - Timeline 진입 전 bootstrap blocker가 해소돼야 한다.
 major_boundaries:
   - Timeline overview UI
   - Local ingestion and normalization pipeline
@@ -15,7 +15,6 @@ required_docs:
   - EXECUTION_PLAN.md
   - SPEC_VALIDATION.md
   - STATUS.md
-  - IMPLEMENTATION_CONTRACT.md
   - PRD.md
   - UX_SPEC.md
   - TECH_SPEC.md
@@ -28,7 +27,6 @@ source_of_truth:
   execution: EXECUTION_PLAN.md
   acceptance: ACCEPTANCE.feature
   validation: SPEC_VALIDATION.md
-  implementation: IMPLEMENTATION_CONTRACT.md
 ids:
   requirement_prefix: REQ
   screen_prefix: SCR

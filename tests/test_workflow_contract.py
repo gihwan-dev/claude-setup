@@ -42,6 +42,7 @@ from workflow_contract import (
     decide_helper_close_action,
     decide_spec_validation_gate,
     derive_task_bundle_required_docs,
+    load_task_bundle_manifest,
     should_spawn_advisory_helper,
     validate_markdown_sections,
     validate_task_bundle_root,
@@ -111,6 +112,39 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertIsNone(spec_error, msg=spec_error)
         self.assertIsNone(execution_plan_error, msg=execution_plan_error)
+
+    def test_fixture_task_bundle_contract_allows_optional_implementation_source(self) -> None:
+        fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task"
+        manifest = load_task_bundle_manifest(fixture_root / "task.yaml")
+
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", manifest.required_docs)
+        self.assertEqual(
+            "IMPLEMENTATION_CONTRACT.md",
+            manifest.source_of_truth.get("implementation"),
+        )
+
+    def test_pending_and_bootstrapped_bundle_fixtures_capture_bootstrap_state(self) -> None:
+        pending_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task"
+        cleared_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task"
+
+        pending_errors = validate_task_bundle_root(pending_root)
+        cleared_errors = validate_task_bundle_root(cleared_root)
+        self.assertEqual([], pending_errors, msg="\n".join(pending_errors))
+        self.assertEqual([], cleared_errors, msg="\n".join(cleared_errors))
+
+        pending_manifest = load_task_bundle_manifest(pending_root / "task.yaml")
+        cleared_manifest = load_task_bundle_manifest(cleared_root / "task.yaml")
+        pending_validation = (pending_root / "SPEC_VALIDATION.md").read_text(encoding="utf-8")
+        cleared_validation = (cleared_root / "SPEC_VALIDATION.md").read_text(encoding="utf-8")
+
+        self.assertNotIn("IMPLEMENTATION_CONTRACT.md", pending_manifest.required_docs)
+        self.assertNotIn("implementation", pending_manifest.source_of_truth)
+        self.assertIn("$bootstrap-project-rules", pending_validation)
+
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", cleared_manifest.required_docs)
+        self.assertEqual("IMPLEMENTATION_CONTRACT.md", cleared_manifest.source_of_truth.get("implementation"))
+        self.assertIn("$bootstrap-project-rules", cleared_validation)
+        self.assertIn("completed", cleared_validation)
 
     def test_advisory_close_guard_task_section_order(self) -> None:
         task_root = REPO_ROOT / "tasks" / "advisory-helper-close-guard"
@@ -566,7 +600,49 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("success_criteria", skill_content)
         self.assertIn("major_boundaries", skill_content)
         self.assertIn("delivery_strategy", skill_content)
+        self.assertIn("normalized required_docs", skill_content)
+        self.assertIn("source_of_truth.implementation", skill_content)
+        self.assertIn("preserved", skill_content)
         self.assertIn("Not started.", skill_content)
+
+    def test_bootstrap_project_rules_skill_contract_is_documented(self) -> None:
+        skill_content = (
+            REPO_ROOT / "skills" / "bootstrap-project-rules" / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "bootstrap-project-rules" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        decision_reference = (
+            REPO_ROOT / "skills" / "bootstrap-project-rules" / "references" / "decision-catalog.md"
+        ).read_text(encoding="utf-8")
+        template_reference = (
+            REPO_ROOT / "skills" / "bootstrap-project-rules" / "references" / "doc-templates.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("docs/ai/ENGINEERING_RULES.md", skill_content)
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", skill_content)
+        self.assertIn("Locked now", skill_content)
+        self.assertIn("Deferred", skill_content)
+        self.assertIn("Banned/Avoid", skill_content)
+        self.assertIn("bootstrap-project-rules:start", skill_content)
+        self.assertIn("AGENTS.md", prompt_content)
+        self.assertIn("CLAUDE.md", prompt_content)
+        self.assertIn("Decision Catalog", decision_reference)
+        self.assertIn("Managed Section Markers", template_reference)
+
+    def test_design_task_documents_post_design_bootstrap_handoff(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "design-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        reference_content = (
+            REPO_ROOT / "skills" / "design-task" / "references" / "task-bundle-rules.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("$bootstrap-project-rules", skill_content)
+        self.assertIn("source_of_truth.implementation", skill_content)
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", reference_content)
+        self.assertIn("$bootstrap-project-rules", prompt_content)
 
     def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -579,6 +655,18 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("blocking", skill_content)
         self.assertIn("EXECUTION_PLAN.md", skill_content)
         self.assertIn("delivery_strategy", skill_content)
+
+    def test_implement_task_reads_optional_implementation_contract(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("source_of_truth.implementation", skill_content)
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", skill_content)
+        self.assertIn("$bootstrap-project-rules", skill_content)
+        self.assertIn("source_of_truth.implementation", prompt_content)
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", prompt_content)
 
     def test_structure_first_instruction_drift_is_guarded(self) -> None:
         worker_content = (
@@ -652,6 +740,10 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("success_criteria", reference_content)
         self.assertIn("major_boundaries", reference_content)
         self.assertIn("delivery_strategy", reference_content)
+        self.assertIn("IMPLEMENTATION_CONTRACT.md", reference_content)
+        self.assertIn("normalize", reference_content)
+        self.assertIn("preserved", reference_content)
+        self.assertIn("source_of_truth.implementation", reference_content)
 
     def test_task_bundle_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "task-bundle-rules.md"

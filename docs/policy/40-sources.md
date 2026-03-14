@@ -13,7 +13,9 @@
 - legacy skill overlay: `.agents/skills` (설치 호환용, 기본 source 아님)
 - long-running task public surface: `design-task`, `implement-task`
 - 새 long-running task source of truth는 `tasks/<task-path>/task.yaml`과 bundle 문서(`README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, 전문 문서들)다.
+- greenfield/new-project post-design bootstrap이 적용되면 repo-level implementation rules source는 `docs/ai/ENGINEERING_RULES.md`다.
 - `task.yaml.delivery_strategy`는 새 bundle의 machine-readable execution contract다.
+- `task.yaml.source_of_truth.implementation`은 optional task supplement pointer로 `IMPLEMENTATION_CONTRACT.md`를 가리킬 수 있다.
 - `STATUS.md`는 새 task와 legacy task 모두에서 오케스트레이터 메타 상태 문서로 유지한다.
 - legacy compatibility task만 `PLAN.md`를 source of truth로 유지하고, 새 task에는 `PLAN.md`를 만들지 않는다.
 - `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다. 새 task는 `task.yaml`, legacy task는 `PLAN.md`를 기준으로 비교하고 `delivery_strategy`가 다르면 새 task를 만든다.

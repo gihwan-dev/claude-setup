@@ -21,8 +21,8 @@
 
 # Blocking issues
 
-- 없음. `$bootstrap-project-rules` completed and blocking gate cleared.
+- `$bootstrap-project-rules`로 repo baseline implementation rules와 task supplement를 먼저 고정해야 한다.
 
 # Proceed verdict
 
-- proceed
+- blocked
