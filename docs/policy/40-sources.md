@@ -16,6 +16,7 @@
 - greenfield/new-project post-design bootstrap이 적용되면 repo-level implementation rules source는 `docs/ai/ENGINEERING_RULES.md`다.
 - `task.yaml.delivery_strategy`는 새 bundle의 machine-readable execution contract다.
 - `task.yaml.source_of_truth.implementation`은 optional task supplement pointer로 `IMPLEMENTATION_CONTRACT.md`를 가리킬 수 있다.
+- `delivery_strategy=ui-first` task는 `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`을 사용한다.
 - `STATUS.md`는 새 task와 legacy task 모두에서 오케스트레이터 메타 상태 문서로 유지한다.
 - legacy compatibility task만 `PLAN.md`를 source of truth로 유지하고, 새 task에는 `PLAN.md`를 만들지 않는다.
 - `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다. 새 task는 `task.yaml`, legacy task는 `PLAN.md`를 기준으로 비교하고 `delivery_strategy`가 다르면 새 task를 만든다.

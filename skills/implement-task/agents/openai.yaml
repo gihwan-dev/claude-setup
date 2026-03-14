@@ -3,7 +3,9 @@ interface:
   short_description: "Run approved task-bundle slices with worker edit-only, main focused validation, same-worker commit-only, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
   default_prompt: >
     $implement-task 승인된 task path의 `task.yaml + EXECUTION_PLAN.md + STATUS.md`를 우선 읽고,
-    `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`도 함께 읽고,
+    `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`,
+    `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`,
+    `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`도 함께 읽고,
     `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`도 함께 읽어.
     `SPEC_VALIDATION.md`의 blocking issue가 남아 있거나 `$bootstrap-project-rules`, project
     implementation rules 미정, `IMPLEMENTATION_CONTRACT.md` 요구가 unresolved면 구현을 시작하지 마.
@@ -11,8 +13,9 @@ interface:
     유지하고, `EXECUTION_PLAN.md`는 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를
     전제로 읽어. `delivery_strategy=ui-first`면 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 건너뛰거나
     병합하지 말고, `SLICE-1`/`SLICE-2`에서 real API/backend/data contract/integration diff를 추가하지 마.
-    `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 읽고,
-    `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 읽어.
+    `SLICE-1`은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고,
+    `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based
+    approval criteria를 읽어.
     각 slice에서 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저
     고정하고, split-first trigger가 켜지면 target file append를 금지해. 같은 slice 안에서 새 모듈
     추출이 가능하지 않으면 `blocked + exact split proposal`로 멈춰. hybrid mode default는

@@ -17,12 +17,16 @@ required_docs:
   - STATUS.md
   - PRD.md
   - UX_SPEC.md
+  - UX_BEHAVIOR_ACCESSIBILITY.md
+  - DESIGN_REFERENCES/
   - TECH_SPEC.md
   - ACCEPTANCE.feature
   - ADRs/
 source_of_truth:
   product: PRD.md
   ux: UX_SPEC.md
+  ux_behavior: UX_BEHAVIOR_ACCESSIBILITY.md
+  design_references: DESIGN_REFERENCES/manifest.json
   architecture: TECH_SPEC.md
   execution: EXECUTION_PLAN.md
   acceptance: ACCEPTANCE.feature

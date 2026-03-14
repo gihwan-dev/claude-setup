@@ -1,0 +1,32 @@
+[
+  {
+    "file": "curated/timeline-shell-adopt.svg",
+    "source_url": "https://example.com/timeline-shell",
+    "captured_at": "2026-03-14T00:00:00Z",
+    "kind": "adopt",
+    "tags": ["shell", "desktop", "orientation"],
+    "adopt_reason": "3-pane shell makes last handoff and first failure scanable.",
+    "avoid_reason": "",
+    "notes": "Use for overview shell and drawer relationship."
+  },
+  {
+    "file": "curated/activity-density-adopt.svg",
+    "source_url": "https://example.com/activity-density",
+    "captured_at": "2026-03-14T00:05:00Z",
+    "kind": "adopt",
+    "tags": ["density", "timeline", "status"],
+    "adopt_reason": "Dense rows stay readable without collapsing status cues.",
+    "avoid_reason": "",
+    "notes": "Use for row density and subdued status color coding."
+  },
+  {
+    "file": "curated/modal-heavy-avoid.svg",
+    "source_url": "https://example.com/modal-heavy-monitor",
+    "captured_at": "2026-03-14T00:10:00Z",
+    "kind": "avoid",
+    "tags": ["modal", "context-loss", "drilldown"],
+    "adopt_reason": "",
+    "avoid_reason": "Modal-first drilldown breaks timeline orientation and focus return.",
+    "notes": "Keep detail in drawer instead of stacked dialogs."
+  }
+]

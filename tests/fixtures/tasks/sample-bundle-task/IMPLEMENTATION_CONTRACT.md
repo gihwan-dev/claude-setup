@@ -3,6 +3,8 @@
 - `task.yaml`
 - `PRD.md`
 - `UX_SPEC.md`
+- `UX_BEHAVIOR_ACCESSIBILITY.md`
+- `DESIGN_REFERENCES/manifest.json`
 - `TECH_SPEC.md`
 - `SPEC_VALIDATION.md`
 
@@ -11,6 +13,7 @@
 - Timeline overview UI는 React 기반 local-first shell로 구현한다.
 - ingestion/normalization pipeline은 local SQLite index DB 경계를 유지한다.
 - initial slices는 `SLICE-1 -> SLICE-2 -> SLICE-3` 순서를 따른다.
+- `SLICE-1` 구현은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 먼저 따른다.
 
 # Allowed Core Libraries
 
@@ -25,7 +28,9 @@
 
 # Validation Overrides
 
+- 30-second checklist review
 - visual shell snapshot review
+- keyboard/focus walkthrough
 - mock interaction smoke check
 - parser unit test
 

@@ -20,7 +20,7 @@ description: >
 ## Required Inputs
 
 - bundle: `task.yaml`, `EXECUTION_PLAN.md`, `STATUS.md`
-- `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`
+- `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`
 - `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`
 - legacy fallback only: `PLAN.md`, `STATUS.md`
 - blocking 판정이 필요한 bundle이면 `SPEC_VALIDATION.md`
@@ -37,7 +37,7 @@ description: >
 1. `STATUS.md`를 먼저 읽고 bundle vs legacy를 판정한다. `STATUS.md`가 없으면 고정 템플릿 섹션으로 생성하고, `task.yaml`가 있으면 bundle을 우선하며 `PLAN.md` fallback은 legacy task에만 허용한다.
 2. path/slug 지정이 있으면 해당 task를 사용하고, 미지정일 때는 위 candidate rule을 그대로 적용한다.
 3. bundle이면 `task.yaml.success_criteria`, `major_boundaries`, `delivery_strategy`를 구현 계약으로 유지하고 `SPEC_VALIDATION.md` blocking issue를 확인한다. `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`를 선행 입력으로 함께 읽는다.
-4. `delivery_strategy=ui-first`면 `UX_SPEC.md`를 함께 읽는다. `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 읽고, `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 읽는다.
+4. `delivery_strategy=ui-first`면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json`을 함께 읽는다. `SLICE-1`은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고, `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval criteria를 읽는다.
 5. 현재 slice 범위를 고정한 뒤 `worker` 하나가 structure preflight 후 edit-only로 code/doc diff를 적용한다. `split-first trigger`가 켜지면 기존 파일 append 대신 같은 slice 안에서 분해 경계를 먼저 고정하고, 범위를 줄이지 못하면 `exact split proposal`로 되돌린다.
 6. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를 사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.

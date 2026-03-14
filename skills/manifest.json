@@ -70,7 +70,7 @@
     },
     {
       "name": "figma-less-ui-design",
-      "description": "Advisory skill for no-Figma MVP/prototype product UI planning. Use when `design-task` has `delivery_strategy=ui-first` but there is no Figma file and the team still needs a concrete `UI Planning Packet` inside `UX_SPEC.md`. If an existing design system, shipped UI, or Figma already exists, switch to `reuse + delta` and avoid inventing a new style.",
+      "description": "Advisory skill for no-Figma MVP/prototype product UI planning. Use when `design-task` has `delivery_strategy=ui-first` and the team needs concrete UX planning docs from repo context plus saved task-local references. Produce `UX_SPEC.md` (`UI Planning Packet`) and `UX_BEHAVIOR_ACCESSIBILITY.md`, and fall back to `reuse + delta` when an existing design system, shipped UI, or Figma already exists.",
       "path": "skills/figma-less-ui-design/SKILL.md"
     },
     {
@@ -122,6 +122,11 @@
       "name": "refactor-repo-skills",
       "description": "Repository-specific execution skill for refactoring verbose local skills. Audit `skills/*/SKILL.md`, score verbosity and structure smells, then rewrite only the top 1-3 candidates or a user-specified skill/path so the source of truth stays concise. Keep scope to `skills/` and generated skill index sync only; do not edit `docs/policy` or `agent-registry`.",
       "path": "skills/refactor-repo-skills/SKILL.md"
+    },
+    {
+      "name": "reference-pack",
+      "description": "Advisory skill for task-local UI reference collection and curation. Use inside `design-task` whenever `delivery_strategy=ui-first` to search, shortlist, save, and document references under `tasks/<task-path>/DESIGN_REFERENCES/`, then feed those saved references into `UX_SPEC.md`.",
+      "path": "skills/reference-pack/SKILL.md"
     },
     {
       "name": "story-generator",

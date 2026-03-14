@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -340,6 +341,9 @@ TASK_BUNDLE_UI_FIRST_WORK_TYPES = _require_str_list(
 TASK_BUNDLE_UI_FIRST_FLAGS = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_ui_first_flags", path=WORKFLOW_POLICY_PATH
 )
+TASK_BUNDLE_UI_REQUIRED_DOCS = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_ui_required_docs", path=WORKFLOW_POLICY_PATH
+)
 TASK_BUNDLE_VALIDATION_GATES = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_validation_gate_values", path=WORKFLOW_POLICY_PATH
 )
@@ -375,6 +379,9 @@ SPEC_VALIDATION_SECTION_ORDER = _require_str_list(
 )
 TASK_BUNDLE_TRACEABILITY_IDS = _require_str_map(
     TASK_DOCUMENTS_POLICY, "bundle_traceability_ids", path=WORKFLOW_POLICY_PATH
+)
+TASK_BUNDLE_OPTIONAL_SOURCE_OF_TRUTH_PATHS = _require_str_map(
+    TASK_DOCUMENTS_POLICY, "bundle_optional_source_of_truth_paths", path=WORKFLOW_POLICY_PATH
 )
 TASK_BUNDLE_BASE_DOCS = _require_str_list_map(
     TASK_DOCUMENTS_POLICY, "bundle_base_docs", path=WORKFLOW_POLICY_PATH
@@ -1068,7 +1075,7 @@ def derive_task_bundle_required_docs(work_type: str, impact_flags: tuple[str, ..
     docs.update(TASK_BUNDLE_BASE_DOCS[work_type])
 
     if set(impact_flags) & set(TASK_BUNDLE_UX_SPEC_FLAGS):
-        docs.add("UX_SPEC.md")
+        docs.update(TASK_BUNDLE_UI_REQUIRED_DOCS)
     if set(impact_flags) & set(TASK_BUNDLE_TECH_SPEC_FLAGS):
         docs.add("TECH_SPEC.md")
     if "public_contract_changed" in impact_flags:
@@ -1182,13 +1189,11 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
     if manifest.source_of_truth.get("validation") != "SPEC_VALIDATION.md":
         errors.append(f"{task_root}: source_of_truth.validation must point to SPEC_VALIDATION.md")
 
-    optional_sources = {
-        "product": "PRD.md",
-        "ux": "UX_SPEC.md",
-        "architecture": "TECH_SPEC.md",
-        "acceptance": "ACCEPTANCE.feature",
-    }
-    for source_key, source_path in optional_sources.items():
+    for source_key, source_path in TASK_BUNDLE_OPTIONAL_SOURCE_OF_TRUTH_PATHS.items():
+        if source_key == "design_references":
+            if "DESIGN_REFERENCES/" in manifest.required_docs and manifest.source_of_truth.get(source_key) != source_path:
+                errors.append(f"{task_root}: source_of_truth.{source_key} must point to {source_path}")
+            continue
         if source_path in manifest.required_docs and manifest.source_of_truth.get(source_key) != source_path:
             errors.append(f"{task_root}: source_of_truth.{source_key} must point to {source_path}")
 
@@ -1196,6 +1201,18 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
         source_path = task_root / relative_path
         if not source_path.exists():
             errors.append(f"{task_root}: source_of_truth.{source_key} points to missing file: {relative_path}")
+
+    design_references_path = manifest.source_of_truth.get("design_references")
+    if design_references_path:
+        manifest_json_path = task_root / design_references_path
+        if manifest_json_path.exists():
+            try:
+                design_references = json.loads(manifest_json_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                errors.append(f"{task_root}: invalid design reference manifest JSON: {design_references_path}: {exc}")
+            else:
+                if not isinstance(design_references, list) or not design_references:
+                    errors.append(f"{task_root}: design reference manifest must contain at least one entry: {design_references_path}")
 
     spec_error = validate_markdown_sections(task_root / "SPEC_VALIDATION.md", SPEC_VALIDATION_SECTION_ORDER)
     if spec_error is not None:

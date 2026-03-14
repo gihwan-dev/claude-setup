@@ -180,8 +180,9 @@
 - greenfield/new-project 설계는 `design-task` 이후 post-design bootstrap skill(`bootstrap-project-rules`)을 거쳐 repo baseline implementation rules와 task supplement contract를 만들 수 있다.
 - `design-task`는 `work_type + impact_flags + delivery_strategy`를 결정한다.
 - `design-task`와 `implement-task`는 각 slice에 `split decision`을 기록하고 target-file append 금지 trigger를 명시한다.
-- `delivery_strategy=ui-first`면 `design-task`는 내부 advisory skill `figma-less-ui-design`을 재사용해 `UX_SPEC.md`에 `UI Planning Packet`을 남긴다.
-- `UI Planning Packet` section order는 `Goal/Audience/Platform`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen/Flow/State Coverage`, `Review Loop`, `Implementation Prompt/Handoff`를 유지한다.
+- `delivery_strategy=ui-first`면 `design-task`는 내부 advisory skill `reference-pack`을 먼저 자동 실행해 `DESIGN_REFERENCES/`를 채우고, 이어서 `figma-less-ui-design`을 재사용해 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 남긴다.
+- `UX_SPEC.md` (`UI Planning Packet`) section order는 `Goal/Audience/Platform`, `30-Second Understanding Checklist`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary + Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Implementation Prompt/Handoff`를 유지한다.
+- `UX_BEHAVIOR_ACCESSIBILITY.md` section order는 `Interaction Model`, `Keyboard + Focus Contract`, `Accessibility Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval Criteria`를 유지한다.
 - 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 스타일 제안이 아니라 `reuse + delta`를 기록한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
@@ -210,9 +211,9 @@
 - `design-task`는 `work_type + impact_flags`로 필수/선택 문서를 고르고 `required_docs`에 실제 bundle 집합을 기록한다.
 - `task.yaml`은 `delivery_strategy`를 포함하고 `standard` 또는 `ui-first`만 허용한다.
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
-- `delivery_strategy=ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
+- `delivery_strategy=ui-first`면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`를 UX source of truth로 고정하고 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
 - `delivery_strategy=ui-first`인 `EXECUTION_PLAN.md`는 `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`, `SLICE-3+=real API/integration` 의미를 유지하고 `SLICE-1`/`SLICE-2`에는 real API/integration 금지를 적는다.
-- `implement-task`에서 `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 읽고, `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 읽는다.
+- `implement-task`에서 `SLICE-1`은 `UX_SPEC.md`의 checklist/layout/token/screen-flow와 `UX_BEHAVIOR_ACCESSIBILITY.md`의 interaction/a11y/microcopy를 읽고, `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval criteria를 읽는다.
 - `SLICE-1` 미승인 또는 `SLICE-2` 상태 모델 미정이면 다음 slice 진입은 stop/replan으로 막는다.
 - `SPEC_VALIDATION.md`는 항상 생성한다.
 - `SPEC_VALIDATION.md`의 gate는 `blocking`/`advisory`만 허용한다.
@@ -330,6 +331,7 @@
 - greenfield/new-project post-design bootstrap이 적용되면 repo-level implementation rules source는 `docs/ai/ENGINEERING_RULES.md`다.
 - `task.yaml.delivery_strategy`는 새 bundle의 machine-readable execution contract다.
 - `task.yaml.source_of_truth.implementation`은 optional task supplement pointer로 `IMPLEMENTATION_CONTRACT.md`를 가리킬 수 있다.
+- `delivery_strategy=ui-first` task는 `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`을 사용한다.
 - `STATUS.md`는 새 task와 legacy task 모두에서 오케스트레이터 메타 상태 문서로 유지한다.
 - legacy compatibility task만 `PLAN.md`를 source of truth로 유지하고, 새 task에는 `PLAN.md`를 만들지 않는다.
 - `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다. 새 task는 `task.yaml`, legacy task는 `PLAN.md`를 기준으로 비교하고 `delivery_strategy`가 다르면 새 task를 만든다.

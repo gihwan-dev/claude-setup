@@ -1,14 +1,19 @@
 interface:
   display_name: "Figma-less UI Design"
-  short_description: "No-Figma MVP/prototype UI planning advisory that writes a `UI Planning Packet` into `UX_SPEC.md` and falls back to `reuse + delta` when an existing style source exists"
+  short_description: "No-Figma UI planning advisory that turns task-local references into `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`, while falling back to `reuse + delta` when an existing style source exists"
   default_prompt: >
-    `$figma-less-ui-design` no-Figma MVP/prototype UI를 위해 `UX_SPEC.md` 안에 `UI Planning
-    Packet`을 작성해. section order는 `Goal/Audience/Platform`, `Visual Direction +
-    Anti-goals`, `Reference Pack (adopt/avoid)`, `Layout/App-shell Contract`, `Token +
-    Primitive Contract`, `Screen/Flow/State Coverage`, `Review Loop`, `Implementation
-    Prompt/Handoff`를 그대로 유지해. 기존 design system, shipped UI, brand guide, Figma가
-    있으면 새 스타일을 만들지 말고 반드시 `reuse + delta`로 기록해. `SLICE-1`이 읽을
-    layout/token/primitive/review-loop와 `SLICE-2`가 읽을 state matrix/mock/edge states까지
-    handoff로 연결해.
+    `$figma-less-ui-design` no-Figma MVP/prototype UI를 위해 saved `DESIGN_REFERENCES/manifest.json`
+    을 읽고 `UX_SPEC.md` (`UI Planning Packet`)와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 함께
+    작성해. `UX_SPEC.md` section order는 `Goal/Audience/Platform`, `30-Second Understanding
+    Checklist`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary +
+    Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow
+    Coverage`, `Implementation Prompt/Handoff`를 유지하고, `UX_BEHAVIOR_ACCESSIBILITY.md`
+    section order는 `Interaction Model`, `Keyboard + Focus Contract`, `Accessibility Contract`,
+    `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`,
+    `Microcopy + Information Expression Rules`, `Task-based Approval Criteria`를 유지해. 기존
+    design system, shipped UI, brand guide, Figma가 있으면 새 스타일을 만들지 말고 반드시
+    `reuse + delta`로 기록해. `SLICE-1`에는 checklist/layout/token/screen-flow와
+    interaction/a11y/microcopy를, `SLICE-2`에는 keyboard/focus, live semantics, state matrix/fixture,
+    degradation, task-based approval criteria를 handoff로 연결해.
 policy:
   allow_implicit_invocation: false

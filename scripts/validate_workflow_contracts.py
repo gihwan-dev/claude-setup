@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import tomllib
 from pathlib import Path
@@ -543,21 +544,34 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
 
 
 def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) -> None:
-    packet_headings = (
+    ux_spec_headings = (
         "Goal/Audience/Platform",
+        "30-Second Understanding Checklist",
         "Visual Direction + Anti-goals",
         "Reference Pack (adopt/avoid)",
+        "Glossary + Object Model",
         "Layout/App-shell Contract",
         "Token + Primitive Contract",
-        "Screen/Flow/State Coverage",
-        "Review Loop",
+        "Screen + Flow Coverage",
         "Implementation Prompt/Handoff",
+    )
+    behavior_headings = (
+        "Interaction Model",
+        "Keyboard + Focus Contract",
+        "Accessibility Contract",
+        "Live Update Semantics",
+        "State Matrix + Fixture Strategy",
+        "Large-run Degradation Rules",
+        "Microcopy + Information Expression Rules",
+        "Task-based Approval Criteria",
     )
 
     figma_less_skill = repo_root / "skills" / "figma-less-ui-design" / "SKILL.md"
     figma_less_prompt = repo_root / "skills" / "figma-less-ui-design" / "agents" / "openai.yaml"
     figma_less_patterns = repo_root / "skills" / "figma-less-ui-design" / "references" / "official-patterns.md"
     figma_less_templates = repo_root / "skills" / "figma-less-ui-design" / "references" / "ui-planning-templates.md"
+    reference_pack_skill = repo_root / "skills" / "reference-pack" / "SKILL.md"
+    reference_pack_prompt = repo_root / "skills" / "reference-pack" / "agents" / "openai.yaml"
     design_skill = repo_root / "skills" / "design-task" / "SKILL.md"
     design_prompt = repo_root / "skills" / "design-task" / "agents" / "openai.yaml"
     design_reference = repo_root / "skills" / "design-task" / "references" / "task-bundle-rules.md"
@@ -573,18 +587,20 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         figma_less_prompt,
         figma_less_patterns,
         figma_less_templates,
+        reference_pack_skill,
+        reference_pack_prompt,
     ):
         if not required_path.exists():
-            errors.append(f"missing figma-less-ui-design contract file: {required_path}")
+            errors.append(f"missing ui planning contract file: {required_path}")
 
     if figma_less_skill.exists():
         _expect_substrings(
             figma_less_skill,
             (
                 "UI Planning Packet",
-                "Goal/Audience/Platform",
-                "Review Loop",
-                "Implementation Prompt/Handoff",
+                "UX_BEHAVIOR_ACCESSIBILITY.md",
+                "30-Second Understanding Checklist",
+                "Task-based Approval Criteria",
                 "reuse + delta",
                 "design system",
                 "Figma",
@@ -597,8 +613,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             (
                 "UI Planning Packet",
                 "UX_SPEC.md",
-                "reuse + delta",
-                "Layout/App-shell Contract",
+                "UX_BEHAVIOR_ACCESSIBILITY.md",
                 "state matrix",
                 "allow_implicit_invocation: false",
             ),
@@ -613,21 +628,45 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
                 "avoid",
                 "App-shell",
                 "Token + Primitive",
+                "Accessibility",
             ),
             errors,
         )
     if figma_less_templates.exists():
-        _expect_substrings(
-            figma_less_templates,
-            packet_headings,
-            errors,
-        )
+        _expect_substrings(figma_less_templates, ux_spec_headings + behavior_headings, errors)
+
+    _expect_substrings(
+        reference_pack_skill,
+        (
+            "DESIGN_REFERENCES/",
+            "shortlist.md",
+            "manifest.json",
+            "5~10개",
+            "최소 3개",
+            "adopt",
+            "avoid",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        reference_pack_prompt,
+        (
+            "DESIGN_REFERENCES/",
+            "manifest.json",
+            "adopt",
+            "avoid",
+            "allow_implicit_invocation: false",
+        ),
+        errors,
+    )
 
     _expect_substrings(
         design_skill,
         (
+            "reference-pack",
             "figma-less-ui-design",
             "UI Planning Packet",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
             "reuse + delta",
             "ux-journey-critic",
             "product-planner",
@@ -641,9 +680,10 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     _expect_substrings(
         design_prompt,
         (
+            "reference-pack",
             "figma-less-ui-design",
-            "UI Planning Packet",
-            "reuse + delta",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
+            "design_references",
             "ux-journey-critic",
         ),
         errors,
@@ -651,8 +691,12 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     _expect_substrings(
         design_reference,
         (
+            "reference-pack",
             "UI Planning Packet",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
             "Goal/Audience/Platform",
+            "Interaction Model",
+            "DESIGN_REFERENCES/",
             "reuse + delta",
             "ux-journey-critic",
         ),
@@ -662,7 +706,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         bootstrap_skill,
         (
             "UX_SPEC.md",
-            "UI Planning Packet",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
+            "DESIGN_REFERENCES/manifest.json",
             "styling stack",
             "component source",
             "Storybook/screenshot tooling",
@@ -676,6 +721,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         bootstrap_prompt,
         (
             "UX_SPEC.md",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
+            "DESIGN_REFERENCES/manifest.json",
             "styling stack",
             "component source",
             "Storybook/screenshot tooling",
@@ -688,12 +735,12 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         implement_skill,
         (
             "UX_SPEC.md",
-            "Layout/App-shell Contract",
-            "Token + Primitive Contract",
-            "Review Loop",
-            "state matrix",
-            "mock plan",
-            "edge states",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
+            "DESIGN_REFERENCES/manifest.json",
+            "checklist",
+            "interaction/a11y/microcopy",
+            "keyboard/focus",
+            "state matrix/fixture",
             "`browser-explorer`",
             "`target URL 또는 Electron entry`",
             "`scenario checklist`",
@@ -705,8 +752,9 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         implement_prompt,
         (
             "UX_SPEC.md",
-            "Layout/App-shell Contract",
-            "state matrix",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
+            "DESIGN_REFERENCES/manifest.json",
+            "keyboard/focus",
             "`browser-explorer`",
             "`target URL 또는 Electron entry`",
             "`scenario checklist`",
@@ -717,8 +765,10 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     _expect_substrings(
         long_running_path,
         (
+            "reference-pack",
             "figma-less-ui-design",
             "UI Planning Packet",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
             "reuse + delta",
             "ux-journey-critic",
         ),
@@ -727,8 +777,10 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     _expect_substrings(
         planner_path,
         (
+            "reference-pack",
             "figma-less-ui-design",
             "UI Planning Packet",
+            "UX_BEHAVIOR_ACCESSIBILITY.md",
             "reuse + delta",
             "ux-journey-critic",
             "state matrix",
@@ -740,7 +792,13 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_SPEC.md",
         repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "UX_SPEC.md",
     ):
-        _expect_heading_sequence(fixture_path, packet_headings, errors)
+        _expect_heading_sequence(fixture_path, ux_spec_headings, errors)
+
+    for fixture_path in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_BEHAVIOR_ACCESSIBILITY.md",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "UX_BEHAVIOR_ACCESSIBILITY.md",
+    ):
+        _expect_heading_sequence(fixture_path, behavior_headings, errors)
 
     for task_yaml_path in (
         repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "task.yaml",
@@ -748,7 +806,13 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     ):
         _expect_substrings(
             task_yaml_path,
-            ("ux: UX_SPEC.md",),
+            (
+                "ux: UX_SPEC.md",
+                "ux_behavior: UX_BEHAVIOR_ACCESSIBILITY.md",
+                "design_references: DESIGN_REFERENCES/manifest.json",
+                "- UX_BEHAVIOR_ACCESSIBILITY.md",
+                "- DESIGN_REFERENCES/",
+            ),
             errors,
         )
 
@@ -760,10 +824,12 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             readme_path,
             (
                 "UI Planning Packet",
+                "UX Behavior",
+                "Design References",
                 "SLICE-1",
-                "layout/app-shell",
+                "interaction/a11y/microcopy",
                 "SLICE-2",
-                "state matrix/mock/edge states",
+                "state matrix/fixture",
             ),
             errors,
         )
@@ -776,12 +842,90 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             spec_path,
             (
                 "UI Planning Packet",
-                "Layout/App-shell Contract",
-                "Token + Primitive Contract",
-                "state matrix",
+                "UX_BEHAVIOR_ACCESSIBILITY.md",
+                "30-Second Understanding Checklist",
+                "Task-based Approval Criteria",
+                "DESIGN_REFERENCES/manifest.json",
             ),
             errors,
         )
+
+    for reference_root in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "DESIGN_REFERENCES",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "DESIGN_REFERENCES",
+    ):
+        shortlist_path = reference_root / "shortlist.md"
+        manifest_path = reference_root / "manifest.json"
+        curated_path = reference_root / "curated"
+        raw_path = reference_root / "raw"
+        if not shortlist_path.exists():
+            errors.append(f"missing design reference shortlist: {shortlist_path}")
+        if not manifest_path.exists():
+            errors.append(f"missing design reference manifest: {manifest_path}")
+        if not curated_path.is_dir():
+            errors.append(f"missing curated reference dir: {curated_path}")
+        if not raw_path.is_dir():
+            errors.append(f"missing raw reference dir: {raw_path}")
+        if manifest_path.exists():
+            _expect_substrings(
+                manifest_path,
+                (
+                    "\"file\"",
+                    "\"source_url\"",
+                    "\"captured_at\"",
+                    "\"kind\"",
+                    "\"adopt_reason\"",
+                    "\"avoid_reason\"",
+                ),
+                errors,
+            )
+            try:
+                entries = json.loads(manifest_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError as exc:
+                errors.append(f"invalid design reference manifest JSON: {manifest_path}: {exc}")
+            else:
+                if not isinstance(entries, list):
+                    errors.append(f"design reference manifest must decode to a list: {manifest_path}")
+                    continue
+                if len(entries) < 3:
+                    errors.append(f"design reference manifest must contain at least 3 entries: {manifest_path}")
+                adopt_count = 0
+                avoid_count = 0
+                for entry in entries:
+                    if not isinstance(entry, dict):
+                        errors.append(f"design reference manifest entry must be an object: {manifest_path}")
+                        continue
+                    missing_fields = sorted(
+                        field
+                        for field in (
+                            "file",
+                            "source_url",
+                            "captured_at",
+                            "kind",
+                            "tags",
+                            "adopt_reason",
+                            "avoid_reason",
+                            "notes",
+                        )
+                        if field not in entry
+                    )
+                    if missing_fields:
+                        errors.append(
+                            f"design reference manifest entry missing fields {missing_fields}: {manifest_path}"
+                        )
+                    kind = entry.get("kind")
+                    if kind == "adopt":
+                        adopt_count += 1
+                    elif kind == "avoid":
+                        avoid_count += 1
+                if adopt_count < 2 or avoid_count < 1:
+                    errors.append(
+                        f"design reference manifest should include at least 2 adopt and 1 avoid entries: {manifest_path}"
+                    )
+        if curated_path.is_dir() and not list(curated_path.glob("*.svg")):
+            errors.append(f"curated reference dir must contain placeholder SVGs: {curated_path}")
+        if raw_path.is_dir() and not list(raw_path.glob("*.svg")):
+            errors.append(f"raw reference dir must contain placeholder SVGs: {raw_path}")
 
 
 def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
@@ -1069,6 +1213,8 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
         "STATUS.md",
         "PRD.md",
         "UX_SPEC.md",
+        "UX_BEHAVIOR_ACCESSIBILITY.md",
+        "DESIGN_REFERENCES/",
         "TECH_SPEC.md",
         "ACCEPTANCE.feature",
         "ADRs/",

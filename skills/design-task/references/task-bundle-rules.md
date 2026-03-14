@@ -60,29 +60,54 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `ui-first`
 - 그 외는 `standard`
-- `ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `figma-less-ui-design`의 `UI Planning Packet`을 그대로 재사용한다.
+- `ui-first`면 `reference-pack`을 먼저 실행해 `DESIGN_REFERENCES/`를 채우고, `figma-less-ui-design`이 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 작성한다.
 - 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 style invention이 아니라 `reuse + delta`를 기록한다.
-- `ui-first`면 UX 방향, 상태 모델, mock 전략이 정리되기 전에는 integration slice를 만들지 않는다.
+- `ui-first`면 UX 방향, behavior/a11y/live 계약, state/fixture 전략이 정리되기 전에는 integration slice를 만들지 않는다.
 
 ## UI Planning Packet (`UX_SPEC.md`)
 
 `delivery_strategy=ui-first`면 `UX_SPEC.md`는 아래 heading 순서를 그대로 유지한다.
 
 - `Goal/Audience/Platform`
+- `30-Second Understanding Checklist`
 - `Visual Direction + Anti-goals`
 - `Reference Pack (adopt/avoid)`
+- `Glossary + Object Model`
 - `Layout/App-shell Contract`
 - `Token + Primitive Contract`
-- `Screen/Flow/State Coverage`
-- `Review Loop`
+- `Screen + Flow Coverage`
 - `Implementation Prompt/Handoff`
+
+## UX Behavior & Accessibility (`UX_BEHAVIOR_ACCESSIBILITY.md`)
+
+`delivery_strategy=ui-first`면 `UX_BEHAVIOR_ACCESSIBILITY.md`는 아래 heading 순서를 그대로 유지한다.
+
+- `Interaction Model`
+- `Keyboard + Focus Contract`
+- `Accessibility Contract`
+- `Live Update Semantics`
+- `State Matrix + Fixture Strategy`
+- `Large-run Degradation Rules`
+- `Microcopy + Information Expression Rules`
+- `Task-based Approval Criteria`
+
+## Reference Pack (`DESIGN_REFERENCES/`)
+
+`delivery_strategy=ui-first`면 `DESIGN_REFERENCES/`는 아래를 포함한다.
+
+- `shortlist.md`
+- `manifest.json`
+- `raw/`
+- `curated/`
 
 추가 규칙:
 
 - `ux-journey-critic` planning fan-out은 mandatory 기본값이다.
+- `reference-pack` advisory skill은 `ui-first` planning에서 항상 자동 실행한다.
 - `product-planner`, `web-researcher`, `solution-analyst`, `structure-planner`, `architecture-reviewer`는 조건이 있을 때만 추가한다.
-- `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`는 `SLICE-1` 진입 근거다.
-- `Screen/Flow/State Coverage`의 state matrix, mock strategy, edge states는 `SLICE-2` 진입 근거다.
+- `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Interaction Model`, `Accessibility Contract`, `Microcopy + Information Expression Rules`는 `SLICE-1` 진입 근거다.
+- `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Task-based Approval Criteria`는 `SLICE-2` 진입 근거다.
+- `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`를 기록한다.
 
 ## Impact Flags
 
@@ -117,7 +142,7 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 
 추가 규칙:
 
-- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`
+- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`
 - `architecture_significant`, `public_contract_changed`, `data_contract_changed`, `operability_changed` 중 하나가 있으면 `TECH_SPEC.md`
 - `architecture_significant`가 있으면 `ADRs/`
 - `public_contract_changed`가 있으면 기본 계약 문서는 `openapi.yaml`
@@ -145,7 +170,7 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 추가 규칙:
 
 - architecture/public/data/operability 플래그가 있으면 `TECH_SPEC.md`
-- `ui_surface_changed`, `workflow_changed`, `public_contract_changed`, `high_user_risk` 중 하나가 있으면 `ACCEPTANCE.feature`
+- `ui_surface_changed`, `workflow_changed`, `public_contract_changed`, `high_user_risk` 중 하나가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`, `ACCEPTANCE.feature`
 
 ### `migration`
 
@@ -170,7 +195,7 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 
 추가 규칙:
 
-- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`
+- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`
 - architecture/public/data/operability 플래그가 있으면 `TECH_SPEC.md`
 - `public_contract_changed`, `data_contract_changed`, `high_user_risk` 중 하나가 있으면 `ACCEPTANCE.feature`
 
@@ -203,6 +228,8 @@ gate 규칙:
 추가 규칙:
 
 - greenfield/new-project 설계인데 repo baseline implementation rules(`docs/ai/ENGINEERING_RULES.md`)가 아직 없으면 `Blocking issues`에 `$bootstrap-project-rules` 실행 요구를 남긴다.
+- `ui-first`인데 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json` 중 하나라도 비어 있거나, 30-second checklist/glossary/interaction/a11y/live/degradation/task-based approval이 빠져 있으면 `Blocking issues`에 기록한다.
+- 기존 shipped UI/Figma/design system이 명확한 경우 reference capture 부족은 advisory로 낮출 수 있지만, 그 판단 근거를 남겨야 한다.
 - 이 blocking issue는 design 단계에서 자동 해소하지 않는다. post-design bootstrap이 완료된 뒤에만 cleared로 바꾼다.
 
 ## `EXECUTION_PLAN.md`

@@ -170,6 +170,11 @@ bundle_impact_flags = [
 bundle_delivery_strategies = ["standard", "ui-first"]
 bundle_ui_first_work_types = ["feature", "bugfix", "refactor", "prototype"]
 bundle_ui_first_flags = ["ui_surface_changed", "workflow_changed"]
+bundle_ui_required_docs = [
+  "UX_SPEC.md",
+  "UX_BEHAVIOR_ACCESSIBILITY.md",
+  "DESIGN_REFERENCES/",
+]
 bundle_validation_gate_values = ["advisory", "blocking"]
 bundle_blocking_validation_flags = [
   "ui_surface_changed",
@@ -183,6 +188,8 @@ bundle_blocking_validation_flags = [
 bundle_design_docs = [
   "PRD.md",
   "UX_SPEC.md",
+  "UX_BEHAVIOR_ACCESSIBILITY.md",
+  "DESIGN_REFERENCES/",
   "TECH_SPEC.md",
   "BUG_REPORT.md",
   "ROOT_CAUSE.md",
@@ -244,6 +251,14 @@ adr_prefix = "ADR"
 acceptance_prefix = "AC"
 slice_prefix = "SLICE"
 risk_prefix = "RISK"
+
+[task_documents.bundle_optional_source_of_truth_paths]
+product = "PRD.md"
+ux = "UX_SPEC.md"
+ux_behavior = "UX_BEHAVIOR_ACCESSIBILITY.md"
+design_references = "DESIGN_REFERENCES/manifest.json"
+architecture = "TECH_SPEC.md"
+acceptance = "ACCEPTANCE.feature"
 
 [task_documents.bundle_base_docs]
 feature = ["PRD.md", "ACCEPTANCE.feature"]

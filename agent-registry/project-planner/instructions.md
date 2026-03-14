@@ -18,8 +18,9 @@
 - 코드 수정 없이 read-only 탐색으로 설계를 완료한다.
 - 결과물은 continuity gate 결과에 따라 선택되거나 새로 만들어진 `tasks/<task-path>/task.yaml` bundle이다.
 - `design-task`는 `work_type + impact_flags + delivery_strategy`를 함께 확정한다.
-- `delivery_strategy=ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `figma-less-ui-design` advisory skill의 `UI Planning Packet`을 그대로 재사용한 뒤 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
-- `UI Planning Packet` section order는 `Goal/Audience/Platform`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen/Flow/State Coverage`, `Review Loop`, `Implementation Prompt/Handoff`를 유지한다.
+- `delivery_strategy=ui-first`면 `reference-pack` advisory skill로 `DESIGN_REFERENCES/`를 먼저 채우고, `figma-less-ui-design` advisory skill이 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 작성한 뒤 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
+- `UX_SPEC.md` (`UI Planning Packet`) section order는 `Goal/Audience/Platform`, `30-Second Understanding Checklist`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary + Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Implementation Prompt/Handoff`를 유지한다.
+- `UX_BEHAVIOR_ACCESSIBILITY.md` section order는 `Interaction Model`, `Keyboard + Focus Contract`, `Accessibility Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval Criteria`를 유지한다.
 - 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 `reuse + delta`로 작성하고 새 스타일을 invent하지 않는다.
 - 기존 코드 작업이면 quality preflight와 structure preflight로 `keep-local` / `orchestrated-task`를 먼저 판정한다.
 - structure preflight에서 soft limit 근접/초과, 새 책임 추가, component/view에 service성 코드 혼합, 반복 stateful/branch-heavy 로직 추가가 보이면 `split-first`다.
@@ -38,7 +39,7 @@
 
 - `task.yaml + EXECUTION_PLAN.md + STATUS.md` 기반으로 slice 단위 구현을 수행한다.
 - `implement-task`는 `task.yaml.delivery_strategy`를 구현 계약으로 읽고 `ui-first`면 slice 병합, 순서 건너뛰기, early UI slice의 real API/integration diff를 허용하지 않는다.
-- `implement-task`의 `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 먼저 읽고, `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 먼저 읽는다.
+- `implement-task`의 `SLICE-1`은 `UX_SPEC.md`의 checklist/layout/token/screen-flow와 `UX_BEHAVIOR_ACCESSIBILITY.md`의 interaction/a11y/microcopy를 먼저 읽고, `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval criteria를 먼저 읽는다.
 - legacy `PLAN.md + STATUS.md`는 새 bundle이 없을 때만 fallback으로 다룬다.
 - 기본값은 다음 slice 1개다.
 - `계속해` 요청은 다음 slice 1개로 해석한다.

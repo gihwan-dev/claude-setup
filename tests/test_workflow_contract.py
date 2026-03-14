@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -70,6 +71,41 @@ class WorkflowContractTests(RepoTestCase):
             if line.startswith("## ")
         ]
         self.assertEqual(list(headings), actual, msg=f"unexpected heading order in {path}")
+
+    def assertReferenceManifestFixture(self, root: Path) -> None:
+        manifest_path = root / "DESIGN_REFERENCES" / "manifest.json"
+        raw_dir = root / "DESIGN_REFERENCES" / "raw"
+        curated_dir = root / "DESIGN_REFERENCES" / "curated"
+
+        entries = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertIsInstance(entries, list)
+        self.assertGreaterEqual(len(entries), 3, msg=f"expected 3+ reference entries in {manifest_path}")
+
+        adopt_count = 0
+        avoid_count = 0
+        for entry in entries:
+            self.assertIsInstance(entry, dict)
+            self.assertTrue(
+                {
+                    "file",
+                    "source_url",
+                    "captured_at",
+                    "kind",
+                    "tags",
+                    "adopt_reason",
+                    "avoid_reason",
+                    "notes",
+                }.issubset(entry.keys())
+            )
+            if entry["kind"] == "adopt":
+                adopt_count += 1
+            if entry["kind"] == "avoid":
+                avoid_count += 1
+
+        self.assertGreaterEqual(adopt_count, 2, msg=f"expected 2+ adopt entries in {manifest_path}")
+        self.assertGreaterEqual(avoid_count, 1, msg=f"expected 1+ avoid entry in {manifest_path}")
+        self.assertTrue(list(raw_dir.glob("*.svg")), msg=f"expected raw SVG placeholders in {raw_dir}")
+        self.assertTrue(list(curated_dir.glob("*.svg")), msg=f"expected curated SVG placeholders in {curated_dir}")
 
     def test_validate_workflow_contract_command_passes_on_repo(self) -> None:
         completed = self.run_cmd("python3", "scripts/validate_workflow_contracts.py")
@@ -154,12 +190,18 @@ class WorkflowContractTests(RepoTestCase):
         raw_task_yaml = (fixture_root / "task.yaml").read_text(encoding="utf-8")
 
         self.assertIn("IMPLEMENTATION_CONTRACT.md", manifest.required_docs)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", manifest.required_docs)
+        self.assertIn("DESIGN_REFERENCES/", manifest.required_docs)
         self.assertEqual(
             "IMPLEMENTATION_CONTRACT.md",
             manifest.source_of_truth.get("implementation"),
         )
         self.assertEqual("UX_SPEC.md", manifest.source_of_truth.get("ux"))
+        self.assertEqual("UX_BEHAVIOR_ACCESSIBILITY.md", manifest.source_of_truth.get("ux_behavior"))
+        self.assertEqual("DESIGN_REFERENCES/manifest.json", manifest.source_of_truth.get("design_references"))
         self.assertIn("ux: UX_SPEC.md", raw_task_yaml)
+        self.assertIn("ux_behavior: UX_BEHAVIOR_ACCESSIBILITY.md", raw_task_yaml)
+        self.assertIn("design_references: DESIGN_REFERENCES/manifest.json", raw_task_yaml)
 
     def test_pending_and_bootstrapped_bundle_fixtures_capture_bootstrap_state(self) -> None:
         pending_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task"
@@ -180,13 +222,21 @@ class WorkflowContractTests(RepoTestCase):
         self.assertNotIn("IMPLEMENTATION_CONTRACT.md", pending_manifest.required_docs)
         self.assertNotIn("implementation", pending_manifest.source_of_truth)
         self.assertEqual("UX_SPEC.md", pending_manifest.source_of_truth.get("ux"))
+        self.assertEqual("UX_BEHAVIOR_ACCESSIBILITY.md", pending_manifest.source_of_truth.get("ux_behavior"))
+        self.assertEqual("DESIGN_REFERENCES/manifest.json", pending_manifest.source_of_truth.get("design_references"))
         self.assertIn("ux: UX_SPEC.md", pending_task_yaml)
+        self.assertIn("ux_behavior: UX_BEHAVIOR_ACCESSIBILITY.md", pending_task_yaml)
+        self.assertIn("design_references: DESIGN_REFERENCES/manifest.json", pending_task_yaml)
         self.assertIn("$bootstrap-project-rules", pending_validation)
 
         self.assertIn("IMPLEMENTATION_CONTRACT.md", cleared_manifest.required_docs)
         self.assertEqual("IMPLEMENTATION_CONTRACT.md", cleared_manifest.source_of_truth.get("implementation"))
         self.assertEqual("UX_SPEC.md", cleared_manifest.source_of_truth.get("ux"))
+        self.assertEqual("UX_BEHAVIOR_ACCESSIBILITY.md", cleared_manifest.source_of_truth.get("ux_behavior"))
+        self.assertEqual("DESIGN_REFERENCES/manifest.json", cleared_manifest.source_of_truth.get("design_references"))
         self.assertIn("ux: UX_SPEC.md", cleared_task_yaml)
+        self.assertIn("ux_behavior: UX_BEHAVIOR_ACCESSIBILITY.md", cleared_task_yaml)
+        self.assertIn("design_references: DESIGN_REFERENCES/manifest.json", cleared_task_yaml)
         self.assertIn("$bootstrap-project-rules", cleared_validation)
         self.assertIn("completed", cleared_validation)
 
@@ -608,6 +658,8 @@ class WorkflowContractTests(RepoTestCase):
                 "STATUS.md",
                 "PRD.md",
                 "UX_SPEC.md",
+                "UX_BEHAVIOR_ACCESSIBILITY.md",
+                "DESIGN_REFERENCES/",
                 "TECH_SPEC.md",
                 "ACCEPTANCE.feature",
                 "ADRs/",
@@ -666,7 +718,7 @@ class WorkflowContractTests(RepoTestCase):
         )
         counted_gate = decide_spec_validation_gate(
             tuple(),
-            ("PRD.md", "UX_SPEC.md", "TECH_SPEC.md"),
+            ("PRD.md", "UX_SPEC.md", "UX_BEHAVIOR_ACCESSIBILITY.md"),
         )
         self.assertEqual("blocking", flagged_gate)
         self.assertEqual("blocking", counted_gate)
@@ -780,8 +832,10 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("source_of_truth.implementation", skill_content)
         self.assertIn("IMPLEMENTATION_CONTRACT.md", reference_content)
         self.assertIn("$bootstrap-project-rules", prompt_content)
+        self.assertIn("reference-pack", skill_content)
         self.assertIn("figma-less-ui-design", skill_content)
         self.assertIn("UI Planning Packet", skill_content)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", skill_content)
         self.assertIn("reuse + delta", skill_content)
         self.assertIn("ux-journey-critic", prompt_content)
 
@@ -809,9 +863,11 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("source_of_truth.implementation", prompt_content)
         self.assertIn("IMPLEMENTATION_CONTRACT.md", prompt_content)
         self.assertIn("UX_SPEC.md", skill_content)
-        self.assertIn("Layout/App-shell Contract", skill_content)
-        self.assertIn("state matrix", skill_content)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", skill_content)
+        self.assertIn("checklist", skill_content)
+        self.assertIn("state matrix/fixture", skill_content)
         self.assertIn("UX_SPEC.md", prompt_content)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", prompt_content)
         self.assertIn("`browser-explorer`", prompt_content)
 
     def test_structure_first_instruction_drift_is_guarded(self) -> None:
@@ -933,6 +989,9 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("delivery_strategy", reference_content)
         self.assertIn("Not started.", reference_content)
         self.assertIn("UI Planning Packet", reference_content)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", reference_content)
+        self.assertIn("DESIGN_REFERENCES/", reference_content)
+        self.assertIn("reference-pack", reference_content)
         self.assertIn("ux-journey-critic", reference_content)
 
     def test_figma_less_ui_design_skill_contract_is_documented(self) -> None:
@@ -952,32 +1011,82 @@ class WorkflowContractTests(RepoTestCase):
         template_content = template_path.read_text(encoding="utf-8")
 
         self.assertIn("UI Planning Packet", skill_content)
+        self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", skill_content)
         self.assertIn("reuse + delta", skill_content)
         self.assertIn("Goal/Audience/Platform", template_content)
-        self.assertIn("Implementation Prompt/Handoff", template_content)
+        self.assertIn("Task-based Approval Criteria", template_content)
         self.assertIn("reuse + delta", patterns_content)
         self.assertIn("UX_SPEC.md", prompt_content)
+        self.assertIn("allow_implicit_invocation: false", prompt_content)
+
+    def test_reference_pack_skill_contract_is_documented(self) -> None:
+        skill_path = REPO_ROOT / "skills" / "reference-pack" / "SKILL.md"
+        prompt_path = REPO_ROOT / "skills" / "reference-pack" / "agents" / "openai.yaml"
+
+        self.assertTrue(skill_path.exists(), msg=f"missing skill file: {skill_path}")
+        self.assertTrue(prompt_path.exists(), msg=f"missing prompt file: {prompt_path}")
+
+        skill_content = skill_path.read_text(encoding="utf-8")
+        prompt_content = prompt_path.read_text(encoding="utf-8")
+
+        self.assertIn("DESIGN_REFERENCES/", skill_content)
+        self.assertIn("manifest.json", skill_content)
+        self.assertIn("최소 3개", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
 
     def test_ui_first_fixtures_use_ui_planning_packet_headings(self) -> None:
         headings = (
             "Goal/Audience/Platform",
+            "30-Second Understanding Checklist",
             "Visual Direction + Anti-goals",
             "Reference Pack (adopt/avoid)",
+            "Glossary + Object Model",
             "Layout/App-shell Contract",
             "Token + Primitive Contract",
-            "Screen/Flow/State Coverage",
-            "Review Loop",
+            "Screen + Flow Coverage",
             "Implementation Prompt/Handoff",
+        )
+        behavior_headings = (
+            "Interaction Model",
+            "Keyboard + Focus Contract",
+            "Accessibility Contract",
+            "Live Update Semantics",
+            "State Matrix + Fixture Strategy",
+            "Large-run Degradation Rules",
+            "Microcopy + Information Expression Rules",
+            "Task-based Approval Criteria",
         )
         bundle_ux = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_SPEC.md"
         pending_ux = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "UX_SPEC.md"
+        bundle_behavior = (
+            REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_BEHAVIOR_ACCESSIBILITY.md"
+        )
+        pending_behavior = (
+            REPO_ROOT
+            / "tests"
+            / "fixtures"
+            / "tasks"
+            / "sample-pending-bootstrap-task"
+            / "UX_BEHAVIOR_ACCESSIBILITY.md"
+        )
         bundle_readme = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "README.md"
         pending_readme = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "README.md"
 
         self.assertHeadingSequence(bundle_ux, headings)
         self.assertHeadingSequence(pending_ux, headings)
+        self.assertHeadingSequence(bundle_behavior, behavior_headings)
+        self.assertHeadingSequence(pending_behavior, behavior_headings)
         self.assertIn("UI Planning Packet", bundle_readme.read_text(encoding="utf-8"))
-        self.assertIn("state matrix/mock/edge states", bundle_readme.read_text(encoding="utf-8"))
+        self.assertIn("Design References", bundle_readme.read_text(encoding="utf-8"))
+        self.assertIn("state matrix/fixture", bundle_readme.read_text(encoding="utf-8"))
         self.assertIn("UI Planning Packet", pending_readme.read_text(encoding="utf-8"))
-        self.assertIn("state matrix/mock/edge states", pending_readme.read_text(encoding="utf-8"))
+        self.assertIn("Design References", pending_readme.read_text(encoding="utf-8"))
+        self.assertIn("state matrix/fixture", pending_readme.read_text(encoding="utf-8"))
+
+    def test_ui_first_fixtures_include_reference_pack_artifacts(self) -> None:
+        self.assertReferenceManifestFixture(
+            REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task"
+        )
+        self.assertReferenceManifestFixture(
+            REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task"
+        )
