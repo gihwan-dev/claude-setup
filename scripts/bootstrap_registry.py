@@ -218,6 +218,12 @@ def _string_map(value: object, *, label: str) -> dict[str, str]:
     return parsed
 
 
+def _optional_string_map(value: object, *, label: str) -> dict[str, str]:
+    if value is None:
+        return {}
+    return _string_map(value, label=label)
+
+
 def _policy_lists(
     repo_root: Path,
 ) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, object]]:
@@ -239,7 +245,7 @@ def _policy_lists(
         projection.get("documentation_only_builtins"),
         label="projection.documentation_only_builtins",
     )
-    sandbox_overrides = _string_map(
+    sandbox_overrides = _optional_string_map(
         codex.get("sandbox_overrides"),
         label="codex.sandbox_overrides",
     )
@@ -299,6 +305,8 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
         if not isinstance(agent_key, str):
             raise ValueError("bootstrap preflight failed: [agents] keys must be strings")
         if agent_key in documentation_only_builtins:
+            continue
+        if agent_key not in _required_helper_agent_ids:
             continue
         if not isinstance(info, dict):
             raise ValueError(f"bootstrap preflight failed: agents.{agent_key} must be a table")
@@ -375,15 +383,6 @@ def _default_helper_orchestration(
     ):
         raise ValueError("missing helper close timeout policies in policy/workflow.toml")
 
-    if agent_id == "worker":
-        return {
-            "blocking_class": "blocking",
-            "result_contract": "final-or-checkpoint",
-            "close_protocol": "explicit-cancel-or-terminal-close",
-            "late_result_policy": "not-applicable",
-            "timeout_policy": non_advisory_timeout_policy,
-            "allowed_close_reasons": list(strong_close_reasons),
-        }
     if agent_id == "verification-worker":
         return {
             "blocking_class": "semi-blocking",
@@ -408,16 +407,12 @@ def _sandbox_for_agent(agent_id: str, sandbox_overrides: dict[str, str]) -> str:
 
 
 def _role_for_codex_builtin(agent_key: str) -> str:
-    if agent_key == "worker":
-        return "implementer"
     if agent_key == "explorer":
         return "explorer"
     return "reviewer"
 
 
 def _repo_tools_for_helper(agent_key: str) -> list[str]:
-    if agent_key == "worker":
-        return ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
     return ["Read", "Grep", "Glob"]
 
 

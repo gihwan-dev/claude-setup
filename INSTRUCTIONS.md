@@ -13,7 +13,7 @@
 - 작업 복잡도와 영향 범위를 먼저 평가한다.
 - 기본은 메인 스레드 단일 실행(single-agent)과 직접 수정이다.
 - 병렬 read-only 작업은 분명한 이점이 있을 때만 사용한다.
-- delegated lane의 code diff는 단일 writer만 허용하고 writable projection은 `worker`만 사용한다.
+- delegated lane의 code diff ownership을 별도 writer에 고정하지 않는다.
 - 서브 에이전트 결과는 하나의 의사결정 가능한 요약으로 통합한다.
 
 ## 역할-실행 매핑
@@ -65,7 +65,7 @@
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
 - `orchestrated-task`면 `design-task`가 `work_type + impact_flags + delivery_strategy`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
 - delegated/long-running hybrid mode default는 `small slices + run-to-boundary`다.
-- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
 - AI/agent workflow planning이면 `web-researcher` 또는 메인 스레드 직접 웹 조사로 official vendor docs를 우선 확인한다.
 - 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.
@@ -102,14 +102,11 @@
   - 공유 경계 또는 public surface 변경이 포함됨
   - 검증 로그가 noisy하거나 multi-step임
 
-### Single-writer rule
+### Delegated execution guardrails
 
-- delegated lane의 code diff는 정확히 하나의 `worker`만 적용한다.
-- same-slice second writer는 금지한다.
-- writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
-- writer edit phase 중에는 mid-flight status/checkpoint 요청을 넣지 않는다. Immediate status check requires explicit cancel path.
+- delegated lane의 code diff ownership을 별도 writer에 고정하지 않는다.
 - `wait timed_out` 시 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다. non-interrupt status ping은 queued-only semantics다.
-- writer가 아직 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background observation 준비만 할 수 있다.
+- Immediate status check requires explicit cancel path.
 
 ### Exit documentation review
 
@@ -165,13 +162,12 @@
 1. 탐색/증거 수집이 필요할 때만 `explorer`를 사용한다.
 2. live browser reproduction, visual evidence, Electron/window behavior 확인이 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 3. 메인 스레드에서 의사결정을 확정한다.
-4. 정확히 하나의 `worker`가 필요한 code diff를 적용한다.
-5. hybrid mode default는 `small slices + run-to-boundary`다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff나 slice budget 초과 handoff는 `split/replan before spawn`으로 되돌린다.
-6. writer가 editing 중이면 no review/diff inspection while writer is still editing 원칙을 지키고, 메인 스레드는 validation/background observation 준비만 한다.
-7. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
-8. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
-9. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
-10. 메인 스레드가 결과를 통합해 최종 응답한다.
+4. 현재 slice의 code/doc diff를 적용한다.
+5. hybrid mode default는 `small slices + run-to-boundary`다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff나 slice budget 초과 handoff는 `split/replan before execution`으로 되돌린다.
+6. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 focused validation 전에 구현 단계 안에서 반영한다.
+7. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
+8. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
+9. 메인 스레드가 결과를 통합해 최종 응답한다.
 
 ### Long-running `implement-task` path
 
@@ -185,20 +181,17 @@
 - `UX_BEHAVIOR_ACCESSIBILITY.md` section order는 `Interaction Model`, `Keyboard + Focus Contract`, `Accessibility Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval Criteria`를 유지한다.
 - 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 스타일 제안이 아니라 `reuse + delta`를 기록한다.
 - 여러 active task 폴더 공존은 정상 경로다.
-- `implement-task` long-running path는 single-writer delegated flow를 유지한다.
+- `implement-task` long-running path는 slice-based delegated flow를 유지한다.
 - 문서 영향 판정은 메인 스레드 기본 책임이다.
 - 종료 전 메인 스레드는 실질 영향 문서만 다시 탐색/검토한다. 기본 대상은 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
 - 문서 대상이 불명확할 때만 read-only helper를 사용한다.
 - path 미지정 시 자동 선택은 후보가 정확히 1개일 때만 허용한다.
 - 후보가 2개 이상이면 사용자 확인 전까지 자동 실행하지 않는다.
-- writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
-- `worker` handoff 기본값은 minimal handoff다. 기본 내용은 `slice goal`, `write scope`, `acceptance checks`, `current diff state`만 포함한다.
 - pre-edit 상태 보고는 1회 structure preflight만 허용하고 첫 edit 전 추가 checkpoint 요청은 금지한다.
-- same-slice second writer는 금지한다. replacement writer도 same slice에서는 허용하지 않는다.
-- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
 - full-history/forked-context는 정확한 thread-local reasoning 또는 uncommitted local state lineage가 꼭 필요할 때만 허용한다.
-- 각 slice는 `worker edit(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
-- 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
+- 각 slice는 `slice implementation(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> commit -> STATUS update -> next slice decision` 순서를 따른다.
+- 필요한 문서 diff는 구현 단계에서 focused validation 전에 함께 반영한다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
 - live browser reproduction, DOM/visual QA, screenshot evidence가 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 - UI 영향 planning은 `ux-journey-critic`를 mandatory 기본값으로 두고, scope가 모호할 때만 `product-planner`, external benchmark가 필요할 때만 `web-researcher`, option comparison이 필요할 때만 `solution-analyst`, 구조 분해가 필요할 때만 `structure-planner`, public/shared boundary 리스크가 있을 때만 `architecture-reviewer`를 추가한다.
@@ -233,12 +226,12 @@
 - `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다.
 - `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다.
 - 문서 diff도 slice budget에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
-- slice budget 기본값은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
+- slice budget 기본값은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 실행 전에 `split/replan before execution`으로 되돌린다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
-- non-interrupt status ping은 queued-only semantics다. mid-flight status/checkpoint 요청은 writer edit phase 동안 금지한다.
+- non-interrupt status ping은 queued-only semantics다.
 - `wait timed_out` 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다.
 - `non-cancel observe path`는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 허용한다.
 - Immediate status check requires explicit cancel path.
@@ -263,7 +256,6 @@
 | 역할 | 접근 권한 | 책임 |
 |------|----------|------|
 | main-thread | 쓰기 가능 | 전략, focused validation, 상태 통합/기록 |
-| worker | 읽기/쓰기 | delegated lane과 `implement-task` slice의 유일한 code diff writer |
 | explorer | 읽기 전용 | 레포지토리 탐색 및 증거 수집 |
 | reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |
@@ -340,7 +332,7 @@
 
 - planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
-- helper agent(`worker`, `explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
+- helper agent(`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
 - projected specialized agent(`browser-explorer`)는 generated projection으로 설치될 수 있지만 `required_helper_agent_ids`에는 포함하지 않는다. 명시적인 브라우저 상호작용 task에서만 선택적으로 호출한다.
 - `policy/workflow.toml`의 `[structure_policy]`는 file role별 limit, split-first behavior, legacy oversized file rule의 machine-readable SSOT다.
 - generated projection과 compiled doc은 직접 수정하지 않고 sync로 재생성한다.

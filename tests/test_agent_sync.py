@@ -16,16 +16,12 @@ from workflow_contract import (
     FALLBACK_REQUIRES_ACK,
     IMMEDIATE_STATUS_CHECK_POLICY,
     NON_CANCEL_STATUS_PING_MODE,
-    REPLACEMENT_WRITER_POLICY,
     REQUIRED_HELPER_AGENT_IDS,
-    SAME_SLICE_SECOND_WRITER_POLICY,
     SLICE_BUDGET_ENFORCEMENT,
     SLICE_BUDGET_MAX_NET_LOC,
     SLICE_BUDGET_MAX_REPO_FILES,
     STATUS_PING_DELIVERY,
     SYNTHETIC_INTERRUPT_REASON,
-    WRITER_MIDFLIGHT_PROBE_POLICY,
-    WRITABLE_PROJECTION_AGENT_IDS,
 )
 
 
@@ -79,7 +75,7 @@ class AgentSyncTests(RepoTestCase):
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
-    def test_helper_close_policy_defaults_include_blocking_writer_guard(self) -> None:
+    def test_helper_close_policy_defaults_cover_helper_observation_and_slice_budget(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
         helper_close = policy.get("helper_close")
         slice_budget = policy.get("slice_budget")
@@ -93,18 +89,9 @@ class AgentSyncTests(RepoTestCase):
             helper_close.get("status_ping_delivery"),
             STATUS_PING_DELIVERY,
         )
-        self.assertEqual(
-            helper_close.get("writer_midflight_probe_policy"),
-            WRITER_MIDFLIGHT_PROBE_POLICY,
-        )
-        self.assertEqual(
-            helper_close.get("replacement_writer_policy"),
-            REPLACEMENT_WRITER_POLICY,
-        )
-        self.assertEqual(
-            helper_close.get("same_slice_second_writer_policy"),
-            SAME_SLICE_SECOND_WRITER_POLICY,
-        )
+        self.assertNotIn("writer_midflight_probe_policy", helper_close)
+        self.assertNotIn("replacement_writer_policy", helper_close)
+        self.assertNotIn("same_slice_second_writer_policy", helper_close)
         self.assertEqual(
             helper_close.get("blocking_timeout_path"),
             BLOCKING_TIMEOUT_PATH,
@@ -156,9 +143,6 @@ class AgentSyncTests(RepoTestCase):
             self.assertIsInstance(role, str, msg=f"missing role in {path}")
             self.assertIsInstance(projection, dict, msg=f"missing projection in {path}")
             if projection.get("repo") is not True and projection.get("codex") is not True:
-                continue
-            if agent_id in WRITABLE_PROJECTION_AGENT_IDS:
-                self.assertEqual(role, "implementer", msg=f"worker role drifted: {path}")
                 continue
             self.assertNotIn(
                 role,
@@ -255,7 +239,7 @@ class AgentSyncTests(RepoTestCase):
         sync_mock.assert_not_called()
         self.assertIn("cannot be combined", fake_stderr.getvalue())
 
-    def test_bootstrap_registry_roundtrip_uses_policy_defaults_for_worker(self) -> None:
+    def test_bootstrap_registry_roundtrip_keeps_required_helpers_and_ignores_optional_worker(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             repo_root = root / "repo"
@@ -271,6 +255,10 @@ class AgentSyncTests(RepoTestCase):
                         "[agents.worker]",
                         'description = "Builtin worker"',
                         'config_file = "worker.toml"',
+                        "",
+                        "[agents.verification-worker]",
+                        'description = "Builtin verification-worker"',
+                        'config_file = "verification-worker.toml"',
                         "",
                     ]
                 ),
@@ -288,6 +276,19 @@ class AgentSyncTests(RepoTestCase):
                     ]
                 ),
             )
+            self._write_text(
+                codex_home / "verification-worker.toml",
+                "\n".join(
+                    [
+                        'model = "gpt-5.4"',
+                        "",
+                        'developer_instructions = """',
+                        "verification-worker instructions",
+                        '"""',
+                        "",
+                    ]
+                ),
+            )
             policy = tomllib.loads(
                 (repo_root / "policy" / "workflow.toml").read_text(encoding="utf-8")
             )
@@ -299,13 +300,14 @@ class AgentSyncTests(RepoTestCase):
                 exit_code = sync_agents._sync_from_registry(repo_root, entries, check=False)
 
             self.assertEqual(exit_code, 0)
+            self.assertFalse((registry_root / "worker").exists())
 
-            worker_payload = tomllib.loads(
-                (registry_root / "worker" / "agent.toml").read_text(encoding="utf-8")
+            helper_payload = tomllib.loads(
+                (registry_root / "verification-worker" / "agent.toml").read_text(encoding="utf-8")
             )
-            projection = worker_payload.get("projection")
-            orchestration = worker_payload.get("orchestration")
-            codex = worker_payload.get("codex")
+            projection = helper_payload.get("projection")
+            orchestration = helper_payload.get("orchestration")
+            codex = helper_payload.get("codex")
 
             self.assertIsInstance(projection, dict)
             self.assertIsInstance(orchestration, dict)
@@ -316,14 +318,11 @@ class AgentSyncTests(RepoTestCase):
                 codex.get("reasoning_effort"),
                 policy["codex"]["expected_reasoning_effort"],
             )
-            self.assertEqual(
-                codex.get("sandbox_mode"),
-                policy["codex"]["sandbox_overrides"]["worker"],
-            )
-            self.assertEqual(orchestration.get("blocking_class"), "blocking")
+            self.assertEqual(codex.get("sandbox_mode"), "read-only")
+            self.assertEqual(orchestration.get("blocking_class"), "semi-blocking")
             self.assertEqual(orchestration.get("result_contract"), "final-or-checkpoint")
             self.assertEqual(orchestration.get("close_protocol"), "explicit-cancel-or-terminal-close")
-            self.assertEqual(orchestration.get("late_result_policy"), "not-applicable")
+            self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
             self.assertEqual(
                 orchestration.get("timeout_policy"),
                 policy["helper_close"]["non_advisory_timeout_policy"],
@@ -334,7 +333,7 @@ class AgentSyncTests(RepoTestCase):
             )
 
             generated_profile = tomllib.loads(
-                (repo_root / "dist" / "codex" / "agents" / "worker.toml").read_text(
+                (repo_root / "dist" / "codex" / "agents" / "verification-worker.toml").read_text(
                     encoding="utf-8"
                 )
             )
@@ -342,11 +341,9 @@ class AgentSyncTests(RepoTestCase):
                 generated_profile.get("model_reasoning_effort"),
                 policy["codex"]["expected_reasoning_effort"],
             )
-            self.assertEqual(
-                generated_profile.get("sandbox_mode"),
-                policy["codex"]["sandbox_overrides"]["worker"],
-            )
-            self.assertTrue((repo_root / "agents" / "worker.md").exists())
+            self.assertEqual(generated_profile.get("sandbox_mode"), "read-only")
+            self.assertFalse((repo_root / "agents" / "worker.md").exists())
+            self.assertFalse((repo_root / "dist" / "codex" / "agents" / "worker.toml").exists())
 
     def test_bootstrap_registry_missing_profile_fails_without_partial_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -361,9 +358,9 @@ class AgentSyncTests(RepoTestCase):
                     [
                         'model = "gpt-5.4"',
                         "",
-                        "[agents.worker]",
-                        'description = "Builtin worker"',
-                        'config_file = "missing-worker.toml"',
+                        "[agents.verification-worker]",
+                        'description = "Builtin verification-worker"',
+                        'config_file = "missing-verification-worker.toml"',
                         "",
                     ]
                 ),

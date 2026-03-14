@@ -95,7 +95,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md` fallback. \"구현해줘\", \"다음 단계 진행해\", \"계속해\" 요청에서 사용하며, `worker edit-only -> main focused validation -> same-worker commit-only -> STATUS.md update` 흐름으로 다음 slice를 진행한다.",
+      "description": "Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md` fallback. \"구현해줘\", \"다음 단계 진행해\", \"계속해\" 요청에서 사용하며, `slice implementation -> main focused validation -> commit -> STATUS.md update` 흐름으로 다음 slice를 진행한다.",
       "path": "skills/implement-task/SKILL.md"
     },
     {

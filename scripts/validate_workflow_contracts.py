@@ -23,8 +23,7 @@ from workflow_contract import (
     detect_task_document_mode,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
-    decide_writer_midflight_action,
-    decide_writer_slice_admission,
+    decide_slice_execution_mode,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FALLBACK_REQUIRES_ACK,
@@ -34,9 +33,8 @@ from workflow_contract import (
     INTERNAL_PLANNING_ROLE_IDS,
     NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
-    REPLACEMENT_WRITER_POLICY,
     REQUIRED_HELPER_AGENT_IDS,
-    SAME_SLICE_SECOND_WRITER_POLICY,
+    SliceExecutionPlan,
     SLICE_BUDGET_ENFORCEMENT,
     SLICE_BUDGET_MAX_NET_LOC,
     SLICE_BUDGET_MAX_REPO_FILES,
@@ -60,14 +58,10 @@ from workflow_contract import (
     TASK_BUNDLE_UI_FIRST_FLAGS,
     TASK_BUNDLE_UI_FIRST_WORK_TYPES,
     TASK_BUNDLE_WORK_TYPES,
-    WRITER_MIDFLIGHT_PROBE_POLICY,
-    WRITABLE_PROJECTION_AGENT_IDS,
     decide_task_bundle_delivery_strategy,
     decide_spec_validation_gate,
     decide_helper_close_action,
     derive_task_bundle_required_docs,
-    WriterMidflightSnapshot,
-    WriterSlicePlan,
     should_spawn_advisory_helper,
     validate_legacy_task_root,
     validate_markdown_sections,
@@ -145,15 +139,10 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
         projection = data.get("projection")
         if not isinstance(agent_id, str) or not isinstance(role, str) or not isinstance(projection, dict):
             continue
-        if agent_id in WRITABLE_PROJECTION_AGENT_IDS:
-            continue
         if role not in {"implementer", "orchestrator"}:
             continue
         if _is_projected(projection):
-            errors.append(
-                "projected implementer/orchestrator is not allowed unless it is the "
-                f"`worker`: {path}"
-            )
+            errors.append(f"projected implementer/orchestrator is not allowed: {path}")
 
 
 def _validate_registry_codex_contract(repo_root: Path, errors: list[str]) -> None:
@@ -305,28 +294,10 @@ def _validate_structure_policy(repo_root: Path, errors: list[str]) -> None:
 
 def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    worker_path = registry_root / "worker" / "instructions.md"
     module_gate_path = registry_root / "module-structure-gatekeeper" / "instructions.md"
     frontend_gate_path = registry_root / "frontend-structure-gatekeeper" / "instructions.md"
     project_planner_path = registry_root / "project-planner" / "instructions.md"
     project_planner_contract = registry_root / "project-planner" / "agent.toml"
-
-    _expect_substrings(
-        worker_path,
-        (
-            "대상 파일 역할 분류",
-            "예상 post-change LOC",
-            "split 필요 여부",
-            "split-first",
-            "append 금지",
-            "exact split proposal",
-            "small slices + run-to-boundary",
-            "queued-only",
-            "same-slice second writer",
-            "split/replan before spawn",
-        ),
-        errors,
-    )
 
     component_target, component_hard = STRUCTURE_ROLE_LIMITS["component_view"]
     react_hook_target, react_hook_hard = STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"]
@@ -491,16 +462,14 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
     routing_path = repo_root / "docs" / "policy" / "10-routing.md"
     long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
     skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
-    worker_path = repo_root / "agent-registry" / "worker" / "instructions.md"
 
     _expect_substrings(
         routing_path,
         (
             "small slices + run-to-boundary",
             "queued-only",
-            "same-slice second writer",
-            "split/replan before spawn",
-            "no review/diff inspection while writer is still editing",
+            "split/replan before execution",
+            "Immediate status check requires explicit cancel path",
         ),
         errors,
     )
@@ -512,8 +481,8 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
             "queued-only",
             "longer wait -> optional queued status probe -> background or natural completion",
             "Immediate status check requires explicit cancel path",
-            "same-slice second writer",
-            "split/replan before spawn",
+            "slice implementation(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> commit -> STATUS update -> next slice decision",
+            "split/replan before execution",
         ),
         errors,
     )
@@ -523,21 +492,8 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         (
             "small slices + run-to-boundary",
             "queued-only",
-            "same-slice second writer",
-            "split/replan before spawn",
-            "no review/diff inspection while writer is still editing",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        worker_path,
-        (
-            "small slices + run-to-boundary",
-            "queued-only",
-            "same-slice second writer",
-            "split/replan before spawn",
-            "Immediate status check requires explicit cancel path",
+            "slice implementation -> main focused validation -> commit",
+            "split/replan before execution",
         ),
         errors,
     )
@@ -984,12 +940,6 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
             errors.append("helper_close.non_cancel_status_ping_mode drifted")
         if helper_close.get("status_ping_delivery") != STATUS_PING_DELIVERY:
             errors.append("helper_close.status_ping_delivery drifted")
-        if helper_close.get("writer_midflight_probe_policy") != WRITER_MIDFLIGHT_PROBE_POLICY:
-            errors.append("helper_close.writer_midflight_probe_policy drifted")
-        if helper_close.get("replacement_writer_policy") != REPLACEMENT_WRITER_POLICY:
-            errors.append("helper_close.replacement_writer_policy drifted")
-        if helper_close.get("same_slice_second_writer_policy") != SAME_SLICE_SECOND_WRITER_POLICY:
-            errors.append("helper_close.same_slice_second_writer_policy drifted")
         if helper_close.get("blocking_timeout_path") != BLOCKING_TIMEOUT_PATH:
             errors.append("helper_close.blocking_timeout_path drifted")
         if helper_close.get("immediate_status_check_policy") != IMMEDIATE_STATUS_CHECK_POLICY:
@@ -1049,11 +999,11 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
         errors.append("wait timeout after non-interrupt status ping must remain observe/status-ping only")
 
     non_cancel_interrupt = HelperCloseSnapshot(
-        helper_id="worker",
-        blocking_class="blocking",
+        helper_id="verification-worker",
+        blocking_class="semi-blocking",
         result_contract="final-or-checkpoint",
         close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="not-applicable",
+        late_result_policy="merge-if-relevant",
         timeout_policy="observe-and-status-ping",
         runtime_status="running",
         observed=True,
@@ -1065,11 +1015,11 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
         errors.append("non-cancel interrupt sequence must be rejected")
 
     premature_fallback = HelperCloseSnapshot(
-        helper_id="worker",
-        blocking_class="blocking",
+        helper_id="verification-worker",
+        blocking_class="semi-blocking",
         result_contract="final-or-checkpoint",
         close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="not-applicable",
+        late_result_policy="merge-if-relevant",
         timeout_policy="observe-and-status-ping",
         runtime_status="interrupted",
         observed=True,
@@ -1101,67 +1051,14 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     if late_checkpoint_decision.action != "allow-close" or not late_checkpoint_decision.accept_late_result:
         errors.append("late checkpoint after drain must remain close ack with merge-if-relevant")
 
-    broad_handoff = WriterSlicePlan(
+    broad_handoff = SliceExecutionPlan(
         repo_files_planned=2,
         net_loc_planned=80,
         work_labels=("setup", "docs"),
     )
-    broad_handoff_decision = decide_writer_slice_admission(broad_handoff)
-    if broad_handoff_decision.action != "split-replan" or broad_handoff_decision.spawn_allowed:
-        errors.append("broad PREP-0 handoff must be rejected before writer spawn")
-
-    same_slice_second_writer = WriterSlicePlan(
-        repo_files_planned=1,
-        net_loc_planned=20,
-        writer_spawn_count_for_slice=2,
-    )
-    same_slice_second_writer_decision = decide_writer_slice_admission(same_slice_second_writer)
-    if same_slice_second_writer_decision.action != "invalid":
-        errors.append("same-slice second writer must be rejected")
-
-    blocking_timeout_probe = WriterMidflightSnapshot(
-        wait_timed_out_count=1,
-        queued_status_probe_sent=True,
-    )
-    blocking_timeout_probe_decision = decide_writer_midflight_action(blocking_timeout_probe)
-    if (
-        blocking_timeout_probe_decision.action != "observe-background"
-        or blocking_timeout_probe_decision.replacement_allowed
-    ):
-        errors.append("blocking writer timeout must stay on queued-probe observe/background path")
-
-    blocking_timeout_replacement = WriterMidflightSnapshot(
-        wait_timed_out_count=1,
-        queued_status_probe_sent=True,
-        replacement_writer_requested=True,
-    )
-    blocking_timeout_replacement_decision = decide_writer_midflight_action(blocking_timeout_replacement)
-    if blocking_timeout_replacement_decision.action != "invalid":
-        errors.append("blocking writer timeout must not permit close/replacement")
-
-    status_only_interrupt = WriterMidflightSnapshot(
-        wait_timed_out_count=1,
-        queued_status_probe_sent=True,
-        interrupt_sent=True,
-    )
-    status_only_interrupt_decision = decide_writer_midflight_action(status_only_interrupt)
-    if status_only_interrupt_decision.action != "invalid":
-        errors.append("status-only interrupt must be rejected")
-
-    immediate_status_check = WriterMidflightSnapshot(
-        immediate_status_check_requested=True,
-    )
-    immediate_status_check_decision = decide_writer_midflight_action(immediate_status_check)
-    if immediate_status_check_decision.action != "invalid":
-        errors.append("immediate status check must stay on the explicit-cancel-only path")
-
-    explicit_cancel_midflight = WriterMidflightSnapshot(
-        immediate_status_check_requested=True,
-        explicit_cancel_requested=True,
-    )
-    explicit_cancel_midflight_decision = decide_writer_midflight_action(explicit_cancel_midflight)
-    if explicit_cancel_midflight_decision.action != "interrupt-and-drain":
-        errors.append("explicit cancel must remain the only interrupt path")
+    broad_handoff_decision = decide_slice_execution_mode(broad_handoff)
+    if broad_handoff_decision.action != "split-replan" or broad_handoff_decision.execution_allowed:
+        errors.append("broad PREP-0 execution must be rejected before slice execution")
 
     quiet_slice = AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)
     if should_spawn_advisory_helper(quiet_slice):

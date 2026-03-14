@@ -8,7 +8,7 @@
 - 작업 복잡도와 영향 범위를 먼저 평가한다.
 - 기본은 메인 스레드 단일 실행(single-agent)과 직접 수정이다.
 - 병렬 read-only 작업은 분명한 이점이 있을 때만 사용한다.
-- delegated lane의 code diff는 단일 writer만 허용하고 writable projection은 `worker`만 사용한다.
+- delegated lane의 code diff ownership을 별도 writer에 고정하지 않는다.
 - 서브 에이전트 결과는 하나의 의사결정 가능한 요약으로 통합한다.
 
 ## 역할-실행 매핑

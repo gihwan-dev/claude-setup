@@ -5,7 +5,6 @@
 | 역할 | 접근 권한 | 책임 |
 |------|----------|------|
 | main-thread | 쓰기 가능 | 전략, focused validation, 상태 통합/기록 |
-| worker | 읽기/쓰기 | delegated lane과 `implement-task` slice의 유일한 code diff writer |
 | explorer | 읽기 전용 | 레포지토리 탐색 및 증거 수집 |
 | reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |

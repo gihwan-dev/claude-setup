@@ -25,6 +25,7 @@ from install_assets import (
     update_codex_config,
     write_generated_skill_manifest,
 )
+from workflow_contract import REQUIRED_HELPER_AGENT_IDS
 
 
 class InstallAssetsTests(RepoTestCase):
@@ -171,8 +172,8 @@ class InstallAssetsTests(RepoTestCase):
             parsed = tomllib.loads(updated)
             agents = parsed.get("agents")
             self.assertIsInstance(agents, dict)
-            self.assertIn("worker", agents)
-            self.assertIn("verification-worker", agents)
+            for agent_id in REQUIRED_HELPER_AGENT_IDS:
+                self.assertIn(agent_id, agents)
 
     def test_run_sync_includes_sync_skills_index(self) -> None:
         calls: list[list[str]] = []

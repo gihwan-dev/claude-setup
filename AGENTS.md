@@ -30,7 +30,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 
 ## Important Constraints
 
-- delegated lane에서는 `worker`만 code diff를 적용한다.
+- delegated lane에서는 code diff ownership을 별도 writer에 고정하지 않는다.
 - planning role은 internal-only다.
 - `skills/`가 canonical source다.
 - `.agents/skills`는 install-time legacy overlay일 뿐 canonical source가 아니다.

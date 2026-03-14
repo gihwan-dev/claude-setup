@@ -21,7 +21,7 @@
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
 - `orchestrated-task`면 `design-task`가 `work_type + impact_flags + delivery_strategy`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
 - delegated/long-running hybrid mode default는 `small slices + run-to-boundary`다.
-- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
 - AI/agent workflow planning이면 `web-researcher` 또는 메인 스레드 직접 웹 조사로 official vendor docs를 우선 확인한다.
 - 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.
@@ -58,14 +58,11 @@
   - 공유 경계 또는 public surface 변경이 포함됨
   - 검증 로그가 noisy하거나 multi-step임
 
-### Single-writer rule
+### Delegated execution guardrails
 
-- delegated lane의 code diff는 정확히 하나의 `worker`만 적용한다.
-- same-slice second writer는 금지한다.
-- writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
-- writer edit phase 중에는 mid-flight status/checkpoint 요청을 넣지 않는다. Immediate status check requires explicit cancel path.
+- delegated lane의 code diff ownership을 별도 writer에 고정하지 않는다.
 - `wait timed_out` 시 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다. non-interrupt status ping은 queued-only semantics다.
-- writer가 아직 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background observation 준비만 할 수 있다.
+- Immediate status check requires explicit cancel path.
 
 ### Exit documentation review
 

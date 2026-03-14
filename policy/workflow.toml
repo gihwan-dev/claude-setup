@@ -3,7 +3,6 @@ long_running = ["design-task", "implement-task"]
 
 [projection]
 required_helper_agent_ids = [
-  "worker",
   "explorer",
   "verification-worker",
   "architecture-reviewer",
@@ -13,7 +12,6 @@ required_helper_agent_ids = [
   "module-structure-gatekeeper",
   "frontend-structure-gatekeeper",
 ]
-writable_projection_agent_ids = ["worker"]
 disabled_writable_projection_agent_ids = [
   "frontend-developer",
   "qa-engineer",
@@ -37,18 +35,12 @@ internal_planning_role_ids = [
 [codex]
 expected_reasoning_effort = "xhigh"
 
-[codex.sandbox_overrides]
-worker = "workspace-write"
-
 [helper_close]
 strong_close_reasons = ["explicit-cancel"]
 advisory_timeout_policy = "background-no-close"
 non_advisory_timeout_policy = "observe-and-status-ping"
 non_cancel_status_ping_mode = "non-interrupt-only"
 status_ping_delivery = "queued-only"
-writer_midflight_probe_policy = "forbidden-during-edit-phase"
-replacement_writer_policy = "forbidden-for-same-slice"
-same_slice_second_writer_policy = "contract-violation"
 blocking_timeout_path = "longer-wait-then-queued-status-probe-then-background-or-natural-completion"
 immediate_status_check_policy = "explicit-cancel-only"
 synthetic_interrupt_reason = "explicit-cancel"
@@ -66,7 +58,7 @@ terminal_runtime_statuses = [
 [slice_budget]
 max_repo_files = 3
 max_net_loc = 150
-enforcement = "split-before-spawn"
+enforcement = "split-before-execution"
 
 [structure_policy]
 soft_limit_behavior = "split-first"

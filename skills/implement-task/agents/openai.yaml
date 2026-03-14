@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved task-bundle slices with worker edit-only, main focused validation, same-worker commit-only, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
+  short_description: "Run approved task-bundle slices with slice implementation, main focused validation, commit, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
   default_prompt: >
     $implement-task 승인된 task path의 `task.yaml + EXECUTION_PLAN.md + STATUS.md`를 우선 읽고,
     `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`,
@@ -19,24 +19,22 @@ interface:
     각 slice에서 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저
     고정하고, split-first trigger가 켜지면 target file append를 금지해. 같은 slice 안에서 새 모듈
     추출이 가능하지 않으면 `blocked + exact split proposal`로 멈춰. hybrid mode default는
-    `small slices + run-to-boundary`다. non-interrupt status ping is `queued-only`. same-slice
-    second writer is forbidden. Immediate status check requires explicit cancel path. no review/diff
-    inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background
-    observation 준비만 한다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff or slice-budget
-    overflow must split/replan before spawn. slice budget은 small slices 기준으로 `repo-tracked files
+    `small slices + run-to-boundary`다. non-interrupt status ping is `queued-only`. Immediate status
+    check requires explicit cancel path. broad `setup`/`skeleton`/`wrapper`/`docs` handoff or
+    slice-budget overflow must split/replan before execution. slice budget은 small slices 기준으로 `repo-tracked files
     3개 이하`, 순 diff `150 LOC 내외`다. 여러 active task 폴더가 공존하는 것은 정상 경로다. path
     미지정이면 먼저 active 후보를 만들고, 후보가 정확히 1개일 때만 자동 선택해. 후보가 2개
     이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 마. 새 task가 없고 legacy `PLAN.md`만
     있을 때만 fallback을 허용해. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
     사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함해. 메인 스레드가 종료 전 실질 영향 문서를 다시 확인한다고 가정하고, 필요한
-    README/docs/task bundle/openapi/schema/runbook diff는 phase 1에서 validation 전에 같이 반영해.
+    README/docs/task bundle/openapi/schema/runbook diff는 구현 단계에서 validation 전에 같이 반영해.
     `docs/policy`를 건드렸다면 `python3 scripts/sync_instructions.py`와
     `python3 scripts/sync_instructions.py --check`, `skills`를 건드렸다면
     `python3 scripts/sync_skills_index.py`와 `python3 scripts/sync_skills_index.py --check`,
     `agent-registry`를 건드렸다면 `python3 scripts/sync_agents.py`와
     `python3 scripts/sync_agents.py --check`를 실행하고 결과를 STATUS/verification에 남겨. 문서
-    diff까지 포함해 slice budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan해. `worker`
-    edit-only -> main focused validation -> same-worker commit-only 순서를 지키고, 초기 STATUS는
+    diff까지 포함해 slice budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan해. `slice implementation
+    -> main focused validation -> commit` 순서를 지키고, 초기 STATUS는
     `Current slice=Not started.` / `Next slice=SLICE-1` 기준을 유지해
 policy:
   allow_implicit_invocation: true
