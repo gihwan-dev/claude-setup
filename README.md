@@ -57,6 +57,14 @@ python3 scripts/install_assets.py --target claude --link
 python3 scripts/install_assets.py --target codex --link
 ```
 
+### Git Hooks (권장)
+
+처음 clone하면 hook을 활성화한다:
+
+    bash scripts/setup-hooks.sh
+
+이후 commit, merge, branch switch 시 관련 파일이 바뀌면 `install_assets.py --link`가 자동 실행된다.
+
 linked git worktree에서 실행하면 현재 워크트리 변경분으로 sync한 뒤 설치는 자동으로 `copy`로 강등한다. 이렇게 해야 설치 결과가 `~/.codex/worktrees/...` 같은 임시 경로에 종속되지 않는다.
 
 ## Notes

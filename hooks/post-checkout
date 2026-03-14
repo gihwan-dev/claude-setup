@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Auto-run install_assets.py after branch checkout if relevant files changed.
+# $1 = prev HEAD, $2 = new HEAD, $3 = 1 if branch checkout, 0 if file checkout
+
+source "$(dirname "$0")/_lib.sh"
+
+# Skip file checkouts — only run on branch switches.
+[ "${3:-0}" != "1" ] && exit 0
+
+claude_setup_auto_install "$1" "$2"

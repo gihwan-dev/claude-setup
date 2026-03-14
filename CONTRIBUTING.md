@@ -70,6 +70,15 @@ PY
 - shell wrapper는 legacy 호환용이다.
 - generated drift를 먼저 해소한 뒤 설치한다.
 
+## Git Hooks
+
+`bash scripts/setup-hooks.sh`를 1회 실행하면 `core.hooksPath`가 repo의 `hooks/` 디렉토리로 설정된다.
+
+이후 commit, merge, branch switch 시 관련 파일(`agent-registry/`, `skills/`, `docs/policy/`, `policy/`, `scripts/sync_*.py`, `scripts/install_assets.py`, `scripts/workflow_contract.py`)이 바뀌면 `install_assets.py --link`가 자동 실행된다.
+
+- 비활성화: `git config --unset core.hooksPath`
+- 에러가 발생해도 git 동작은 차단하지 않는다 (경고만 출력).
+
 ## When Unsure
 
 1. 어떤 파일이 source of truth인지 먼저 확인한다.

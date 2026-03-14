@@ -2,7 +2,7 @@ settings.local.json
 skills/issue-start
 skills/issue-create
 skills/issue-update
-hooks
+# hooks
 settings.json
 .idea/
 __pycache__/

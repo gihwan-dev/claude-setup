@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Auto-run install_assets.py after merge if relevant files changed.
+
+source "$(dirname "$0")/_lib.sh"
+
+claude_setup_auto_install "ORIG_HEAD" "HEAD"
