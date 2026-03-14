@@ -8,19 +8,29 @@ from workflow_contract import (
     ADVISORY_TIMEOUT_POLICY,
     AGENT_CONTRACTS_BY_ID,
     AdvisorySliceContext,
+    BLOCKING_TIMEOUT_PATH,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
+    decide_writer_midflight_action,
+    decide_writer_slice_admission,
     DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     FALLBACK_REQUIRES_ACK,
     HelperCloseSnapshot,
+    IMMEDIATE_STATUS_CHECK_POLICY,
     INVALID_CLOSE_REASON,
     LONG_RUNNING_PUBLIC_SURFACE,
     NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
+    REPLACEMENT_WRITER_POLICY,
     REQUIRED_HELPER_AGENT_IDS,
+    SAME_SLICE_SECOND_WRITER_POLICY,
+    SLICE_BUDGET_ENFORCEMENT,
+    SLICE_BUDGET_MAX_NET_LOC,
+    SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
+    STATUS_PING_DELIVERY,
     STATUS_SECTION_ORDER,
     STRUCTURE_EXCEPTIONS,
     STRUCTURE_HARD_LIMIT_BEHAVIOR,
@@ -46,6 +56,9 @@ from workflow_contract import (
     should_spawn_advisory_helper,
     validate_markdown_sections,
     validate_task_bundle_root,
+    WRITER_MIDFLIGHT_PROBE_POLICY,
+    WriterMidflightSnapshot,
+    WriterSlicePlan,
 )
 
 
@@ -89,6 +102,20 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("component", STRUCTURE_SPLIT_ROLES)
         self.assertIn("adapter", STRUCTURE_SPLIT_ROLES)
         self.assertIn("migration snapshot", STRUCTURE_EXCEPTIONS)
+
+    def test_writer_runtime_policy_constants_cover_slice_budget_contract(self) -> None:
+        self.assertEqual("queued-only", STATUS_PING_DELIVERY)
+        self.assertEqual("forbidden-during-edit-phase", WRITER_MIDFLIGHT_PROBE_POLICY)
+        self.assertEqual("forbidden-for-same-slice", REPLACEMENT_WRITER_POLICY)
+        self.assertEqual("contract-violation", SAME_SLICE_SECOND_WRITER_POLICY)
+        self.assertEqual(
+            "longer-wait-then-queued-status-probe-then-background-or-natural-completion",
+            BLOCKING_TIMEOUT_PATH,
+        )
+        self.assertEqual("explicit-cancel-only", IMMEDIATE_STATUS_CHECK_POLICY)
+        self.assertEqual(3, SLICE_BUDGET_MAX_REPO_FILES)
+        self.assertEqual(150, SLICE_BUDGET_MAX_NET_LOC)
+        self.assertEqual("split-before-spawn", SLICE_BUDGET_ENFORCEMENT)
 
     def test_fixture_plan_and_status_section_order(self) -> None:
         fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-task"
@@ -401,6 +428,99 @@ class WorkflowContractTests(RepoTestCase):
         self.assertEqual(decision.action, "invalid")
         self.assertIn(FALLBACK_REQUIRES_ACK, decision.rationale)
 
+    def test_decide_writer_slice_admission_rejects_broad_prep0_handoff(self) -> None:
+        decision = decide_writer_slice_admission(
+            WriterSlicePlan(
+                repo_files_planned=2,
+                net_loc_planned=80,
+                work_labels=("setup", "docs"),
+            )
+        )
+
+        self.assertFalse(decision.spawn_allowed)
+        self.assertEqual("split-replan", decision.action)
+        self.assertIn(SLICE_BUDGET_ENFORCEMENT, decision.rationale)
+
+    def test_decide_writer_slice_admission_rejects_same_slice_second_writer(self) -> None:
+        decision = decide_writer_slice_admission(
+            WriterSlicePlan(
+                repo_files_planned=1,
+                net_loc_planned=20,
+                writer_spawn_count_for_slice=2,
+            )
+        )
+
+        self.assertFalse(decision.spawn_allowed)
+        self.assertEqual("invalid", decision.action)
+        self.assertIn(SAME_SLICE_SECOND_WRITER_POLICY, decision.rationale)
+
+    def test_decide_writer_midflight_action_rejects_midflight_checkpoint_request(self) -> None:
+        decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                checkpoint_request_pending=True,
+            )
+        )
+
+        self.assertFalse(decision.replacement_allowed)
+        self.assertEqual("invalid", decision.action)
+        self.assertIn(WRITER_MIDFLIGHT_PROBE_POLICY, decision.rationale)
+
+    def test_decide_writer_midflight_action_rejects_status_only_interrupt_sequence(self) -> None:
+        decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                wait_timed_out_count=1,
+                queued_status_probe_sent=True,
+                interrupt_sent=True,
+            )
+        )
+
+        self.assertFalse(decision.replacement_allowed)
+        self.assertEqual("invalid", decision.action)
+        self.assertIn("explicit-cancel", decision.rationale)
+
+    def test_decide_writer_midflight_action_rejects_timeout_replacement_writer(self) -> None:
+        decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                wait_timed_out_count=1,
+                queued_status_probe_sent=True,
+                replacement_writer_requested=True,
+            )
+        )
+
+        self.assertFalse(decision.replacement_allowed)
+        self.assertEqual("invalid", decision.action)
+        self.assertIn(REPLACEMENT_WRITER_POLICY, decision.rationale)
+
+    def test_decide_writer_midflight_action_routes_timeout_to_queued_probe_path(self) -> None:
+        decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                wait_timed_out_count=1,
+                queued_status_probe_sent=True,
+            )
+        )
+
+        self.assertFalse(decision.replacement_allowed)
+        self.assertEqual("observe-background", decision.action)
+        self.assertIn(STATUS_PING_DELIVERY, decision.rationale)
+        self.assertIn(BLOCKING_TIMEOUT_PATH, decision.rationale)
+
+    def test_decide_writer_midflight_action_keeps_immediate_status_check_on_explicit_cancel_path(self) -> None:
+        invalid_decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                immediate_status_check_requested=True,
+            )
+        )
+        explicit_cancel_decision = decide_writer_midflight_action(
+            WriterMidflightSnapshot(
+                immediate_status_check_requested=True,
+                explicit_cancel_requested=True,
+            )
+        )
+
+        self.assertEqual("invalid", invalid_decision.action)
+        self.assertIn(IMMEDIATE_STATUS_CHECK_POLICY, invalid_decision.rationale)
+        self.assertEqual("interrupt-and-drain", explicit_cancel_decision.action)
+
     def test_should_spawn_advisory_helper_skips_small_low_risk_slice(self) -> None:
         context = AdvisorySliceContext(
             helper_id="code-quality-reviewer",
@@ -678,6 +798,10 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("split-first", worker_content)
         self.assertIn("append 금지", worker_content)
         self.assertIn("exact split proposal", worker_content)
+        self.assertIn("small slices + run-to-boundary", worker_content)
+        self.assertIn("queued-only", worker_content)
+        self.assertIn("same-slice second writer", worker_content)
+        self.assertIn("split/replan before spawn", worker_content)
 
         module_gate_content = (
             REPO_ROOT / "agent-registry" / "module-structure-gatekeeper" / "instructions.md"
@@ -703,30 +827,55 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("structure preflight", design_content)
         self.assertIn("split decision", design_content)
         self.assertIn("target-file append 금지", design_content)
+        self.assertIn("repo-tracked files 3개 이하", design_content)
+        self.assertIn("split/replan before spawn", design_content)
+        self.assertNotIn("하나의 응집된 모듈 경계", design_content)
 
         self.assertIn("structure preflight", implement_content)
         self.assertIn("split-first trigger", implement_content)
         self.assertIn("exact split proposal", implement_content)
+        self.assertIn("repo-tracked files 3개 이하", implement_content)
+        self.assertIn("split/replan before spawn", implement_content)
+        self.assertNotIn("하나의 응집된 모듈 경계", implement_content)
 
     def test_documentation_recheck_contract_is_documented(self) -> None:
         routing_content = (REPO_ROOT / "docs" / "policy" / "10-routing.md").read_text(encoding="utf-8")
         long_running_content = (REPO_ROOT / "docs" / "policy" / "20-long-running.md").read_text(encoding="utf-8")
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        instructions_content = (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8")
         prompt_content = (
             REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
         ).read_text(encoding="utf-8")
+        normalized_prompt_content = " ".join(prompt_content.split())
 
         self.assertIn("실질 영향이 있는 문서만 다시 탐색하고 검토", routing_content)
         self.assertIn("문서 영향 대상이 불명확할 때만 read-only helper", routing_content)
+        self.assertIn("small slices + run-to-boundary", routing_content)
+        self.assertIn("queued-only", routing_content)
+        self.assertIn("same-slice second writer", routing_content)
         self.assertIn("phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영", long_running_content)
         self.assertIn("python3 scripts/sync_instructions.py --check", long_running_content)
         self.assertIn("문서 diff도 slice budget에 포함", long_running_content)
+        self.assertIn("repo-tracked files 3개 이하", long_running_content)
+        self.assertNotIn("하나의 응집된 모듈 경계", long_running_content)
+        self.assertIn("longer wait -> optional queued status probe -> background or natural completion", long_running_content)
+        self.assertIn("Immediate status check requires explicit cancel path", long_running_content)
         self.assertIn("python3 scripts/sync_skills_index.py --check", skill_content)
         self.assertIn("python3 scripts/sync_agents.py --check", skill_content)
-        self.assertIn("실질 영향 문서를 다시 확인", prompt_content)
-        self.assertIn("python3 scripts/sync_instructions.py", prompt_content)
-        self.assertIn("python3 scripts/sync_skills_index.py", prompt_content)
-        self.assertIn("python3 scripts/sync_agents.py", prompt_content)
+        self.assertIn("small slices + run-to-boundary", skill_content)
+        self.assertIn("no review/diff inspection while writer is still editing", skill_content)
+        self.assertIn("queued-only", instructions_content)
+        self.assertIn("small slices + run-to-boundary", instructions_content)
+        self.assertIn("실질 영향 문서를 다시 확인", normalized_prompt_content)
+        self.assertIn("small slices + run-to-boundary", normalized_prompt_content)
+        self.assertIn("queued-only", normalized_prompt_content)
+        self.assertIn("same-slice second writer is forbidden", normalized_prompt_content)
+        self.assertIn("Immediate status check requires explicit cancel path", normalized_prompt_content)
+        self.assertIn("no review/diff inspection while writer is still editing", normalized_prompt_content)
+        self.assertIn("split/replan before spawn", normalized_prompt_content)
+        self.assertIn("python3 scripts/sync_instructions.py", normalized_prompt_content)
+        self.assertIn("python3 scripts/sync_skills_index.py", normalized_prompt_content)
+        self.assertIn("python3 scripts/sync_agents.py", normalized_prompt_content)
 
     def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"

@@ -6,13 +6,21 @@
 - 기본 역할은 edit-only다. handoff에 phase가 명시되지 않으면 코드 수정 외 검증/커밋을 수행하지 않는다.
 - validation/commit은 handoff에 phase(`validation`, `commit-only`)가 명시된 경우에만 수행한다.
 - 변경은 최소 diff로 한다(불필요한 리포맷/리네이밍 금지).
+- hybrid mode default는 `small slices + run-to-boundary`다.
 - edit 전에 대상 파일 역할 분류, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
 - split-first trigger(soft limit 근접/초과, 새 책임 추가, service/use-case/repository/util 성격 코드가 component/view에 섞임, 반복 stateful/branch-heavy 로직 추가)가 켜지면 기존 파일에 append 금지다.
 - split-first trigger가 켜지면 같은 slice 안에서 새 모듈로 추출한다. 범위 초과 또는 경계 불명확이면 `상태: blocked`와 함께 exact split proposal을 남긴다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘기면 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
 - 검증/린트는 handoff phase가 명시적으로 요구할 때만 실행하고 결과를 요약한다.
+- same-slice second writer는 금지다. replacement writer도 same slice에서 허용하지 않는다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer는 허용하지 않는다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
+- non-interrupt status ping은 queued-only다.
+- writer edit phase 중에는 mid-flight status/checkpoint 요청을 처리하지 않는다.
+- Immediate status check requires explicit cancel path.
+- `wait timed_out` 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다.
+- writer가 아직 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지한다.
 - close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
 - `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.

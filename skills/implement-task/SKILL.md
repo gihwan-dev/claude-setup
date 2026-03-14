@@ -30,10 +30,13 @@ description: >
 - 여러 active task 폴더가 공존하는 것은 정상 경로다.
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
+- hybrid mode default는 `small slices + run-to-boundary`다.
 - `STATUS.md`는 오케스트레이터 전용 메타 상태 문서다.
 - `worker` handoff 기본값은 minimal handoff다. 기본 내용은 `slice goal`, `write scope`, `acceptance checks`, `current diff state`만 포함한다.
 - 각 slice 실행 전에는 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
 - pre-edit 상태 보고는 1회 structure preflight만 허용하고 첫 edit 전 추가 checkpoint 요청은 금지한다.
+- same-slice second writer는 금지한다. replacement writer도 same slice에서는 허용하지 않는다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice hard guardrail을 넘는 PREP-0 스타일 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
 - full-history/forked-context는 정확한 thread-local reasoning 또는 uncommitted local state lineage가 꼭 필요할 때만 허용한다.
 - split-first trigger가 켜지면 target file append를 금지하고 같은 slice 내 추출 또는 `blocked + exact split proposal`만 허용한다.
 - 종료 전 메인 스레드는 실질 영향 문서만 다시 탐색/검토한다. 기본 대상은 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
@@ -49,17 +52,22 @@ description: >
 - 각 slice는 커밋을 정확히 1회 남겨야 하며, 커밋 메시지는 한국어 conventional commit 한 줄을 사용한다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 slice 실패로 기록하고 다음 slice로 넘어가지 않는다.
-- slice hard guardrail: `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`, 순 diff `150 LOC 내외`.
+- slice hard guardrail은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 `split/replan before spawn`으로 되돌린다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice로 묶는 giant mixed slice를 금지한다.
 - full-repo validation은 shared/public boundary 변경 시에만 허용한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
+- non-interrupt status ping은 queued-only semantics다.
+- writer edit phase 중에는 mid-flight status/checkpoint 요청을 넣지 않는다.
+- `wait timed_out` 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다.
 - `non-cancel observe path`는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 허용한다.
+- Immediate status check requires explicit cancel path.
 - `explicit cancel path`는 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`만 허용한다.
 - non-cancel 경로에서는 synthetic interrupt를 보내지 않는다.
 - `explicit cancel`만 종료 근거다.
 - `result가 더 이상 필요 없음`은 close 근거가 아니다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
+- writer가 아직 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background observation 준비만 할 수 있다.
 - advisory helper 미응답은 slice 실패로 처리하지 않고 close가 아니라 background/advisory로 전환한다.
 - 늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.
 - advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
@@ -101,19 +109,21 @@ description: >
 7. phase 1에서 fresh `worker`가 edit-only로 현재 slice의 code diff를 적용한다.
 8. phase 1 시작 시 `worker`는 대상 파일 역할, 예상 post-change LOC, split 필요 여부를 먼저 보고한다.
 9. split-first trigger가 켜지면 same `worker`는 기존 파일 append 대신 새 모듈 추출 또는 `blocked + exact split proposal`로 되돌린다.
-10. 메인 스레드는 실질 영향 문서를 판정하고 다시 탐색/검토한다. 대상이 불명확할 때만 read-only helper를 사용한다.
-11. 필요한 문서 diff나 SSOT 관련 generated projection sync는 phase 1을 수행한 same `worker`가 focused validation 전에 마무리한다.
-12. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
-13. 진행이 멈춘 것처럼 보여도 non-cancel 경로에서는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 사용한다.
-14. 종료가 꼭 필요할 때만 explicit cancel 경로의 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`을 사용한다.
-15. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-16. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
-17. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-18. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
-19. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
-20. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
-21. `STATUS.md`를 manager-facing 요약으로 갱신한다.
-22. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 7번부터 반복한다.
+10. same-slice second writer나 broad `setup`/`skeleton`/`wrapper`/`docs` handoff가 감지되면 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
+11. 메인 스레드는 실질 영향 문서를 판정하고 다시 탐색/검토한다. 대상이 불명확할 때만 read-only helper를 사용한다.
+12. 필요한 문서 diff나 SSOT 관련 generated projection sync는 phase 1을 수행한 same `worker`가 focused validation 전에 마무리한다.
+13. 메인 스레드는 `worker`의 `liveness gate`와 `completion gate`를 분리해 관찰한다. `wait timeout`만으로 stalled나 close를 판정하지 않는다.
+14. writer가 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background observation 준비만 한다.
+15. 진행이 멈춘 것처럼 보여도 non-cancel 경로에서는 `longer wait -> optional queued status probe -> background or natural completion`만 사용한다.
+16. 종료가 꼭 필요할 때만 explicit cancel 경로의 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`을 사용한다. Immediate status check requires explicit cancel path.
+17. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
+18. 검증 출력이 noisy하면 `verification-worker`가 메인 검증 로그를 해석하고 pass/fail을 요약한다. commit sign-off가 불가능한 경우에만 일시적으로 semi-blocking으로 취급한다.
+19. focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
+20. focused validation이 통과하면 phase 1을 수행한 same `worker`가 commit-only로 재개한다.
+21. 1차 `git commit`이 hook 실패로 막히면 same `worker`가 동일 메시지로 `git commit --no-verify`를 1회만 재시도한다.
+22. 커밋이 실패하면 slice 실패를 기록하고 다음 slice로 진행하지 않는다.
+23. `STATUS.md`를 manager-facing 요약으로 갱신한다.
+24. `계속해` 모드면 종료한다. `끝까지` 모드면 다음 slice를 다시 읽고 7번부터 반복한다.
 
 ## Default Validation Fallback (Repo-Aware)
 
@@ -136,6 +146,7 @@ description: >
 
 - `implement-task`의 code writer는 `worker` 하나다.
 - writable projection은 `worker`만 허용한다.
+- same-slice second writer는 금지한다.
 - 오케스트레이터는 slice 선택, 문서 영향 판정, focused validation 실행, stop/replan 판정, 상태 기록을 수행한다.
 - read-only helper fan-out은 탐색/리뷰/로그 해석이 필요할 때만 사용하고, 문서 영향 대상이 불명확할 때만 문서 검토 보조로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
@@ -145,6 +156,7 @@ description: >
 - 같은 slice에는 phase 1을 수행한 same `worker`만 commit-only를 수행한다.
 - `delivery_strategy=ui-first`면 early UI slice에 real API/integration diff를 섞지 않고 다음 slice로 넘긴다.
 - `wait timeout`은 stalled와 동일하지 않으며 replacement writer를 트리거하지 않는다.
+- writer edit phase에서는 mid-flight status/checkpoint 요청을 넣지 않고, Immediate status check requires explicit cancel path를 따른다.
 - `module-structure-gatekeeper`는 비trivial code diff 이후 자동 reviewer로 실행한다.
 - `frontend-structure-gatekeeper`는 비trivial frontend diff에서 추가 자동 reviewer로 실행한다.
 - `EXECUTION_PLAN.md`의 각 slice는 `split decision`과 target-file append 금지 trigger를 포함해야 한다.

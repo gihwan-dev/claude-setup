@@ -12,10 +12,19 @@ from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
 from workflow_contract import (
+    BLOCKING_TIMEOUT_PATH,
     FALLBACK_REQUIRES_ACK,
+    IMMEDIATE_STATUS_CHECK_POLICY,
     NON_CANCEL_STATUS_PING_MODE,
+    REPLACEMENT_WRITER_POLICY,
     REQUIRED_HELPER_AGENT_IDS,
+    SAME_SLICE_SECOND_WRITER_POLICY,
+    SLICE_BUDGET_ENFORCEMENT,
+    SLICE_BUDGET_MAX_NET_LOC,
+    SLICE_BUDGET_MAX_REPO_FILES,
+    STATUS_PING_DELIVERY,
     SYNTHETIC_INTERRUPT_REASON,
+    WRITER_MIDFLIGHT_PROBE_POLICY,
     WRITABLE_PROJECTION_AGENT_IDS,
 )
 
@@ -73,10 +82,36 @@ class AgentSyncTests(RepoTestCase):
     def test_helper_close_policy_defaults_include_blocking_writer_guard(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
         helper_close = policy.get("helper_close")
+        slice_budget = policy.get("slice_budget")
         self.assertIsInstance(helper_close, dict)
+        self.assertIsInstance(slice_budget, dict)
         self.assertEqual(
             helper_close.get("non_cancel_status_ping_mode"),
             NON_CANCEL_STATUS_PING_MODE,
+        )
+        self.assertEqual(
+            helper_close.get("status_ping_delivery"),
+            STATUS_PING_DELIVERY,
+        )
+        self.assertEqual(
+            helper_close.get("writer_midflight_probe_policy"),
+            WRITER_MIDFLIGHT_PROBE_POLICY,
+        )
+        self.assertEqual(
+            helper_close.get("replacement_writer_policy"),
+            REPLACEMENT_WRITER_POLICY,
+        )
+        self.assertEqual(
+            helper_close.get("same_slice_second_writer_policy"),
+            SAME_SLICE_SECOND_WRITER_POLICY,
+        )
+        self.assertEqual(
+            helper_close.get("blocking_timeout_path"),
+            BLOCKING_TIMEOUT_PATH,
+        )
+        self.assertEqual(
+            helper_close.get("immediate_status_check_policy"),
+            IMMEDIATE_STATUS_CHECK_POLICY,
         )
         self.assertEqual(
             helper_close.get("synthetic_interrupt_reason"),
@@ -86,6 +121,9 @@ class AgentSyncTests(RepoTestCase):
             helper_close.get("fallback_requires_ack"),
             FALLBACK_REQUIRES_ACK,
         )
+        self.assertEqual(slice_budget.get("max_repo_files"), SLICE_BUDGET_MAX_REPO_FILES)
+        self.assertEqual(slice_budget.get("max_net_loc"), SLICE_BUDGET_MAX_NET_LOC)
+        self.assertEqual(slice_budget.get("enforcement"), SLICE_BUDGET_ENFORCEMENT)
 
     def test_browser_explorer_is_projected_with_danger_full_access_profile(self) -> None:
         self.assertNotIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)

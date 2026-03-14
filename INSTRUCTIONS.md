@@ -64,6 +64,8 @@
   - 컴포넌트/훅/스토리지/정책 계산이 한 파일이나 흐름에 혼재함
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
 - `orchestrated-task`면 `design-task`가 `work_type + impact_flags + delivery_strategy`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
+- delegated/long-running hybrid mode default는 `small slices + run-to-boundary`다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
 - AI/agent workflow planning이면 `web-researcher` 또는 메인 스레드 직접 웹 조사로 official vendor docs를 우선 확인한다.
 - 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.
@@ -103,8 +105,11 @@
 ### Single-writer rule
 
 - delegated lane의 code diff는 정확히 하나의 `worker`만 적용한다.
-- 같은 실행 단위에서 두 번째 writer를 투입하지 않는다.
+- same-slice second writer는 금지한다.
 - writer stall 기본 정책은 대기+점검이며 replacement writer를 투입하지 않는다.
+- writer edit phase 중에는 mid-flight status/checkpoint 요청을 넣지 않는다. Immediate status check requires explicit cancel path.
+- `wait timed_out` 시 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다. non-interrupt status ping은 queued-only semantics다.
+- writer가 아직 editing 중이면 no review/diff inspection while writer is still editing 원칙을 유지하고, 메인 스레드는 validation/background observation 준비만 할 수 있다.
 
 ### Exit documentation review
 
@@ -161,10 +166,12 @@
 2. live browser reproduction, visual evidence, Electron/window behavior 확인이 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 3. 메인 스레드에서 의사결정을 확정한다.
 4. 정확히 하나의 `worker`가 필요한 code diff를 적용한다.
-5. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
-6. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
-7. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
-8. 메인 스레드가 결과를 통합해 최종 응답한다.
+5. hybrid mode default는 `small slices + run-to-boundary`다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff나 slice budget 초과 handoff는 `split/replan before spawn`으로 되돌린다.
+6. writer가 editing 중이면 no review/diff inspection while writer is still editing 원칙을 지키고, 메인 스레드는 validation/background observation 준비만 한다.
+7. 메인 스레드가 문서 영향 여부를 판정하고 필요한 문서 diff는 same `worker`가 validation 전에 phase 1 안에서 반영한다.
+8. 검증 출력이 noisy/multi-step일 때만 `verification-worker`를 사용한다.
+9. 메인 스레드가 결과를 통합하기 전에 실질 영향 문서 재검토와 필요한 sync/check를 마무리한다.
+10. 메인 스레드가 결과를 통합해 최종 응답한다.
 
 ### Long-running `implement-task` path
 
@@ -183,6 +190,8 @@
 - writable projection은 `worker`만 허용하고 slice마다 정확히 한 명만 code diff를 적용한다.
 - `worker` handoff 기본값은 minimal handoff다. 기본 내용은 `slice goal`, `write scope`, `acceptance checks`, `current diff state`만 포함한다.
 - pre-edit 상태 보고는 1회 structure preflight만 허용하고 첫 edit 전 추가 checkpoint 요청은 금지한다.
+- same-slice second writer는 금지한다. replacement writer도 same slice에서는 허용하지 않는다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 handoff는 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
 - full-history/forked-context는 정확한 thread-local reasoning 또는 uncommitted local state lineage가 꼭 필요할 때만 허용한다.
 - 각 slice는 `worker edit(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> same worker commit-only -> STATUS update -> next slice decision` 순서를 따른다.
 - 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
@@ -219,12 +228,15 @@
 - `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다.
 - `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다.
 - 문서 diff도 slice budget에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
-- slice budget 기본값은 `repo-tracked files 3개 이하` 또는 `하나의 응집된 모듈 경계`이며, 순 diff는 `150 LOC 내외`로 제한한다.
+- slice budget 기본값은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 writer spawn 전에 `split/replan before spawn`으로 되돌린다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
 - 공통 리팩터링 + 여러 화면 치환 + 테스트 전수 갱신 + 정적 스캔을 한 slice에 묶는 혼합 giant slice를 금지한다.
 - `wait timeout`은 stalled와 동일하지 않다.
 - `liveness gate`와 `completion gate`를 분리한다.
+- non-interrupt status ping은 queued-only semantics다. mid-flight status/checkpoint 요청은 writer edit phase 동안 금지한다.
+- `wait timed_out` 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다.
 - `non-cancel observe path`는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 허용한다.
+- Immediate status check requires explicit cancel path.
 - `explicit cancel path`는 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`만 허용한다.
 - non-cancel 경로에서는 synthetic interrupt를 보내지 않는다.
 - `explicit cancel`만 종료 근거다.

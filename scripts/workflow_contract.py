@@ -131,6 +131,7 @@ PUBLIC_SURFACE_POLICY = _require_table(WORKFLOW_POLICY, "public_surface", path=W
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
 HELPER_CLOSE_POLICY = _require_table(WORKFLOW_POLICY, "helper_close", path=WORKFLOW_POLICY_PATH)
+SLICE_BUDGET_POLICY = _require_table(WORKFLOW_POLICY, "slice_budget", path=WORKFLOW_POLICY_PATH)
 STRUCTURE_POLICY = _require_table(WORKFLOW_POLICY, "structure_policy", path=WORKFLOW_POLICY_PATH)
 TASK_DOCUMENTS_POLICY = _require_table(WORKFLOW_POLICY, "task_documents", path=WORKFLOW_POLICY_PATH)
 
@@ -174,6 +175,24 @@ NON_ADVISORY_TIMEOUT_POLICY = _require_str(
 NON_CANCEL_STATUS_PING_MODE = _require_str(
     HELPER_CLOSE_POLICY, "non_cancel_status_ping_mode", path=WORKFLOW_POLICY_PATH
 )
+STATUS_PING_DELIVERY = _require_str(
+    HELPER_CLOSE_POLICY, "status_ping_delivery", path=WORKFLOW_POLICY_PATH
+)
+WRITER_MIDFLIGHT_PROBE_POLICY = _require_str(
+    HELPER_CLOSE_POLICY, "writer_midflight_probe_policy", path=WORKFLOW_POLICY_PATH
+)
+REPLACEMENT_WRITER_POLICY = _require_str(
+    HELPER_CLOSE_POLICY, "replacement_writer_policy", path=WORKFLOW_POLICY_PATH
+)
+SAME_SLICE_SECOND_WRITER_POLICY = _require_str(
+    HELPER_CLOSE_POLICY, "same_slice_second_writer_policy", path=WORKFLOW_POLICY_PATH
+)
+BLOCKING_TIMEOUT_PATH = _require_str(
+    HELPER_CLOSE_POLICY, "blocking_timeout_path", path=WORKFLOW_POLICY_PATH
+)
+IMMEDIATE_STATUS_CHECK_POLICY = _require_str(
+    HELPER_CLOSE_POLICY, "immediate_status_check_policy", path=WORKFLOW_POLICY_PATH
+)
 SYNTHETIC_INTERRUPT_REASON = _require_str(
     HELPER_CLOSE_POLICY, "synthetic_interrupt_reason", path=WORKFLOW_POLICY_PATH
 )
@@ -189,11 +208,53 @@ HELPER_CLOSE_ACK_DEFINITION = _require_str(
 TERMINAL_RUNTIME_STATUSES = _require_str_list(
     HELPER_CLOSE_POLICY, "terminal_runtime_statuses", path=WORKFLOW_POLICY_PATH
 )
+SLICE_BUDGET_MAX_REPO_FILES = _require_int(
+    SLICE_BUDGET_POLICY, "max_repo_files", path=WORKFLOW_POLICY_PATH
+)
+SLICE_BUDGET_MAX_NET_LOC = _require_int(
+    SLICE_BUDGET_POLICY, "max_net_loc", path=WORKFLOW_POLICY_PATH
+)
+SLICE_BUDGET_ENFORCEMENT = _require_str(
+    SLICE_BUDGET_POLICY, "enforcement", path=WORKFLOW_POLICY_PATH
+)
 
 # Policy-derived constants/predicates to avoid scattering string literals.
 if NON_CANCEL_STATUS_PING_MODE != "non-interrupt-only":
     raise ValueError(
         f"helper_close.non_cancel_status_ping_mode must be 'non-interrupt-only', got {NON_CANCEL_STATUS_PING_MODE!r}"
+    )
+if STATUS_PING_DELIVERY != "queued-only":
+    raise ValueError(
+        f"helper_close.status_ping_delivery must be 'queued-only', got {STATUS_PING_DELIVERY!r}"
+    )
+if WRITER_MIDFLIGHT_PROBE_POLICY != "forbidden-during-edit-phase":
+    raise ValueError(
+        "helper_close.writer_midflight_probe_policy must be "
+        f"'forbidden-during-edit-phase', got {WRITER_MIDFLIGHT_PROBE_POLICY!r}"
+    )
+if REPLACEMENT_WRITER_POLICY != "forbidden-for-same-slice":
+    raise ValueError(
+        "helper_close.replacement_writer_policy must be "
+        f"'forbidden-for-same-slice', got {REPLACEMENT_WRITER_POLICY!r}"
+    )
+if SAME_SLICE_SECOND_WRITER_POLICY != "contract-violation":
+    raise ValueError(
+        "helper_close.same_slice_second_writer_policy must be "
+        f"'contract-violation', got {SAME_SLICE_SECOND_WRITER_POLICY!r}"
+    )
+if (
+    BLOCKING_TIMEOUT_PATH
+    != "longer-wait-then-queued-status-probe-then-background-or-natural-completion"
+):
+    raise ValueError(
+        "helper_close.blocking_timeout_path must be "
+        "'longer-wait-then-queued-status-probe-then-background-or-natural-completion', "
+        f"got {BLOCKING_TIMEOUT_PATH!r}"
+    )
+if IMMEDIATE_STATUS_CHECK_POLICY != "explicit-cancel-only":
+    raise ValueError(
+        "helper_close.immediate_status_check_policy must be "
+        f"'explicit-cancel-only', got {IMMEDIATE_STATUS_CHECK_POLICY!r}"
     )
 if FALLBACK_REQUIRES_ACK != "terminal-or-background":
     raise ValueError(
@@ -203,8 +264,15 @@ if SYNTHETIC_INTERRUPT_REASON not in STRONG_CLOSE_REASONS:
     raise ValueError(
         "helper_close.synthetic_interrupt_reason must be included in helper_close.strong_close_reasons"
     )
+if SLICE_BUDGET_MAX_REPO_FILES <= 0 or SLICE_BUDGET_MAX_NET_LOC <= 0:
+    raise ValueError("slice_budget thresholds must be positive integers")
+if SLICE_BUDGET_ENFORCEMENT != "split-before-spawn":
+    raise ValueError(
+        f"slice_budget.enforcement must be 'split-before-spawn', got {SLICE_BUDGET_ENFORCEMENT!r}"
+    )
 
 EXPLICIT_CANCEL_CLOSE_REASON: str = SYNTHETIC_INTERRUPT_REASON
+BROAD_SLICE_WORK_LABELS = frozenset({"setup", "skeleton", "fsd-skeleton", "wrapper", "docs"})
 
 def _is_explicit_cancel(reason: str | None) -> bool:
     return reason == EXPLICIT_CANCEL_CLOSE_REASON
@@ -424,6 +492,42 @@ class AdvisorySliceContext:
 
 
 @dataclass(frozen=True)
+class WriterSlicePlan:
+    repo_files_planned: int = 0
+    net_loc_planned: int = 0
+    work_labels: tuple[str, ...] = tuple()
+    writer_spawn_count_for_slice: int = 1
+
+
+@dataclass(frozen=True)
+class WriterSliceAdmissionDecision:
+    action: str
+    spawn_allowed: bool
+    rationale: str
+
+
+@dataclass(frozen=True)
+class WriterMidflightSnapshot:
+    phase: str = "edit-only"
+    writer_is_editing: bool = True
+    wait_timed_out_count: int = 0
+    queued_status_probe_sent: bool = False
+    immediate_status_check_requested: bool = False
+    checkpoint_request_pending: bool = False
+    explicit_cancel_requested: bool = False
+    interrupt_sent: bool = False
+    replacement_writer_requested: bool = False
+    same_slice_writer_spawn_count: int = 1
+
+
+@dataclass(frozen=True)
+class WriterMidflightDecision:
+    action: str
+    replacement_allowed: bool
+    rationale: str
+
+
+@dataclass(frozen=True)
 class TaskBundleManifest:
     task: str
     goal: str
@@ -437,6 +541,138 @@ class TaskBundleManifest:
     delivery_strategy: str
     validation_gate: str
     current_phase: str
+
+
+def is_same_slice_second_writer_violation(writer_spawn_count: int) -> bool:
+    return writer_spawn_count > 1
+
+
+def is_broad_writer_handoff(plan: WriterSlicePlan) -> bool:
+    broad_labels = {label for label in plan.work_labels if label in BROAD_SLICE_WORK_LABELS}
+    return (
+        plan.repo_files_planned > SLICE_BUDGET_MAX_REPO_FILES
+        or plan.net_loc_planned > SLICE_BUDGET_MAX_NET_LOC
+        or len(broad_labels) >= 2
+    )
+
+
+def decide_writer_slice_admission(plan: WriterSlicePlan) -> WriterSliceAdmissionDecision:
+    if is_same_slice_second_writer_violation(plan.writer_spawn_count_for_slice):
+        return WriterSliceAdmissionDecision(
+            action="invalid",
+            spawn_allowed=False,
+            rationale=(
+                f"same-slice second writer is a {SAME_SLICE_SECOND_WRITER_POLICY}; "
+                f"replacement writer policy is `{REPLACEMENT_WRITER_POLICY}`"
+            ),
+        )
+
+    if is_broad_writer_handoff(plan):
+        return WriterSliceAdmissionDecision(
+            action="split-replan",
+            spawn_allowed=False,
+            rationale=(
+                f"broad PREP-0 style handoff exceeds slice budget; "
+                f"{SLICE_BUDGET_ENFORCEMENT} requires split/replan before spawn "
+                f"({SLICE_BUDGET_MAX_REPO_FILES} files / {SLICE_BUDGET_MAX_NET_LOC} net LOC)"
+            ),
+        )
+
+    return WriterSliceAdmissionDecision(
+        action="allow",
+        spawn_allowed=True,
+        rationale="slice stays within budget; spawn the single writer and run to boundary",
+    )
+
+
+def decide_writer_midflight_action(snapshot: WriterMidflightSnapshot) -> WriterMidflightDecision:
+    if snapshot.phase != "edit-only":
+        return WriterMidflightDecision(
+            action="not-applicable",
+            replacement_allowed=False,
+            rationale="writer mid-flight guard applies only during edit-only phase",
+        )
+
+    if is_same_slice_second_writer_violation(snapshot.same_slice_writer_spawn_count):
+        return WriterMidflightDecision(
+            action="invalid",
+            replacement_allowed=False,
+            rationale=(
+                f"same-slice second writer is a {SAME_SLICE_SECOND_WRITER_POLICY}; "
+                f"replacement writer policy is `{REPLACEMENT_WRITER_POLICY}`"
+            ),
+        )
+
+    if snapshot.replacement_writer_requested:
+        return WriterMidflightDecision(
+            action="invalid",
+            replacement_allowed=False,
+            rationale=(
+                f"replacement writer is `{REPLACEMENT_WRITER_POLICY}` and cannot be used for the same slice"
+            ),
+        )
+
+    if snapshot.writer_is_editing and snapshot.checkpoint_request_pending:
+        return WriterMidflightDecision(
+            action="invalid",
+            replacement_allowed=False,
+            rationale=(
+                "mid-flight status/checkpoint requests are "
+                f"`{WRITER_MIDFLIGHT_PROBE_POLICY}` while the writer is editing"
+            ),
+        )
+
+    if snapshot.immediate_status_check_requested and not snapshot.explicit_cancel_requested:
+        return WriterMidflightDecision(
+            action="invalid",
+            replacement_allowed=False,
+            rationale=(
+                f"immediate status check policy is `{IMMEDIATE_STATUS_CHECK_POLICY}`; "
+                f"use `{BLOCKING_TIMEOUT_PATH}` instead"
+            ),
+        )
+
+    if snapshot.interrupt_sent and not snapshot.explicit_cancel_requested:
+        return WriterMidflightDecision(
+            action="invalid",
+            replacement_allowed=False,
+            rationale=(
+                f"interrupt is reserved for `{EXPLICIT_CANCEL_CLOSE_REASON}`; "
+                f"non-cancel status probes stay `{STATUS_PING_DELIVERY}`"
+            ),
+        )
+
+    if snapshot.explicit_cancel_requested:
+        return WriterMidflightDecision(
+            action="interrupt-and-drain",
+            replacement_allowed=False,
+            rationale=(
+                f"explicit cancel is the only interrupt path; "
+                "interrupt and drain instead of spawning another writer"
+            ),
+        )
+
+    if snapshot.wait_timed_out_count > 0:
+        if snapshot.queued_status_probe_sent:
+            return WriterMidflightDecision(
+                action="observe-background",
+                replacement_allowed=False,
+                rationale=(
+                    f"blocking timeout path is `{BLOCKING_TIMEOUT_PATH}` and the probe stays "
+                    f"`{STATUS_PING_DELIVERY}`"
+                ),
+            )
+        return WriterMidflightDecision(
+            action="longer-wait",
+            replacement_allowed=False,
+            rationale="blocking writer timeout extends wait before any queued status probe",
+        )
+
+    return WriterMidflightDecision(
+        action="run-to-boundary",
+        replacement_allowed=False,
+        rationale="hybrid mode default is small slices + run-to-boundary",
+    )
 
 
 def _accept_late_result(late_result_policy: str) -> bool:
@@ -506,7 +742,7 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
                 "status-ping",
                 snapshot,
                 False,
-                "timed-out advisory helper must be status-pinged before any close decision",
+                f"timed-out helper must receive a `{STATUS_PING_DELIVERY}` status probe before any close decision",
             )
         if not snapshot.drain_grace_elapsed:
             return _decision(
@@ -527,7 +763,7 @@ def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDeci
             "status-ping",
             snapshot,
             False,
-            "running helper requires status ping before interrupt/close",
+            f"running helper requires a `{STATUS_PING_DELIVERY}` status ping before interrupt/close",
         )
 
     if _is_explicit_cancel(close_reason) and (
