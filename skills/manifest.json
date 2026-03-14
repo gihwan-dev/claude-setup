@@ -69,6 +69,11 @@
       "path": "skills/figma-design-pipeline/SKILL.md"
     },
     {
+      "name": "figma-less-ui-design",
+      "description": "Advisory skill for no-Figma MVP/prototype product UI planning. Use when `design-task` has `delivery_strategy=ui-first` but there is no Figma file and the team still needs a concrete `UI Planning Packet` inside `UX_SPEC.md`. If an existing design system, shipped UI, or Figma already exists, switch to `reuse + delta` and avoid inventing a new style.",
+      "path": "skills/figma-less-ui-design/SKILL.md"
+    },
+    {
       "name": "figma-to-code",
       "description": "Generate React component code from a Figma URL and target file path. Figma URL과 대상 컴포넌트 파일 경로를 받아 디자인 데이터를 수집하고, 프로젝트 패턴과 토큰 규칙을 반영한 React 코드를 만든다. 상세 토큰 매핑과 에러/출력 포맷은 `references/`를 사용한다.",
       "path": "skills/figma-to-code/SKILL.md"

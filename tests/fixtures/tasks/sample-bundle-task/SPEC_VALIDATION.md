@@ -6,9 +6,9 @@
 
 # UX/state gaps
 
-- empty/error/loading/permission state copy가 정의되어 있다.
-- keyboard focus 이동 규칙과 responsive fallback이 정리되어 있다.
-- local state와 mock strategy가 `SLICE-2` 기준으로 정리되어 있다.
+- `UI Planning Packet`의 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`가 정의되어 있다.
+- `Screen/Flow/State Coverage`에 empty/error/loading/permission/responsive state matrix가 정의되어 있다.
+- local state와 mock strategy, edge states가 `SLICE-2` 기준으로 정리되어 있다.
 
 # Architecture/operability risks
 

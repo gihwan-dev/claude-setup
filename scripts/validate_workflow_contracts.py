@@ -219,6 +219,17 @@ def _expect_substrings(path: Path, substrings: tuple[str, ...], errors: list[str
             errors.append(f"{path}: missing required contract snippet: {substring}")
 
 
+def _expect_heading_sequence(path: Path, headings: tuple[str, ...], errors: list[str]) -> None:
+    content = path.read_text(encoding="utf-8")
+    actual = [
+        line[3:].strip()
+        for line in content.splitlines()
+        if line.startswith("## ")
+    ]
+    if tuple(actual) != headings:
+        errors.append(f"{path}: UI Planning Packet heading order drifted")
+
+
 def _validate_structure_policy(repo_root: Path, errors: list[str]) -> None:
     workflow_path = repo_root / "policy" / "workflow.toml"
     payload = _load_toml(workflow_path)
@@ -529,6 +540,248 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         ),
         errors,
     )
+
+
+def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) -> None:
+    packet_headings = (
+        "Goal/Audience/Platform",
+        "Visual Direction + Anti-goals",
+        "Reference Pack (adopt/avoid)",
+        "Layout/App-shell Contract",
+        "Token + Primitive Contract",
+        "Screen/Flow/State Coverage",
+        "Review Loop",
+        "Implementation Prompt/Handoff",
+    )
+
+    figma_less_skill = repo_root / "skills" / "figma-less-ui-design" / "SKILL.md"
+    figma_less_prompt = repo_root / "skills" / "figma-less-ui-design" / "agents" / "openai.yaml"
+    figma_less_patterns = repo_root / "skills" / "figma-less-ui-design" / "references" / "official-patterns.md"
+    figma_less_templates = repo_root / "skills" / "figma-less-ui-design" / "references" / "ui-planning-templates.md"
+    design_skill = repo_root / "skills" / "design-task" / "SKILL.md"
+    design_prompt = repo_root / "skills" / "design-task" / "agents" / "openai.yaml"
+    design_reference = repo_root / "skills" / "design-task" / "references" / "task-bundle-rules.md"
+    bootstrap_skill = repo_root / "skills" / "bootstrap-project-rules" / "SKILL.md"
+    bootstrap_prompt = repo_root / "skills" / "bootstrap-project-rules" / "agents" / "openai.yaml"
+    implement_skill = repo_root / "skills" / "implement-task" / "SKILL.md"
+    implement_prompt = repo_root / "skills" / "implement-task" / "agents" / "openai.yaml"
+    long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
+    planner_path = repo_root / "agent-registry" / "project-planner" / "instructions.md"
+
+    for required_path in (
+        figma_less_skill,
+        figma_less_prompt,
+        figma_less_patterns,
+        figma_less_templates,
+    ):
+        if not required_path.exists():
+            errors.append(f"missing figma-less-ui-design contract file: {required_path}")
+
+    if figma_less_skill.exists():
+        _expect_substrings(
+            figma_less_skill,
+            (
+                "UI Planning Packet",
+                "Goal/Audience/Platform",
+                "Review Loop",
+                "Implementation Prompt/Handoff",
+                "reuse + delta",
+                "design system",
+                "Figma",
+            ),
+            errors,
+        )
+    if figma_less_prompt.exists():
+        _expect_substrings(
+            figma_less_prompt,
+            (
+                "UI Planning Packet",
+                "UX_SPEC.md",
+                "reuse + delta",
+                "Layout/App-shell Contract",
+                "state matrix",
+                "allow_implicit_invocation: false",
+            ),
+            errors,
+        )
+    if figma_less_patterns.exists():
+        _expect_substrings(
+            figma_less_patterns,
+            (
+                "reuse + delta",
+                "adopt",
+                "avoid",
+                "App-shell",
+                "Token + Primitive",
+            ),
+            errors,
+        )
+    if figma_less_templates.exists():
+        _expect_substrings(
+            figma_less_templates,
+            packet_headings,
+            errors,
+        )
+
+    _expect_substrings(
+        design_skill,
+        (
+            "figma-less-ui-design",
+            "UI Planning Packet",
+            "reuse + delta",
+            "ux-journey-critic",
+            "product-planner",
+            "web-researcher",
+            "solution-analyst",
+            "structure-planner",
+            "architecture-reviewer",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        design_prompt,
+        (
+            "figma-less-ui-design",
+            "UI Planning Packet",
+            "reuse + delta",
+            "ux-journey-critic",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        design_reference,
+        (
+            "UI Planning Packet",
+            "Goal/Audience/Platform",
+            "reuse + delta",
+            "ux-journey-critic",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        bootstrap_skill,
+        (
+            "UX_SPEC.md",
+            "UI Planning Packet",
+            "styling stack",
+            "component source",
+            "Storybook/screenshot tooling",
+            "token source path",
+            "do/don't only",
+            "UX ownership",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        bootstrap_prompt,
+        (
+            "UX_SPEC.md",
+            "styling stack",
+            "component source",
+            "Storybook/screenshot tooling",
+            "token source path",
+            "do/don't only",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        implement_skill,
+        (
+            "UX_SPEC.md",
+            "Layout/App-shell Contract",
+            "Token + Primitive Contract",
+            "Review Loop",
+            "state matrix",
+            "mock plan",
+            "edge states",
+            "`browser-explorer`",
+            "`target URL 또는 Electron entry`",
+            "`scenario checklist`",
+            "`evidence checklist`",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        implement_prompt,
+        (
+            "UX_SPEC.md",
+            "Layout/App-shell Contract",
+            "state matrix",
+            "`browser-explorer`",
+            "`target URL 또는 Electron entry`",
+            "`scenario checklist`",
+            "`evidence checklist`",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        long_running_path,
+        (
+            "figma-less-ui-design",
+            "UI Planning Packet",
+            "reuse + delta",
+            "ux-journey-critic",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        planner_path,
+        (
+            "figma-less-ui-design",
+            "UI Planning Packet",
+            "reuse + delta",
+            "ux-journey-critic",
+            "state matrix",
+        ),
+        errors,
+    )
+
+    for fixture_path in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_SPEC.md",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "UX_SPEC.md",
+    ):
+        _expect_heading_sequence(fixture_path, packet_headings, errors)
+
+    for task_yaml_path in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "task.yaml",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "task.yaml",
+    ):
+        _expect_substrings(
+            task_yaml_path,
+            ("ux: UX_SPEC.md",),
+            errors,
+        )
+
+    for readme_path in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "README.md",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "README.md",
+    ):
+        _expect_substrings(
+            readme_path,
+            (
+                "UI Planning Packet",
+                "SLICE-1",
+                "layout/app-shell",
+                "SLICE-2",
+                "state matrix/mock/edge states",
+            ),
+            errors,
+        )
+
+    for spec_path in (
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "SPEC_VALIDATION.md",
+        repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "SPEC_VALIDATION.md",
+    ):
+        _expect_substrings(
+            spec_path,
+            (
+                "UI Planning Packet",
+                "Layout/App-shell Contract",
+                "Token + Primitive Contract",
+                "state matrix",
+            ),
+            errors,
+        )
 
 
 def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
@@ -923,6 +1176,7 @@ def main() -> int:
     _validate_structure_instruction_drift(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)
+    _validate_ui_planning_packet_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(repo_root, errors)
     _validate_documentation_only_builtins(repo_root, errors)

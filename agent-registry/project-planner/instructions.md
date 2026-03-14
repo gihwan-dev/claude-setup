@@ -18,7 +18,9 @@
 - 코드 수정 없이 read-only 탐색으로 설계를 완료한다.
 - 결과물은 continuity gate 결과에 따라 선택되거나 새로 만들어진 `tasks/<task-path>/task.yaml` bundle이다.
 - `design-task`는 `work_type + impact_flags + delivery_strategy`를 함께 확정한다.
-- `delivery_strategy=ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
+- `delivery_strategy=ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `figma-less-ui-design` advisory skill의 `UI Planning Packet`을 그대로 재사용한 뒤 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
+- `UI Planning Packet` section order는 `Goal/Audience/Platform`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen/Flow/State Coverage`, `Review Loop`, `Implementation Prompt/Handoff`를 유지한다.
+- 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 `reuse + delta`로 작성하고 새 스타일을 invent하지 않는다.
 - 기존 코드 작업이면 quality preflight와 structure preflight로 `keep-local` / `orchestrated-task`를 먼저 판정한다.
 - structure preflight에서 soft limit 근접/초과, 새 책임 추가, component/view에 service성 코드 혼합, 반복 stateful/branch-heavy 로직 추가가 보이면 `split-first`다.
 - `split-first`면 direct append를 허용하지 않고 `structure-planner`를 escalation 기본값으로 사용한다.
@@ -27,7 +29,7 @@
 - 구조 냄새나 `split-first`가 보이면 `structure-planner`, `complexity-analyst`, `test-engineer`를 추가하고, public/shared boundary 변경이 예상될 때만 `architecture-reviewer`를 붙인다.
 - distinct goal이면 같은 도메인이라도 새 task path를 만든다.
 - 각 slice는 change boundary, file budget, validation owner, focused validation과 함께 `split decision`을 기록한다.
-- UI 영향 planning은 `ux-journey-critic`를 우선하고 scope가 모호할 때만 `product-planner`, 구조 분해가 필요할 때만 `structure-planner`를 추가한다.
+- UI 영향 planning은 `ux-journey-critic`를 mandatory 기본값으로 두고, scope가 모호할 때만 `product-planner`, external benchmark가 필요할 때만 `web-researcher`, option comparison이 필요할 때만 `solution-analyst`, 구조 분해가 필요할 때만 `structure-planner`, public/shared boundary 리스크가 있을 때만 `architecture-reviewer`를 추가한다.
 - AI/agent workflow planning은 `web-researcher`를 official vendor docs 우선 조사 용도로 사용한다.
 - 새 task bundle의 source of truth는 `task.yaml`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`다.
 - custom planning role이 런타임에서 직접 실행되지 않으면 `design-task`의 overlay fallback 규칙을 따른다.
@@ -36,6 +38,7 @@
 
 - `task.yaml + EXECUTION_PLAN.md + STATUS.md` 기반으로 slice 단위 구현을 수행한다.
 - `implement-task`는 `task.yaml.delivery_strategy`를 구현 계약으로 읽고 `ui-first`면 slice 병합, 순서 건너뛰기, early UI slice의 real API/integration diff를 허용하지 않는다.
+- `implement-task`의 `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 먼저 읽고, `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 먼저 읽는다.
 - legacy `PLAN.md + STATUS.md`는 새 bundle이 없을 때만 fallback으로 다룬다.
 - 기본값은 다음 slice 1개다.
 - `계속해` 요청은 다음 slice 1개로 해석한다.

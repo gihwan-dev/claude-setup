@@ -17,6 +17,8 @@ description: >
 `design-task` 산출물을 읽고, repo baseline `docs/ai/ENGINEERING_RULES.md`와
 task supplement `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`를 만들거나 갱신한 뒤
 root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
+강화된 `UX_SPEC.md`의 `UI Planning Packet`은 UX source of truth로 유지하고,
+bootstrap은 구현 스택/도구/경계만 잠근다.
 
 ## Hard Rules
 
@@ -26,8 +28,10 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
 - 현재 repo 사실(manifest, config, 기존 문서, 기존 AGENTS/CLAUDE)부터 탐색하고, 되돌리기 어려운 결정만 짧게 질의한다.
 - dependency policy는 반드시 `Locked now`, `Deferred`, `Banned/Avoid` 세 분류로 기록한다.
 - `Locked now`에는 runtime/language, framework, package manager, lint/format/typecheck/test stack, 기본 state/data fetching 전략, 기본 styling/design-system 방향, 폴더/모듈 경계를 포함한다.
+- `Locked now`에는 styling stack, component source, Storybook/screenshot tooling, token source path도 포함한다.
 - 선택 라이브러리는 scope가 아직 문서로 고정되지 않았으면 upfront으로 승인하지 않고 `Deferred`에 남긴다. 각 항목에는 재결정 trigger를 적는다.
 - `AGENTS.md`는 concise inline rules만 유지한다. 긴 설명은 넣지 않는다.
+- `AGENTS.md` managed section에는 do/don't only를 남긴다.
 - `CLAUDE.md`는 import-centric memory로 유지한다. `@docs/ai/ENGINEERING_RULES.md` 같은 import를 우선 사용한다.
 - `README.md`는 human-facing 문서로 유지한다. `AI Workflow` 또는 `Engineering Rules` 링크 섹션만 짧게 추가한다.
 - 기존 `AGENTS.md`, `CLAUDE.md`, `README.md` 전체 overwrite를 금지한다. managed section만 갱신한다.
@@ -37,6 +41,7 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
 - `README.md`가 없으면 새로 장문 README를 만들지 않는다. advisory만 남기고 AI 문서만 작성한다.
 - `SPEC_VALIDATION.md`에 bootstrap 관련 blocking issue 외 다른 blocker가 남아 있으면 이를 임의로 해소하지 않는다.
 - 핵심 아키텍처 결정이 unresolved면 `IMPLEMENTATION_CONTRACT.md`를 부분 초안으로 남길 수는 있어도 bootstrap blocker는 해소하지 않는다.
+- UX ownership은 계속 `UX_SPEC.md`에 남기고 bootstrap은 visual direction을 재정의하지 않는다.
 
 ## Required References
 
@@ -62,15 +67,15 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
 ## Workflow
 
 1. task path와 bundle mode를 판정한다.
-2. `task.yaml`, `SPEC_VALIDATION.md`, `README.md`, source-of-truth design docs를 읽고 구현에 영향을 주는 불확실성을 추린다.
+2. `task.yaml`, `SPEC_VALIDATION.md`, `README.md`, source-of-truth design docs를 읽고 구현에 영향을 주는 불확실성을 추린다. `UX_SPEC.md`가 있으면 `UI Planning Packet`의 layout/token/state/review-loop를 우선 확인한다.
 3. repo root 문서와 manifest/config를 읽고 이미 고정된 사실을 `Fact`로 분류한다.
 4. `${SKILL_DIR}/references/decision-catalog.md` 기준으로 결정을 분류한다.
    - `Locked now`
    - `Deferred`
    - `Banned/Avoid`
 5. `Locked now`인데 repo 탐색으로 확정할 수 없는 항목만 high-leverage 질문으로 좁힌다.
-6. `docs/ai/ENGINEERING_RULES.md`를 작성 또는 갱신한다.
-7. `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`를 작성 또는 갱신한다.
+6. `docs/ai/ENGINEERING_RULES.md`를 작성 또는 갱신한다. styling stack, component source, Storybook/screenshot tooling, token source path를 implementation-facing rule로 잠근다.
+7. `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`를 작성 또는 갱신한다. `UX_SPEC.md` ownership은 유지하고 slice가 읽어야 할 implementation guardrail만 추가한다.
 8. `task.yaml.required_docs`에 `IMPLEMENTATION_CONTRACT.md`를 추가하고, `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`를 기록한다.
 9. task `README.md`의 document map과 key decisions를 implementation contract 관점으로 보강한다.
 10. root `AGENTS.md`, `CLAUDE.md`, 존재하는 경우 `README.md`의 managed section을 갱신한다.
@@ -90,11 +95,13 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
   - exact validation commands
   - architecture map / hard rules
   - known quirks
+  - do/don't only
 - `CLAUDE.md`는 얇은 summary + import만 둔다.
 - `README.md`는 사람이 읽는 목적/실행법/doc map을 유지하고 AI 문서는 링크만 건다.
 - root 파일 갱신은 managed section 안에서만 수행한다.
 - managed section이 없으면 파일 끝에 추가한다.
 - managed section 밖 사용자 텍스트는 보존한다.
+- UX direction, anti-goals, reference pack ownership은 계속 `UX_SPEC.md`에 남긴다.
 
 ## Handoff Rules
 
@@ -102,6 +109,7 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
 - `source_of_truth.implementation`이 생긴 task는 이후 구현 단계에서 이를 선행 입력으로 읽어야 한다.
 - unresolved architecture decision, missing validation command, conflicting source-of-truth가 남아 있으면 bootstrap blocker를 유지하고 `implement-task`로 넘어가지 않는다.
 - `Deferred` 항목은 구현 slice에서 자동 승인하지 않는다. 문서에 적힌 trigger가 충족될 때만 재결정한다.
+- `SLICE-1`/`SLICE-2` 구현자는 `UX_SPEC.md`를 먼저 읽고, bootstrap 문서는 그 구현 guardrail만 보강한다.
 
 ## Output Quality Checklist
 
@@ -113,3 +121,4 @@ root `AGENTS.md`/`CLAUDE.md`/`README.md`의 managed section을 맞춘다.
 - `AGENTS.md`/`CLAUDE.md`/`README.md`는 managed section만 갱신했는가?
 - bootstrap 관련 blocking issue를 해소했거나, 해소하지 못한 이유를 남겼는가?
 - 구현이나 패키지 설치 없이 문서 계약만 남겼는가?
+- styling stack, component source, Storybook/screenshot tooling, token source path, `AGENTS.md` do/don't only를 잠그되 UX ownership은 `UX_SPEC.md`에 남겼는가?

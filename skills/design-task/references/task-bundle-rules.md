@@ -60,7 +60,29 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `ui-first`
 - 그 외는 `standard`
-- `ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 UX 방향, 상태 모델, mock 전략이 정리되기 전에는 integration slice를 만들지 않는다.
+- `ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `figma-less-ui-design`의 `UI Planning Packet`을 그대로 재사용한다.
+- 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 style invention이 아니라 `reuse + delta`를 기록한다.
+- `ui-first`면 UX 방향, 상태 모델, mock 전략이 정리되기 전에는 integration slice를 만들지 않는다.
+
+## UI Planning Packet (`UX_SPEC.md`)
+
+`delivery_strategy=ui-first`면 `UX_SPEC.md`는 아래 heading 순서를 그대로 유지한다.
+
+- `Goal/Audience/Platform`
+- `Visual Direction + Anti-goals`
+- `Reference Pack (adopt/avoid)`
+- `Layout/App-shell Contract`
+- `Token + Primitive Contract`
+- `Screen/Flow/State Coverage`
+- `Review Loop`
+- `Implementation Prompt/Handoff`
+
+추가 규칙:
+
+- `ux-journey-critic` planning fan-out은 mandatory 기본값이다.
+- `product-planner`, `web-researcher`, `solution-analyst`, `structure-planner`, `architecture-reviewer`는 조건이 있을 때만 추가한다.
+- `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`는 `SLICE-1` 진입 근거다.
+- `Screen/Flow/State Coverage`의 state matrix, mock strategy, edge states는 `SLICE-2` 진입 근거다.
 
 ## Impact Flags
 

@@ -28,6 +28,9 @@
 - greenfield/new-project 설계는 `design-task` 이후 post-design bootstrap skill(`bootstrap-project-rules`)을 거쳐 repo baseline implementation rules와 task supplement contract를 만들 수 있다.
 - `design-task`는 `work_type + impact_flags + delivery_strategy`를 결정한다.
 - `design-task`와 `implement-task`는 각 slice에 `split decision`을 기록하고 target-file append 금지 trigger를 명시한다.
+- `delivery_strategy=ui-first`면 `design-task`는 내부 advisory skill `figma-less-ui-design`을 재사용해 `UX_SPEC.md`에 `UI Planning Packet`을 남긴다.
+- `UI Planning Packet` section order는 `Goal/Audience/Platform`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen/Flow/State Coverage`, `Review Loop`, `Implementation Prompt/Handoff`를 유지한다.
+- 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 스타일 제안이 아니라 `reuse + delta`를 기록한다.
 - 여러 active task 폴더 공존은 정상 경로다.
 - `implement-task` long-running path는 single-writer delegated flow를 유지한다.
 - 문서 영향 판정은 메인 스레드 기본 책임이다.
@@ -45,7 +48,7 @@
 - 필요한 문서 diff는 phase 1을 수행한 same `worker`가 focused validation 전에 함께 반영한다.
 - helper fan-out은 탐색/리뷰/검증 로그 해석이 필요할 때만 read-only로 사용한다.
 - live browser reproduction, DOM/visual QA, screenshot evidence가 필요할 때만 `browser-explorer`를 선택적으로 사용한다. handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
-- UI 영향 planning은 `ux-journey-critic`를 우선하고 scope가 모호할 때만 `product-planner`, 구조 분해가 필요할 때만 `structure-planner`를 추가한다.
+- UI 영향 planning은 `ux-journey-critic`를 mandatory 기본값으로 두고, scope가 모호할 때만 `product-planner`, external benchmark가 필요할 때만 `web-researcher`, option comparison이 필요할 때만 `solution-analyst`, 구조 분해가 필요할 때만 `structure-planner`, public/shared boundary 리스크가 있을 때만 `architecture-reviewer`를 추가한다.
 - AI/agent workflow planning은 `web-researcher`를 official vendor docs 우선 조사 용도로 사용한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고 advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 때만 허용한다.
 - 새 task bundle core docs는 `task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`다.
@@ -57,6 +60,7 @@
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
 - `delivery_strategy=ui-first`면 `UX_SPEC.md`를 UX source of truth로 고정하고 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
 - `delivery_strategy=ui-first`인 `EXECUTION_PLAN.md`는 `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`, `SLICE-3+=real API/integration` 의미를 유지하고 `SLICE-1`/`SLICE-2`에는 real API/integration 금지를 적는다.
+- `implement-task`에서 `SLICE-1`은 `Layout/App-shell Contract`, `Token + Primitive Contract`, `Review Loop`를 읽고, `SLICE-2`는 `Screen/Flow/State Coverage`의 state matrix, mock plan, edge states를 읽는다.
 - `SLICE-1` 미승인 또는 `SLICE-2` 상태 모델 미정이면 다음 slice 진입은 stop/replan으로 막는다.
 - `SPEC_VALIDATION.md`는 항상 생성한다.
 - `SPEC_VALIDATION.md`의 gate는 `blocking`/`advisory`만 허용한다.

@@ -15,7 +15,7 @@
 - `web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`
 - 위 role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
 - 장시간 대기/폴링 감시는 built-in `monitor`만 사용하고 repo-managed projection은 만들지 않는다.
-- UI 영향 long-running planning은 `ux-journey-critic`를 우선하고 goal/scope가 모호할 때만 `product-planner`, 구조 분해가 필요할 때만 `structure-planner`를 추가한다.
+- UI 영향 long-running planning은 `ux-journey-critic`를 mandatory 기본값으로 두고, `product-planner`, `web-researcher`, `solution-analyst`, `structure-planner`, `architecture-reviewer`만 goal/scope 모호성, external benchmark, option comparison, 구조 분해, public/shared boundary 리스크가 있을 때 conditional로 추가한다.
 - AI/agent workflow planning은 `web-researcher`를 official vendor docs 우선 조사 용도로 사용한다.
 
 ## 자동 리뷰 트리거
