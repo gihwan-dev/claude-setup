@@ -1,0 +1,6 @@
+interface:
+  display_name: "Refactor Repo Skills"
+  short_description: "skills/를 감사해 장황한 SKILL.md를 상위 소수 배치로 압축 리팩토링하는 repo 전용 실행 스킬"
+  default_prompt: "$refactor-repo-skills `skills/` 전체를 `audit_skills.py`로 감사해 냄새 점수를 계산하고, 사용자가 path/name을 주지 않으면 상위 1~3개 후보만 골라 source-of-truth를 리팩토링해. generated 파일은 직접 수정하지 말고 `python3 scripts/sync_skills_index.py`와 `python3 scripts/sync_skills_index.py --check`로만 맞춰. `docs/policy`와 `agent-registry`는 건드리지 말고, frontmatter description은 trigger 중심으로 줄이며, SKILL.md 본문은 workflow/guardrail만 남기고, 세부 규칙과 예시는 `references/`로 이동해. extraneous docs는 만들지 말고 감사 결과와 residual risk를 함께 요약해줘."
+policy:
+  allow_implicit_invocation: false
