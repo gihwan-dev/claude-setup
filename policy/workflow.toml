@@ -28,26 +28,6 @@ browser-explorer = "high"
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"
 
-[helper_close]
-strong_close_reasons = ["explicit-cancel"]
-advisory_timeout_policy = "background-no-close"
-non_advisory_timeout_policy = "observe-and-status-ping"
-non_cancel_status_ping_mode = "non-interrupt-only"
-status_ping_delivery = "queued-only"
-blocking_timeout_path = "longer-wait-then-queued-status-probe-then-background-or-natural-completion"
-immediate_status_check_policy = "explicit-cancel-only"
-synthetic_interrupt_reason = "explicit-cancel"
-fallback_requires_ack = "terminal-or-background"
-invalid_close_reason = "result-no-longer-needed"
-helper_close_ack_definition = "final 또는 drain grace 이후 checkpoint/terminal runtime ack"
-terminal_runtime_statuses = [
-  "blocked",
-  "cancelled",
-  "completed",
-  "errored",
-  "interrupted",
-]
-
 [review_triggers]
 code_quality_min_changed_files = 3
 architecture_min_changed_files = 7

@@ -12,7 +12,6 @@ POLICY_ROOT = REPO_ROOT / "policy"
 WORKFLOW_POLICY_PATH = POLICY_ROOT / "workflow.toml"
 AGENT_REGISTRY_ROOT = REPO_ROOT / "agent-registry"
 
-OrchestrationValue: TypeAlias = str | list[str]
 TomlDict: TypeAlias = dict[str, object]
 
 
@@ -107,26 +106,6 @@ def _optional_str_map(table: TomlDict, key: str, *, path: Path) -> dict[str, str
 
 
 
-def _parse_orchestration_table(path: Path, table: object) -> dict[str, OrchestrationValue]:
-    if not isinstance(table, dict):
-        raise ValueError(f"missing [orchestration] in {path}")
-
-    parsed: dict[str, OrchestrationValue] = {}
-    for key, value in table.items():
-        if not isinstance(key, str):
-            raise ValueError(f"invalid orchestration key in {path}: {key!r}")
-        if isinstance(value, str):
-            parsed[key] = value
-            continue
-        if isinstance(value, list) and all(isinstance(item, str) for item in value):
-            parsed[key] = list(value)
-            continue
-        raise ValueError(
-            f"invalid orchestration value for {key} in {path}: expected str or list[str]"
-        )
-    return parsed
-
-
 def _load_workflow_policy() -> TomlDict:
     return _load_toml(WORKFLOW_POLICY_PATH)
 
@@ -136,7 +115,6 @@ WORKFLOW_POLICY = _load_workflow_policy()
 PUBLIC_SURFACE_POLICY = _require_table(WORKFLOW_POLICY, "public_surface", path=WORKFLOW_POLICY_PATH)
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
-HELPER_CLOSE_POLICY = _require_table(WORKFLOW_POLICY, "helper_close", path=WORKFLOW_POLICY_PATH)
 SLICE_BUDGET_POLICY = _require_table(WORKFLOW_POLICY, "slice_budget", path=WORKFLOW_POLICY_PATH)
 TASK_DOCUMENTS_POLICY = _require_table(WORKFLOW_POLICY, "task_documents", path=WORKFLOW_POLICY_PATH)
 
@@ -166,42 +144,6 @@ EXPECTED_CODEX_SANDBOX_BY_AGENT = _optional_str_map(
 def expected_reasoning_effort_for(agent_id: str) -> str:
     return CODEX_REASONING_EFFORT_OVERRIDES.get(agent_id, DEFAULT_CODEX_REASONING_EFFORT)
 
-STRONG_CLOSE_REASONS = list(
-    _require_str_list(HELPER_CLOSE_POLICY, "strong_close_reasons", path=WORKFLOW_POLICY_PATH)
-)
-ADVISORY_TIMEOUT_POLICY = _require_str(
-    HELPER_CLOSE_POLICY, "advisory_timeout_policy", path=WORKFLOW_POLICY_PATH
-)
-NON_ADVISORY_TIMEOUT_POLICY = _require_str(
-    HELPER_CLOSE_POLICY, "non_advisory_timeout_policy", path=WORKFLOW_POLICY_PATH
-)
-NON_CANCEL_STATUS_PING_MODE = _require_str(
-    HELPER_CLOSE_POLICY, "non_cancel_status_ping_mode", path=WORKFLOW_POLICY_PATH
-)
-STATUS_PING_DELIVERY = _require_str(
-    HELPER_CLOSE_POLICY, "status_ping_delivery", path=WORKFLOW_POLICY_PATH
-)
-BLOCKING_TIMEOUT_PATH = _require_str(
-    HELPER_CLOSE_POLICY, "blocking_timeout_path", path=WORKFLOW_POLICY_PATH
-)
-IMMEDIATE_STATUS_CHECK_POLICY = _require_str(
-    HELPER_CLOSE_POLICY, "immediate_status_check_policy", path=WORKFLOW_POLICY_PATH
-)
-SYNTHETIC_INTERRUPT_REASON = _require_str(
-    HELPER_CLOSE_POLICY, "synthetic_interrupt_reason", path=WORKFLOW_POLICY_PATH
-)
-FALLBACK_REQUIRES_ACK = _require_str(
-    HELPER_CLOSE_POLICY, "fallback_requires_ack", path=WORKFLOW_POLICY_PATH
-)
-INVALID_CLOSE_REASON = _require_str(
-    HELPER_CLOSE_POLICY, "invalid_close_reason", path=WORKFLOW_POLICY_PATH
-)
-HELPER_CLOSE_ACK_DEFINITION = _require_str(
-    HELPER_CLOSE_POLICY, "helper_close_ack_definition", path=WORKFLOW_POLICY_PATH
-)
-TERMINAL_RUNTIME_STATUSES = _require_str_list(
-    HELPER_CLOSE_POLICY, "terminal_runtime_statuses", path=WORKFLOW_POLICY_PATH
-)
 SLICE_BUDGET_MAX_REPO_FILES = _require_int(
     SLICE_BUDGET_POLICY, "max_repo_files", path=WORKFLOW_POLICY_PATH
 )
@@ -212,37 +154,6 @@ SLICE_BUDGET_ENFORCEMENT = _require_str(
     SLICE_BUDGET_POLICY, "enforcement", path=WORKFLOW_POLICY_PATH
 )
 
-# Policy-derived constants/predicates to avoid scattering string literals.
-if NON_CANCEL_STATUS_PING_MODE != "non-interrupt-only":
-    raise ValueError(
-        f"helper_close.non_cancel_status_ping_mode must be 'non-interrupt-only', got {NON_CANCEL_STATUS_PING_MODE!r}"
-    )
-if STATUS_PING_DELIVERY != "queued-only":
-    raise ValueError(
-        f"helper_close.status_ping_delivery must be 'queued-only', got {STATUS_PING_DELIVERY!r}"
-    )
-if (
-    BLOCKING_TIMEOUT_PATH
-    != "longer-wait-then-queued-status-probe-then-background-or-natural-completion"
-):
-    raise ValueError(
-        "helper_close.blocking_timeout_path must be "
-        "'longer-wait-then-queued-status-probe-then-background-or-natural-completion', "
-        f"got {BLOCKING_TIMEOUT_PATH!r}"
-    )
-if IMMEDIATE_STATUS_CHECK_POLICY != "explicit-cancel-only":
-    raise ValueError(
-        "helper_close.immediate_status_check_policy must be "
-        f"'explicit-cancel-only', got {IMMEDIATE_STATUS_CHECK_POLICY!r}"
-    )
-if FALLBACK_REQUIRES_ACK != "terminal-or-background":
-    raise ValueError(
-        f"helper_close.fallback_requires_ack must be 'terminal-or-background', got {FALLBACK_REQUIRES_ACK!r}"
-    )
-if SYNTHETIC_INTERRUPT_REASON not in STRONG_CLOSE_REASONS:
-    raise ValueError(
-        "helper_close.synthetic_interrupt_reason must be included in helper_close.strong_close_reasons"
-    )
 if SLICE_BUDGET_MAX_REPO_FILES <= 0 or SLICE_BUDGET_MAX_NET_LOC <= 0:
     raise ValueError("slice_budget thresholds must be positive integers")
 if SLICE_BUDGET_ENFORCEMENT != "split-before-execution":
@@ -250,23 +161,7 @@ if SLICE_BUDGET_ENFORCEMENT != "split-before-execution":
         f"slice_budget.enforcement must be 'split-before-execution', got {SLICE_BUDGET_ENFORCEMENT!r}"
     )
 
-EXPLICIT_CANCEL_CLOSE_REASON: str = SYNTHETIC_INTERRUPT_REASON
 BROAD_SLICE_WORK_LABELS = frozenset({"setup", "skeleton", "fsd-skeleton", "wrapper", "docs"})
-
-def _is_explicit_cancel(reason: str | None) -> bool:
-    return reason == EXPLICIT_CANCEL_CLOSE_REASON
-
-def _has_terminal_runtime_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
-    return snapshot.has_terminal_runtime_ack and snapshot.runtime_status in TERMINAL_RUNTIME_STATUSES
-
-
-def _has_natural_close_ack(snapshot: "HelperCloseSnapshot") -> bool:
-    # Close/fallback ack excludes preliminary-only output and raw runtime status notifications.
-    return (
-        snapshot.has_final
-        or (snapshot.has_checkpoint and snapshot.drain_grace_elapsed)
-        or (snapshot.drain_grace_elapsed and _has_terminal_runtime_close_ack(snapshot))
-    )
 
 PLAN_SECTION_ORDER = _require_str_list(
     TASK_DOCUMENTS_POLICY, "plan_section_order", path=WORKFLOW_POLICY_PATH
@@ -374,65 +269,10 @@ for _agent_dir in sorted(AGENT_REGISTRY_ROOT.iterdir()):
     AGENT_CONTRACTS_BY_ID[_agent_id] = _contract
 
 
-def _expected_helper_orchestration() -> dict[str, dict[str, OrchestrationValue]]:
-    expected: dict[str, dict[str, OrchestrationValue]] = {}
-    for agent_id in REQUIRED_HELPER_AGENT_IDS:
-        contract = AGENT_CONTRACTS_BY_ID.get(agent_id)
-        if contract is None:
-            raise ValueError(f"missing required helper registry entry: {agent_id}")
-        path = AGENT_REGISTRY_ROOT / agent_id / "agent.toml"
-        expected[agent_id] = _parse_orchestration_table(path, contract.get("orchestration"))
-    return expected
-
-
-CORE_HELPER_ORCHESTRATION_EXPECTED = _expected_helper_orchestration()
-
 ADVISORY_HELPER_AGENT_IDS = tuple(
-    agent_id
-    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items()
-    if expected.get("blocking_class") == "advisory"
+    agent_id for agent_id in REQUIRED_HELPER_AGENT_IDS
+    if agent_id != "verification-worker"
 )
-
-
-@dataclass(frozen=True)
-class HelperCloseSnapshot:
-    helper_id: str
-    blocking_class: str
-    result_contract: str
-    close_protocol: str
-    late_result_policy: str
-    timeout_policy: str
-    allowed_close_reasons: tuple[str, ...] = tuple(STRONG_CLOSE_REASONS)
-    runtime_status: str = "running"
-    observed: bool = False
-    status_pinged: bool = False
-    interrupt_sent: bool = False
-    drain_grace_elapsed: bool = False
-    wait_timed_out_count: int = 0
-    close_reason: str | None = None
-    has_preliminary: bool = False
-    has_checkpoint: bool = False
-    has_final: bool = False
-    has_terminal_runtime_ack: bool = False
-    backgrounded: bool = False
-    fallback_requested: bool = False
-
-    def has_result(self) -> bool:
-        return self.has_preliminary or self.has_checkpoint or self.has_final
-
-    def has_ack(self) -> bool:
-        return _has_natural_close_ack(self)
-
-    def has_fallback_ack(self) -> bool:
-        return self.backgrounded or self.has_ack()
-
-
-@dataclass(frozen=True)
-class HelperCloseDecision:
-    action: str
-    close_allowed: bool
-    accept_late_result: bool
-    rationale: str
 
 
 @dataclass(frozen=True)
@@ -511,143 +351,6 @@ def decide_slice_execution_mode(plan: SliceExecutionPlan) -> SliceExecutionDecis
         execution_allowed=True,
         rationale="slice stays within budget; execute the slice and run to boundary",
     )
-
-
-def _accept_late_result(late_result_policy: str) -> bool:
-    return late_result_policy == "merge-if-relevant"
-
-
-def _decision(
-    action: str,
-    snapshot: HelperCloseSnapshot,
-    close_allowed: bool,
-    rationale: str,
-) -> HelperCloseDecision:
-    return HelperCloseDecision(
-        action=action,
-        close_allowed=close_allowed,
-        accept_late_result=_accept_late_result(snapshot.late_result_policy),
-        rationale=rationale,
-    )
-
-
-def _has_protocol_completion(snapshot: HelperCloseSnapshot) -> bool:
-    return snapshot.has_ack() and snapshot.interrupt_sent and snapshot.drain_grace_elapsed
-
-
-def decide_helper_close_action(snapshot: HelperCloseSnapshot) -> HelperCloseDecision:
-    strong_close_reasons = set(snapshot.allowed_close_reasons)
-    close_reason = snapshot.close_reason
-    has_strong_reason = close_reason in strong_close_reasons
-
-    if close_reason == INVALID_CLOSE_REASON:
-        action = "background" if snapshot.blocking_class == "advisory" else "observe"
-        return _decision(
-            action,
-            snapshot,
-            close_allowed=False,
-            rationale=f"`{INVALID_CLOSE_REASON}` is not a valid close reason",
-        )
-
-    if snapshot.interrupt_sent and not _is_explicit_cancel(close_reason):
-        return _decision(
-            "invalid",
-            snapshot,
-            False,
-            f"non-cancel status ping mode is `{NON_CANCEL_STATUS_PING_MODE}`; synthetic interrupt is reserved for `{SYNTHETIC_INTERRUPT_REASON}`",
-        )
-
-    if snapshot.fallback_requested and not snapshot.has_fallback_ack():
-        return _decision(
-            "invalid",
-            snapshot,
-            False,
-            f"parent fallback requires {FALLBACK_REQUIRES_ACK} ack before close/deep-solo handoff",
-        )
-
-    if not snapshot.observed:
-        return _decision("observe", snapshot, False, "close preflight starts with observe")
-
-    if (
-        snapshot.blocking_class == "advisory"
-        and snapshot.runtime_status == "running"
-        and snapshot.wait_timed_out_count > 0
-        and not has_strong_reason
-        and not snapshot.has_result()
-    ):
-        if not snapshot.status_pinged:
-            return _decision(
-                "status-ping",
-                snapshot,
-                False,
-                f"timed-out helper must receive a `{STATUS_PING_DELIVERY}` status probe before any close decision",
-            )
-        if not snapshot.drain_grace_elapsed:
-            return _decision(
-                "observe",
-                snapshot,
-                False,
-                "non-cancel observe path stays in observe/drain until terminal or background ack",
-            )
-        return _decision(
-            "background",
-            snapshot,
-            False,
-            "advisory nonresponse may move to background only after observe/drain on the non-cancel path",
-        )
-
-    if snapshot.runtime_status == "running" and not snapshot.status_pinged:
-        return _decision(
-            "status-ping",
-            snapshot,
-            False,
-            f"running helper requires a `{STATUS_PING_DELIVERY}` status ping before interrupt/close",
-        )
-
-    if _is_explicit_cancel(close_reason) and (
-        (not snapshot.interrupt_sent or not snapshot.drain_grace_elapsed)
-    ):
-        return _decision(
-            "interrupt-and-drain",
-            snapshot,
-            False,
-            "close requires interrupt flush and drain grace before close judgment",
-        )
-
-    if _is_explicit_cancel(close_reason) and not snapshot.has_ack():
-        return _decision(
-            "observe",
-            snapshot,
-            False,
-            f"strong close reason requires protocol completion ack ({HELPER_CLOSE_ACK_DEFINITION})",
-        )
-
-    if _is_explicit_cancel(close_reason) and _has_protocol_completion(snapshot):
-        return _decision(
-            "allow-close",
-            snapshot,
-            True,
-            f"strong close reason and ack satisfied ({HELPER_CLOSE_ACK_DEFINITION}): {close_reason}",
-        )
-
-    # Natural terminal/result path: no synthetic interrupt when not explicit-cancel.
-    if (not _is_explicit_cancel(close_reason)) and snapshot.has_ack():
-        return _decision(
-            "allow-close",
-            snapshot,
-            True,
-            "natural terminal/result ack; no synthetic interrupt",
-        )
-
-    if snapshot.blocking_class == "advisory" and snapshot.timeout_policy == ADVISORY_TIMEOUT_POLICY:
-        return _decision(
-            "background",
-            snapshot,
-            False,
-            "advisory helper remains background until strong close reason or ack",
-        )
-
-    return _decision("observe", snapshot, False, "continue observing helper state")
 
 
 def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:

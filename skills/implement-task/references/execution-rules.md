@@ -19,7 +19,6 @@
   - focused validation 실패
   - 커밋 실패(`--no-verify` 재시도 실패 포함)
   - 구현 단계가 `blocked + exact split proposal`로 중단됨
-  - `liveness gate` 점검과 `drain grace` 이후에도 `final/checkpoint`를 받지 못함
   - bundle `SPEC_VALIDATION.md` blocking issue 미해소
   - `EXECUTION_PLAN.md` 또는 legacy `PLAN.md`의 stop/replan 조건 충족
   - public boundary drift 발생
@@ -33,21 +32,6 @@
 - broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice hard guardrail을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
 - 종료 전 메인 스레드는 README, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs 같은 실질 영향 문서를 다시 확인한다.
 - 필요한 문서 diff나 generated projection sync는 구현 단계에서 focused validation 전에 함께 반영한다.
-
-## Liveness And Cancel Rules
-
-- `wait timeout`은 stalled와 동일하지 않다.
-- `liveness gate`와 `completion gate`를 분리한다.
-- non-interrupt status ping은 queued-only semantics다.
-- `wait timed_out` 허용 경로는 `longer wait -> optional queued status probe -> background or natural completion`이다.
-- `non-cancel observe path`는 `wait -> inspect/status ping(interrupt=false) -> observe/drain -> background or natural completion`만 허용한다.
-- Immediate status check requires explicit cancel path.
-- `explicit cancel path`는 `wait -> inspect/status ping -> interrupt -> drain grace -> close 판단`만 허용한다.
-- non-cancel 경로에서는 synthetic interrupt를 보내지 않는다.
-- `explicit cancel`만 종료 근거다.
-- `result가 더 이상 필요 없음`은 close 근거가 아니다.
-- advisory helper 미응답은 slice 실패로 처리하지 않고 background/advisory로 전환한다.
-- 늦게 도착한 advisory 결과는 현재 판단과 관련 있으면 merge-if-relevant로 병합한다.
 
 ## Validation Fallback
 

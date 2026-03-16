@@ -8,10 +8,6 @@ import os
 import sys
 import tomllib
 from pathlib import Path
-from typing import TypeAlias
-
-OrchestrationValue: TypeAlias = str | list[str]
-
 
 @dataclass(frozen=True)
 class CodexBuiltinProfile:
@@ -26,12 +22,6 @@ class CodexBuiltinProfile:
 
 def _quote_toml(value: str) -> str:
     return json.dumps(value, ensure_ascii=False)
-
-
-def _serialize_toml_value(value: OrchestrationValue) -> str:
-    if isinstance(value, list):
-        return f"[{', '.join(_quote_toml(item) for item in value)}]"
-    return _quote_toml(value)
 
 
 def _normalize_instructions(text: str) -> str:
@@ -89,7 +79,6 @@ def _serialize_agent_toml(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
-    orchestration: dict[str, OrchestrationValue] | None,
 ) -> str:
     lines = [
         f'id = {_quote_toml(agent_id)}',
@@ -102,11 +91,6 @@ def _serialize_agent_toml(
         f"codex = {str(codex_projection).lower()}",
         "",
     ]
-    if orchestration:
-        lines.append("[orchestration]")
-        for key, value in orchestration.items():
-            lines.append(f"{key} = {_serialize_toml_value(value)}")
-        lines.append("")
     if repo_projection:
         if repo_model is None:
             raise ValueError(f"repo model missing for {agent_id}")
@@ -157,7 +141,6 @@ def _write_registry_entry(
     codex_model: str | None,
     codex_reasoning_effort: str | None,
     codex_sandbox_mode: str | None,
-    orchestration: dict[str, OrchestrationValue] | None,
     instructions: str,
 ) -> None:
     entry_dir = registry_root / agent_id
@@ -177,7 +160,6 @@ def _write_registry_entry(
             codex_model=codex_model,
             codex_reasoning_effort=codex_reasoning_effort,
             codex_sandbox_mode=codex_sandbox_mode,
-            orchestration=orchestration,
         ),
         encoding="utf-8",
     )
@@ -226,13 +208,12 @@ def _optional_string_map(value: object, *, label: str) -> dict[str, str]:
 
 def _policy_lists(
     repo_root: Path,
-) -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, str], dict[str, object]]:
+) -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, str]]:
     policy = _load_policy(repo_root)
     projection = policy.get("projection", {})
     codex = policy.get("codex", {})
-    helper_close = policy.get("helper_close", {})
-    if not isinstance(projection, dict) or not isinstance(codex, dict) or not isinstance(helper_close, dict):
-        raise ValueError("missing [projection], [codex], or [helper_close] in policy/workflow.toml")
+    if not isinstance(projection, dict) or not isinstance(codex, dict):
+        raise ValueError("missing [projection] or [codex] in policy/workflow.toml")
     required_helpers = _string_list(
         projection.get("required_helper_agent_ids"),
         label="projection.required_helper_agent_ids",
@@ -258,7 +239,6 @@ def _policy_lists(
         sandbox_overrides,
         default_reasoning_effort,
         reasoning_effort_overrides,
-        helper_close,
     )
 
 
@@ -269,7 +249,6 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
         sandbox_overrides,
         default_reasoning_effort,
         reasoning_effort_overrides,
-        _helper_close,
     ) = _policy_lists(repo_root)
 
     codex_home = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex")))
@@ -330,63 +309,6 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
     return profiles
 
 
-def _existing_orchestration(
-    registry_root: Path,
-    agent_id: str,
-) -> dict[str, OrchestrationValue] | None:
-    path = registry_root / agent_id / "agent.toml"
-    if not path.exists():
-        return None
-    data = _load_toml(path)
-    raw = data.get("orchestration")
-    if not isinstance(raw, dict):
-        return None
-
-    parsed: dict[str, OrchestrationValue] = {}
-    for key, value in raw.items():
-        if isinstance(key, str) and isinstance(value, str):
-            parsed[key] = value
-        elif isinstance(key, str) and isinstance(value, list) and all(
-            isinstance(item, str) for item in value
-        ):
-            parsed[key] = list(value)
-    return parsed or None
-
-
-def _default_helper_orchestration(
-    agent_id: str,
-    helper_close: dict[str, object],
-) -> dict[str, OrchestrationValue]:
-    strong_close_reasons = _string_list(
-        helper_close.get("strong_close_reasons"),
-        label="helper_close.strong_close_reasons",
-    )
-    advisory_timeout_policy = helper_close.get("advisory_timeout_policy")
-    non_advisory_timeout_policy = helper_close.get("non_advisory_timeout_policy")
-    if not isinstance(advisory_timeout_policy, str) or not isinstance(
-        non_advisory_timeout_policy, str
-    ):
-        raise ValueError("missing helper close timeout policies in policy/workflow.toml")
-
-    if agent_id == "verification-worker":
-        return {
-            "blocking_class": "semi-blocking",
-            "result_contract": "final-or-checkpoint",
-            "close_protocol": "explicit-cancel-or-terminal-close",
-            "late_result_policy": "merge-if-relevant",
-            "timeout_policy": non_advisory_timeout_policy,
-            "allowed_close_reasons": list(strong_close_reasons),
-        }
-    return {
-        "blocking_class": "advisory",
-        "result_contract": "preliminary-or-final",
-        "close_protocol": "explicit-cancel-or-terminal-close",
-        "late_result_policy": "merge-if-relevant",
-        "timeout_policy": advisory_timeout_policy,
-        "allowed_close_reasons": list(strong_close_reasons),
-    }
-
-
 def _sandbox_for_agent(agent_id: str, sandbox_overrides: dict[str, str]) -> str:
     return sandbox_overrides.get(agent_id, "read-only")
 
@@ -408,7 +330,6 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
         sandbox_overrides,
         default_reasoning_effort,
         reasoning_effort_overrides,
-        _helper_close,
     ) = _policy_lists(repo_root)
     for path in sorted((repo_root / "agents").glob("*.md")):
         markdown = path.read_text(encoding="utf-8")
@@ -435,7 +356,6 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
             codex_model="gpt-5.4",
             codex_reasoning_effort=reasoning_effort_overrides.get(agent_id, default_reasoning_effort),
             codex_sandbox_mode=_sandbox_for_agent(agent_id, sandbox_overrides),
-            orchestration=_existing_orchestration(registry_root, agent_id),
             instructions=_strip_generated_notice(body),
         )
 
@@ -451,7 +371,6 @@ def _bootstrap_codex_builtins(
         _sandbox_overrides,
         _default_reasoning_effort,
         _reasoning_effort_overrides,
-        helper_close,
     ) = _policy_lists(repo_root)
     profiles = (
         builtin_profiles
@@ -478,12 +397,6 @@ def _bootstrap_codex_builtins(
             codex_model=profile.model,
             codex_reasoning_effort=profile.reasoning_effort,
             codex_sandbox_mode=profile.sandbox_mode,
-            orchestration=_existing_orchestration(registry_root, agent_key)
-            or (
-                _default_helper_orchestration(agent_key, helper_close)
-                if is_required_helper
-                else None
-            ),
             instructions=profile.developer_instructions,
         )
 

@@ -16,15 +16,6 @@
 - 주장은 반드시 runtime/log 근거 또는 repo file:line 근거를 남긴다.
 - 결론은 브라우저 관찰 결과와 재현 단계 중심으로 요약한다.
 - `explorer`는 레포 탐색용이고, 너는 브라우저 상호작용/증거 수집용이다.
-- `wait timeout`은 stalled와 동일하지 않다.
-- `liveness gate`와 `completion gate`를 분리한다.
-- close 판단은 `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 순서를 따른다.
-- `explicit cancel`만 종료 근거다.
-- `result가 더 이상 필요 없음`은 close 근거가 아니다.
-- advisory helper는 구현/테스트/커밋 완료만으로 close하지 않는다.
-- advisory helper 미응답은 close가 아니라 background/advisory로 전환한다.
-- `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
-- interrupt/close 요청을 받으면 새 브라우저 상호작용 시작을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
 작업 방식
 1. preflight로 `target URL 또는 Electron entry`, `검증할 행동/시나리오`, `필요한 증거`가 모두 명확한지 확인한다.

@@ -15,21 +15,12 @@ from sync_agents import (
     _validate_entries,
 )
 from workflow_contract import (
-    ADVISORY_TIMEOUT_POLICY,
     AdvisorySliceContext,
-    AGENT_CONTRACTS_BY_ID,
-    BLOCKING_TIMEOUT_PATH,
-    CORE_HELPER_ORCHESTRATION_EXPECTED,
     detect_task_document_mode,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     decide_slice_execution_mode,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
-    FALLBACK_REQUIRES_ACK,
-    HelperCloseSnapshot,
-    IMMEDIATE_STATUS_CHECK_POLICY,
-    INVALID_CLOSE_REASON,
-    NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
     SliceExecutionPlan,
@@ -37,9 +28,7 @@ from workflow_contract import (
     SLICE_BUDGET_MAX_NET_LOC,
     SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
-    STATUS_PING_DELIVERY,
     STATUS_SECTION_ORDER,
-    SYNTHETIC_INTERRUPT_REASON,
     TASK_BUNDLE_CORE_DOCS,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
@@ -51,7 +40,6 @@ from workflow_contract import (
     TASK_BUNDLE_WORK_TYPES,
     decide_task_bundle_delivery_strategy,
     decide_spec_validation_gate,
-    decide_helper_close_action,
     derive_task_bundle_required_docs,
     should_spawn_advisory_helper,
     validate_legacy_task_root,
@@ -135,35 +123,6 @@ def _validate_registry_codex_contract(repo_root: Path, errors: list[str]) -> Non
                 f"registry sandbox_mode mismatch for {agent_id}: "
                 f"expected={expected_sandbox!r} actual={sandbox_mode!r} ({path})"
             )
-
-
-def _validate_helper_orchestration(errors: list[str]) -> None:
-    required_keys = {
-        "blocking_class",
-        "result_contract",
-        "close_protocol",
-        "late_result_policy",
-        "timeout_policy",
-        "allowed_close_reasons",
-    }
-    for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
-        contract = AGENT_CONTRACTS_BY_ID.get(agent_id)
-        if contract is None:
-            errors.append(f"missing helper contract: {agent_id}")
-            continue
-        orchestration = contract.get("orchestration")
-        if not isinstance(orchestration, dict):
-            errors.append(f"missing [orchestration] for {agent_id}")
-            continue
-
-        missing_keys = required_keys - set(orchestration.keys())
-        if missing_keys:
-            errors.append(
-                f"helper orchestration missing keys for {agent_id}: {sorted(missing_keys)}"
-            )
-
-        if orchestration != expected:
-            errors.append(f"helper orchestration cache drifted for {agent_id}")
 
 
 def _expect_substrings(path: Path, substrings: tuple[str, ...], errors: list[str]) -> None:
@@ -287,9 +246,7 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         routing_path,
         (
             "small slices + run-to-boundary",
-            "queued-only",
             "split/replan before execution",
-            "Immediate status check requires explicit cancel path",
         ),
         errors,
     )
@@ -306,7 +263,6 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         skill_path,
         (
             "small slices + run-to-boundary",
-            "queued-only",
             "slice implementation -> main focused validation -> commit",
             "split/replan before execution",
         ),
@@ -713,22 +669,6 @@ def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
 
 def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     policy = _load_toml(repo_root / "policy" / "workflow.toml")
-    helper_close = policy.get("helper_close")
-    if not isinstance(helper_close, dict):
-        errors.append("policy.workflow.toml missing [helper_close] table")
-    else:
-        if helper_close.get("non_cancel_status_ping_mode") != NON_CANCEL_STATUS_PING_MODE:
-            errors.append("helper_close.non_cancel_status_ping_mode drifted")
-        if helper_close.get("status_ping_delivery") != STATUS_PING_DELIVERY:
-            errors.append("helper_close.status_ping_delivery drifted")
-        if helper_close.get("blocking_timeout_path") != BLOCKING_TIMEOUT_PATH:
-            errors.append("helper_close.blocking_timeout_path drifted")
-        if helper_close.get("immediate_status_check_policy") != IMMEDIATE_STATUS_CHECK_POLICY:
-            errors.append("helper_close.immediate_status_check_policy drifted")
-        if helper_close.get("synthetic_interrupt_reason") != SYNTHETIC_INTERRUPT_REASON:
-            errors.append("helper_close.synthetic_interrupt_reason drifted")
-        if helper_close.get("fallback_requires_ack") != FALLBACK_REQUIRES_ACK:
-            errors.append("helper_close.fallback_requires_ack drifted")
 
     slice_budget = policy.get("slice_budget")
     if not isinstance(slice_budget, dict):
@@ -740,97 +680,6 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
             errors.append("slice_budget.max_net_loc drifted")
         if slice_budget.get("enforcement") != SLICE_BUDGET_ENFORCEMENT:
             errors.append("slice_budget.enforcement drifted")
-
-    bad_sequence = HelperCloseSnapshot(
-        helper_id="explorer",
-        blocking_class="advisory",
-        result_contract="preliminary-or-final",
-        close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="merge-if-relevant",
-        timeout_policy=ADVISORY_TIMEOUT_POLICY,
-        runtime_status="running",
-        observed=True,
-        status_pinged=True,
-        wait_timed_out_count=2,
-        close_reason=INVALID_CLOSE_REASON,
-    )
-    bad_sequence_decision = decide_helper_close_action(bad_sequence)
-    if bad_sequence_decision.close_allowed or bad_sequence_decision.action == "allow-close":
-        errors.append("invalid advisory close sequence was not rejected")
-    if not bad_sequence_decision.accept_late_result:
-        errors.append("advisory late result policy must remain merge-if-relevant")
-
-    timed_out_running = HelperCloseSnapshot(
-        helper_id="explorer",
-        blocking_class="advisory",
-        result_contract="preliminary-or-final",
-        close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="merge-if-relevant",
-        timeout_policy=ADVISORY_TIMEOUT_POLICY,
-        runtime_status="running",
-        observed=True,
-        status_pinged=True,
-        wait_timed_out_count=1,
-    )
-    timed_out_running_decision = decide_helper_close_action(timed_out_running)
-    if timed_out_running_decision.close_allowed or timed_out_running_decision.action not in {
-        "observe",
-        "status-ping",
-    }:
-        errors.append("wait timeout after non-interrupt status ping must remain observe/status-ping only")
-
-    non_cancel_interrupt = HelperCloseSnapshot(
-        helper_id="verification-worker",
-        blocking_class="semi-blocking",
-        result_contract="final-or-checkpoint",
-        close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="merge-if-relevant",
-        timeout_policy="observe-and-status-ping",
-        runtime_status="running",
-        observed=True,
-        status_pinged=True,
-        interrupt_sent=True,
-    )
-    non_cancel_interrupt_decision = decide_helper_close_action(non_cancel_interrupt)
-    if non_cancel_interrupt_decision.action != "invalid":
-        errors.append("non-cancel interrupt sequence must be rejected")
-
-    premature_fallback = HelperCloseSnapshot(
-        helper_id="verification-worker",
-        blocking_class="semi-blocking",
-        result_contract="final-or-checkpoint",
-        close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="merge-if-relevant",
-        timeout_policy="observe-and-status-ping",
-        runtime_status="interrupted",
-        observed=True,
-        status_pinged=True,
-        interrupt_sent=True,
-        close_reason=SYNTHETIC_INTERRUPT_REASON,
-        fallback_requested=True,
-    )
-    premature_fallback_decision = decide_helper_close_action(premature_fallback)
-    if premature_fallback_decision.action != "invalid":
-        errors.append("parent fallback before terminal/background ack must be rejected")
-
-    late_checkpoint = HelperCloseSnapshot(
-        helper_id="explorer",
-        blocking_class="advisory",
-        result_contract="preliminary-or-final",
-        close_protocol="explicit-cancel-or-terminal-close",
-        late_result_policy="merge-if-relevant",
-        timeout_policy=ADVISORY_TIMEOUT_POLICY,
-        runtime_status="interrupted",
-        observed=True,
-        status_pinged=True,
-        interrupt_sent=True,
-        drain_grace_elapsed=True,
-        close_reason=SYNTHETIC_INTERRUPT_REASON,
-        has_checkpoint=True,
-    )
-    late_checkpoint_decision = decide_helper_close_action(late_checkpoint)
-    if late_checkpoint_decision.action != "allow-close" or not late_checkpoint_decision.accept_late_result:
-        errors.append("late checkpoint after drain must remain close ack with merge-if-relevant")
 
     broad_handoff = SliceExecutionPlan(
         repo_files_planned=2,
@@ -995,7 +844,6 @@ def main() -> int:
     errors: list[str] = []
     _validate_agent_projection(repo_root, errors)
     _validate_registry_codex_contract(repo_root, errors)
-    _validate_helper_orchestration(errors)
     _validate_structure_reviewer_instruction_drift(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)

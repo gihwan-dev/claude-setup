@@ -52,14 +52,13 @@ description: >
 - `delivery_strategy=ui-first`면 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 건너뛰거나 병합하지 않고, early UI slice에 real API/integration diff를 섞지 않는다.
 - `slice implementation -> main focused validation -> commit` 순서를 유지한다.
 - hybrid mode default는 `small slices + run-to-boundary`다.
-- non-interrupt status ping is `queued-only`.
 - slice budget이 small slices 기준(`repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`)을 넘기면 `split/replan before execution`으로 되돌린다.
 - focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
 - 문서/SSOT 변경이 있으면 필요한 sync와 `--check`까지 끝난 뒤 종료한다.
 
 ## References
 
-- 상세 실행 규칙, liveness/cancel 경로, validation fallback, STATUS 계약: `references/execution-rules.md`
+- 상세 실행 규칙, validation fallback, STATUS 계약: `references/execution-rules.md`
 
 ## Validation
 

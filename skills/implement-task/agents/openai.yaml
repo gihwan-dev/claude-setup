@@ -19,8 +19,7 @@ interface:
     각 slice에서 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저
     고정하고, split-first trigger가 켜지면 target file append를 금지해. 같은 slice 안에서 새 모듈
     추출이 가능하지 않으면 `blocked + exact split proposal`로 멈춰. hybrid mode default는
-    `small slices + run-to-boundary`다. non-interrupt status ping is `queued-only`. Immediate status
-    check requires explicit cancel path. broad `setup`/`skeleton`/`wrapper`/`docs` handoff or
+    `small slices + run-to-boundary`다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff or
     slice-budget overflow must split/replan before execution. slice budget은 small slices 기준으로 `repo-tracked files
     3개 이하`, 순 diff `150 LOC 내외`다. 여러 active task 폴더가 공존하는 것은 정상 경로다. path
     미지정이면 먼저 active 후보를 만들고, 후보가 정확히 1개일 때만 자동 선택해. 후보가 2개

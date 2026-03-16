@@ -7,14 +7,6 @@ source = "codex-builtin"
 repo = true
 codex = true
 
-[orchestration]
-blocking_class = "semi-blocking"
-result_contract = "final-or-checkpoint"
-close_protocol = "explicit-cancel-or-terminal-close"
-late_result_policy = "merge-if-relevant"
-timeout_policy = "observe-and-status-ping"
-allowed_close_reasons = ["explicit-cancel"]
-
 [repo]
 model = "haiku"
 tools = ["Read", "Grep", "Glob"]

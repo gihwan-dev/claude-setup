@@ -12,16 +12,10 @@ from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
 from workflow_contract import (
-    BLOCKING_TIMEOUT_PATH,
-    FALLBACK_REQUIRES_ACK,
-    IMMEDIATE_STATUS_CHECK_POLICY,
-    NON_CANCEL_STATUS_PING_MODE,
     REQUIRED_HELPER_AGENT_IDS,
     SLICE_BUDGET_ENFORCEMENT,
     SLICE_BUDGET_MAX_NET_LOC,
     SLICE_BUDGET_MAX_REPO_FILES,
-    STATUS_PING_DELIVERY,
-    SYNTHETIC_INTERRUPT_REASON,
 )
 
 
@@ -75,39 +69,10 @@ class AgentSyncTests(RepoTestCase):
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
-    def test_helper_close_policy_defaults_cover_helper_observation_and_slice_budget(self) -> None:
+    def test_slice_budget_policy_defaults(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
-        helper_close = policy.get("helper_close")
         slice_budget = policy.get("slice_budget")
-        self.assertIsInstance(helper_close, dict)
         self.assertIsInstance(slice_budget, dict)
-        self.assertEqual(
-            helper_close.get("non_cancel_status_ping_mode"),
-            NON_CANCEL_STATUS_PING_MODE,
-        )
-        self.assertEqual(
-            helper_close.get("status_ping_delivery"),
-            STATUS_PING_DELIVERY,
-        )
-        self.assertNotIn("writer_midflight_probe_policy", helper_close)
-        self.assertNotIn("replacement_writer_policy", helper_close)
-        self.assertNotIn("same_slice_second_writer_policy", helper_close)
-        self.assertEqual(
-            helper_close.get("blocking_timeout_path"),
-            BLOCKING_TIMEOUT_PATH,
-        )
-        self.assertEqual(
-            helper_close.get("immediate_status_check_policy"),
-            IMMEDIATE_STATUS_CHECK_POLICY,
-        )
-        self.assertEqual(
-            helper_close.get("synthetic_interrupt_reason"),
-            SYNTHETIC_INTERRUPT_REASON,
-        )
-        self.assertEqual(
-            helper_close.get("fallback_requires_ack"),
-            FALLBACK_REQUIRES_ACK,
-        )
         self.assertEqual(slice_budget.get("max_repo_files"), SLICE_BUDGET_MAX_REPO_FILES)
         self.assertEqual(slice_budget.get("max_net_loc"), SLICE_BUDGET_MAX_NET_LOC)
         self.assertEqual(slice_budget.get("enforcement"), SLICE_BUDGET_ENFORCEMENT)
@@ -150,43 +115,6 @@ class AgentSyncTests(RepoTestCase):
                 msg=f"projected writable role is not allowed: {path}",
             )
 
-    def test_sync_agents_serialize_roundtrips_orchestration_section(self) -> None:
-        serialized = sync_agents._serialize_agent_toml(
-            agent_id="sample-helper",
-            role="reviewer",
-            description="sample",
-            source="codex-builtin",
-            repo_projection=False,
-            codex_projection=False,
-            repo_model=None,
-            repo_tools=[],
-            codex_agent_key=None,
-            codex_config_file=None,
-            codex_model=None,
-            codex_reasoning_effort=None,
-            codex_sandbox_mode=None,
-            orchestration={
-                "blocking_class": "advisory",
-                "result_contract": "preliminary-or-final",
-                "close_protocol": "explicit-cancel-or-terminal-close",
-                "late_result_policy": "merge-if-relevant",
-                "timeout_policy": "background-no-close",
-                "allowed_close_reasons": ["explicit-cancel"],
-            },
-        )
-        payload = tomllib.loads(serialized)
-        orchestration = payload.get("orchestration")
-        self.assertIsInstance(orchestration, dict)
-        self.assertEqual(orchestration.get("blocking_class"), "advisory")
-        self.assertEqual(orchestration.get("result_contract"), "preliminary-or-final")
-        self.assertEqual(orchestration.get("close_protocol"), "explicit-cancel-or-terminal-close")
-        self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
-        self.assertEqual(orchestration.get("timeout_policy"), "background-no-close")
-        self.assertEqual(
-            orchestration.get("allowed_close_reasons"),
-            ["explicit-cancel"],
-        )
-
     def test_deprecated_bootstrap_shim_delegates_to_bootstrap_registry(self) -> None:
         sample_entries = [
             sync_agents.AgentEntry(
@@ -203,7 +131,6 @@ class AgentSyncTests(RepoTestCase):
                 codex_model=None,
                 codex_reasoning_effort=None,
                 codex_sandbox_mode=None,
-                orchestration=None,
                 instructions="sample\n",
             )
         ]
@@ -306,11 +233,9 @@ class AgentSyncTests(RepoTestCase):
                 (registry_root / "verification-worker" / "agent.toml").read_text(encoding="utf-8")
             )
             projection = helper_payload.get("projection")
-            orchestration = helper_payload.get("orchestration")
             codex = helper_payload.get("codex")
 
             self.assertIsInstance(projection, dict)
-            self.assertIsInstance(orchestration, dict)
             self.assertIsInstance(codex, dict)
             self.assertTrue(projection.get("repo"))
             self.assertTrue(projection.get("codex"))
@@ -324,18 +249,6 @@ class AgentSyncTests(RepoTestCase):
                 expected_effort,
             )
             self.assertEqual(codex.get("sandbox_mode"), "read-only")
-            self.assertEqual(orchestration.get("blocking_class"), "semi-blocking")
-            self.assertEqual(orchestration.get("result_contract"), "final-or-checkpoint")
-            self.assertEqual(orchestration.get("close_protocol"), "explicit-cancel-or-terminal-close")
-            self.assertEqual(orchestration.get("late_result_policy"), "merge-if-relevant")
-            self.assertEqual(
-                orchestration.get("timeout_policy"),
-                policy["helper_close"]["non_advisory_timeout_policy"],
-            )
-            self.assertEqual(
-                orchestration.get("allowed_close_reasons"),
-                policy["helper_close"]["strong_close_reasons"],
-            )
 
             generated_profile = tomllib.loads(
                 (repo_root / "dist" / "codex" / "agents" / "verification-worker.toml").read_text(

@@ -6,21 +6,13 @@ from pathlib import Path
 
 from support import REPO_ROOT, RepoTestCase
 from workflow_contract import (
-    ADVISORY_TIMEOUT_POLICY,
     AGENT_CONTRACTS_BY_ID,
     AdvisorySliceContext,
-    BLOCKING_TIMEOUT_PATH,
-    CORE_HELPER_ORCHESTRATION_EXPECTED,
     decide_slice_execution_mode,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
-    FALLBACK_REQUIRES_ACK,
-    HelperCloseSnapshot,
-    IMMEDIATE_STATUS_CHECK_POLICY,
-    INVALID_CLOSE_REASON,
     LONG_RUNNING_PUBLIC_SURFACE,
-    NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
     SliceExecutionPlan,
@@ -28,9 +20,7 @@ from workflow_contract import (
     SLICE_BUDGET_MAX_NET_LOC,
     SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
-    STATUS_PING_DELIVERY,
     STATUS_SECTION_ORDER,
-    SYNTHETIC_INTERRUPT_REASON,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     TASK_BUNDLE_IMPACT_FLAGS,
@@ -40,7 +30,6 @@ from workflow_contract import (
     TASK_BUNDLE_UI_FIRST_WORK_TYPES,
     TASK_BUNDLE_WORK_TYPES,
     decide_task_bundle_delivery_strategy,
-    decide_helper_close_action,
     decide_spec_validation_gate,
     derive_task_bundle_required_docs,
     load_task_bundle_manifest,
@@ -114,8 +103,6 @@ class WorkflowContractTests(RepoTestCase):
         )
         for agent_id in REQUIRED_HELPER_AGENT_IDS:
             self.assertIn(agent_id, AGENT_CONTRACTS_BY_ID)
-            orchestration = AGENT_CONTRACTS_BY_ID[agent_id].get("orchestration")
-            self.assertEqual(orchestration, CORE_HELPER_ORCHESTRATION_EXPECTED[agent_id])
 
     def test_structure_reviewer_agent_has_thresholds(self) -> None:
         agent_path = REPO_ROOT / "agent-registry" / "structure-reviewer" / "agent.toml"
@@ -136,13 +123,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("adapter", thresholds["split_roles"])
         self.assertIn("migration snapshot", thresholds["exceptions"])
 
-    def test_helper_runtime_policy_constants_cover_slice_budget_contract(self) -> None:
-        self.assertEqual("queued-only", STATUS_PING_DELIVERY)
-        self.assertEqual(
-            "longer-wait-then-queued-status-probe-then-background-or-natural-completion",
-            BLOCKING_TIMEOUT_PATH,
-        )
-        self.assertEqual("explicit-cancel-only", IMMEDIATE_STATUS_CHECK_POLICY)
+    def test_slice_budget_constants(self) -> None:
         self.assertEqual(3, SLICE_BUDGET_MAX_REPO_FILES)
         self.assertEqual(150, SLICE_BUDGET_MAX_NET_LOC)
         self.assertEqual("split-before-execution", SLICE_BUDGET_ENFORCEMENT)
@@ -232,254 +213,6 @@ class WorkflowContractTests(RepoTestCase):
         status_error = validate_markdown_sections(task_root / "STATUS.md", STATUS_SECTION_ORDER)
         self.assertIsNone(plan_error, msg=plan_error)
         self.assertIsNone(status_error, msg=status_error)
-
-    def test_core_helper_orchestration_mapping_contract(self) -> None:
-        for agent_id, expected in CORE_HELPER_ORCHESTRATION_EXPECTED.items():
-            path = REPO_ROOT / "agent-registry" / agent_id / "agent.toml"
-            payload = tomllib.loads(path.read_text(encoding="utf-8"))
-            orchestration = payload.get("orchestration")
-            self.assertIsInstance(orchestration, dict, msg=f"missing [orchestration] in {path}")
-            self.assertEqual(orchestration, expected, msg=f"unexpected orchestration mapping for {agent_id}")
-
-    def test_decide_helper_close_action_rejects_bad_advisory_sequence(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            wait_timed_out_count=2,
-            close_reason=INVALID_CLOSE_REASON,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "background")
-        self.assertTrue(decision.accept_late_result)
-
-    def test_decide_helper_close_action_requires_status_ping_for_running_helper(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="running",
-            observed=True,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "status-ping")
-
-    def test_decide_helper_close_action_timeout_running_after_status_ping_stays_observe_until_drain(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            wait_timed_out_count=1,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "observe")
-
-    def test_decide_helper_close_action_explicit_cancel_requires_interrupt_and_drain_before_close(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            close_reason="explicit-cancel",
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "interrupt-and-drain")
-
-    def test_decide_helper_close_action_rejects_non_cancel_interrupt_sequence(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            interrupt_sent=True,
-            close_reason=None,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "invalid")
-        self.assertIn(NON_CANCEL_STATUS_PING_MODE, decision.rationale)
-        self.assertIn(SYNTHETIC_INTERRUPT_REASON, decision.rationale)
-
-    def test_decide_helper_close_action_rejects_blocked_and_hard_deadline_on_running_helper(self) -> None:
-        # blocked reason should not trigger interrupt on running helper
-        blocked_snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            close_reason="blocked",
-        )
-        blocked_decision = decide_helper_close_action(blocked_snapshot)
-        self.assertFalse(blocked_decision.close_allowed)
-        self.assertIn(blocked_decision.action, {"observe", "status-ping"})
-
-        # hard-deadline should also not trigger interrupt on running helper
-        hd_snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            close_reason="hard-deadline",
-        )
-        hd_decision = decide_helper_close_action(hd_snapshot)
-        self.assertFalse(hd_decision.close_allowed)
-        self.assertIn(hd_decision.action, {"observe", "status-ping"})
-
-    def test_decide_helper_close_action_allows_close_with_late_checkpoint_after_drain(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="interrupted",
-            observed=True,
-            status_pinged=True,
-            interrupt_sent=True,
-            drain_grace_elapsed=True,
-            close_reason="explicit-cancel",
-            has_checkpoint=True,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertTrue(decision.close_allowed)
-        self.assertEqual(decision.action, "allow-close")
-        self.assertIn("strong close reason", decision.rationale)
-        self.assertTrue(decision.accept_late_result)
-
-    def test_decide_helper_close_action_rejects_interrupted_status_without_terminal_runtime_ack(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="interrupted",
-            observed=True,
-            status_pinged=True,
-            interrupt_sent=True,
-            drain_grace_elapsed=True,
-            close_reason="explicit-cancel",
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "observe")
-
-    def test_decide_helper_close_action_allows_close_with_terminal_runtime_ack_after_drain(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="completed",
-            observed=True,
-            status_pinged=True,
-            drain_grace_elapsed=True,
-            has_terminal_runtime_ack=True,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertTrue(decision.close_allowed)
-        self.assertEqual(decision.action, "allow-close")
-
-    def test_decide_helper_close_action_running_preliminary_does_not_allow_close(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="explorer",
-            blocking_class="advisory",
-            result_contract="preliminary-or-final",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy=ADVISORY_TIMEOUT_POLICY,
-            runtime_status="running",
-            observed=True,
-            status_pinged=True,
-            has_preliminary=True,
-            close_reason=None,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertIn(decision.action, {"background", "status-ping", "observe"})
-
-    def test_decide_helper_close_action_rejects_parent_fallback_before_ack(self) -> None:
-        snapshot = HelperCloseSnapshot(
-            helper_id="verification-worker",
-            blocking_class="semi-blocking",
-            result_contract="final-or-checkpoint",
-            close_protocol="explicit-cancel-or-terminal-close",
-            late_result_policy="merge-if-relevant",
-            timeout_policy="observe-and-status-ping",
-            runtime_status="interrupted",
-            observed=True,
-            status_pinged=True,
-            interrupt_sent=True,
-            close_reason="explicit-cancel",
-            fallback_requested=True,
-        )
-
-        decision = decide_helper_close_action(snapshot)
-
-        self.assertFalse(decision.close_allowed)
-        self.assertEqual(decision.action, "invalid")
-        self.assertIn(FALLBACK_REQUIRES_ACK, decision.rationale)
 
     def test_decide_slice_execution_mode_rejects_broad_prep0_handoff(self) -> None:
         decision = decide_slice_execution_mode(
@@ -804,20 +537,15 @@ class WorkflowContractTests(RepoTestCase):
         normalized_prompt_content = " ".join(prompt_content.split())
 
         self.assertIn("small slices + run-to-boundary", routing_content)
-        self.assertIn("queued-only", routing_content)
         self.assertIn("split/replan before execution", routing_content)
-        self.assertIn("Immediate status check requires explicit cancel path", routing_content)
         self.assertIn("small slices + run-to-boundary", workflows_content)
         self.assertIn("python3 scripts/sync_skills_index.py --check", skill_content)
         self.assertIn("python3 scripts/sync_agents.py --check", skill_content)
         self.assertIn("small slices + run-to-boundary", skill_content)
         self.assertIn("slice implementation -> main focused validation -> commit", skill_content)
-        self.assertIn("queued-only", instructions_content)
         self.assertIn("small slices + run-to-boundary", instructions_content)
         self.assertIn("실질 영향 문서를 다시 확인", normalized_prompt_content)
         self.assertIn("small slices + run-to-boundary", normalized_prompt_content)
-        self.assertIn("queued-only", normalized_prompt_content)
-        self.assertIn("Immediate status check requires explicit cancel path", normalized_prompt_content)
         self.assertIn("slice implementation -> main focused validation -> commit", normalized_prompt_content)
         self.assertIn("split/replan before execution", normalized_prompt_content)
         self.assertIn("python3 scripts/sync_instructions.py", normalized_prompt_content)
