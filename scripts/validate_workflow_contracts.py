@@ -388,8 +388,6 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
 def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
     routing_path = repo_root / "docs" / "policy" / "10-routing.md"
     long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
-    implement_task_path = repo_root / "docs" / "policy" / "22-implement-task.md"
-    helper_protocol_path = repo_root / "docs" / "policy" / "23-helper-protocol.md"
     skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
 
     _expect_substrings(
@@ -407,25 +405,6 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         long_running_path,
         (
             "small slices + run-to-boundary",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        implement_task_path,
-        (
-            "slice implementation(구현 + 필요한 문서/source-of-truth 반영) -> main focused validation -> commit -> STATUS update -> next slice decision",
-            "split/replan before execution",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        helper_protocol_path,
-        (
-            "queued-only",
-            "longer wait -> optional queued status probe -> background or natural completion",
-            "Immediate status check requires explicit cancel path",
         ),
         errors,
     )
@@ -478,7 +457,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     bootstrap_prompt = repo_root / "skills" / "bootstrap-project-rules" / "agents" / "openai.yaml"
     implement_skill = repo_root / "skills" / "implement-task" / "SKILL.md"
     implement_prompt = repo_root / "skills" / "implement-task" / "agents" / "openai.yaml"
-    design_task_path = repo_root / "docs" / "policy" / "21-design-task.md"
 
     for required_path in (
         figma_less_skill,
@@ -657,18 +635,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "`target URL 또는 Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
-        ),
-        errors,
-    )
-    _expect_substrings(
-        design_task_path,
-        (
-            "reference-pack",
-            "figma-less-ui-design",
-            "UI Planning Packet",
-            "UX_BEHAVIOR_ACCESSIBILITY.md",
-            "reuse + delta",
-            "ux-journey-critic",
         ),
         errors,
     )

@@ -24,7 +24,5 @@
 
 - 사용자에게는 `design-task`, `implement-task`만 노출한다.
 - 여러 active task 폴더 공존은 정상 경로다.
-- 상세 워크플로우는 아래 문서를 참조한다.
-  - `21-design-task.md`: design-task 워크플로우와 delivery strategy
-  - `22-implement-task.md`: implement-task 실행, 검증, sync 규칙
-  - `23-helper-protocol.md`: helper agent close/timeout 계약
+- `design-task`, `implement-task` 스킬의 상세 워크플로우는 각 스킬의 SKILL.md와 references에서 관리한다.
+- helper agent close/timeout 계약은 `workflow.toml [helper_close]`와 각 `agent.toml [orchestration]`에서 관리한다.

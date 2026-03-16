@@ -9,9 +9,6 @@
 @docs/policy/10-routing.md
 @docs/policy/15-structure-first.md
 @docs/policy/20-long-running.md
-@docs/policy/21-design-task.md
-@docs/policy/22-implement-task.md
-@docs/policy/23-helper-protocol.md
 @docs/policy/30-reviews.md
 @docs/policy/40-sources.md
 @docs/policy/50-style.md

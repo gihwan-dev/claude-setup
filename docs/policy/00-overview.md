@@ -32,6 +32,4 @@
 | 프롬프트 최적화 | main-thread | 관련 skill/레퍼런스만 사용 |
 | 검증/결과 분석 | verifier | verification-worker |
 
-- `design-task`는 non-trivial long-running 작업에서 task bundle(`task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`)을 설계하고 `delivery_strategy`를 확정한다.
-- UI 영향 task는 `delivery_strategy=ui-first`를 기본값으로 사용하고 `UI -> local state/mock -> real API/integration` 순서로 slice를 만든다.
-- `implement-task`는 새 bundle을 우선 읽고, 기존 `PLAN.md`/`STATUS.md` task는 fallback compatibility로만 다룬다.
+- `design-task`와 `implement-task`는 non-trivial long-running 작업의 설계/실행 스킬이다. 상세는 각 스킬에서 관리한다.
