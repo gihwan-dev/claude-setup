@@ -64,6 +64,11 @@
       "path": "skills/design-task/SKILL.md"
     },
     {
+      "name": "figma-codex-pipeline",
+      "description": "Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. Figma 페이지를 의미 단위로 분해하고 컴포넌트별 병렬 코드 생성 후 통합/검증하는 4-phase 파이프라인. 단일 컴포넌트는 figma-to-code, 페이지 단위는 이 스킬을 사용한다.",
+      "path": "skills/figma-codex-pipeline/SKILL.md"
+    },
+    {
       "name": "figma-design-pipeline",
       "description": "End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills. Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. \"/figma-pipeline\", \"피그마 파이프라인\" 등의 요청 시 사용",
       "path": "skills/figma-design-pipeline/SKILL.md"

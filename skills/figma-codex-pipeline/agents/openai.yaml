@@ -1,0 +1,15 @@
+interface:
+  display_name: "Figma Codex Pipeline"
+  short_description: "Page-level Figma-to-Code pipeline: decompose page into semantic units, generate components in parallel via Codex, integrate, and verify"
+  default_prompt: >
+    $figma-codex-pipeline Figma 페이지 URL과 대상 디렉토리를 받아 4-phase 파이프라인을 실행한다.
+    Phase 1: Setup Interview로 프로젝트 규칙을 수집하고, Figma 데이터를 pre-fetch한 뒤 의미 단위로
+    분해하여 components.csv를 생성한다. 승인 게이트에서 사용자 확인을 받는다.
+    Phase 2: spawn_agents_on_csv로 컴포넌트별 병렬 코드 생성. 워커는 pre-fetched 파일과
+    shared_context.json만 읽고 target_path에만 쓴다.
+    Phase 3: 메인 에이전트가 루트 컴포넌트 조립, 토큰 통일, import 정규화, responsive 래퍼를 수행한다.
+    Phase 4: verification.csv로 lint/typecheck/screenshot/viewport/accessibility 병렬 검증.
+    Critical 발견 시 Phase 3 수정 후 재검증 (최대 2회).
+    토큰 매핑은 figma-to-code/references/token-mapping.md, 에러 처리는 error-handling.md를 참조한다.
+policy:
+  allow_implicit_invocation: true
