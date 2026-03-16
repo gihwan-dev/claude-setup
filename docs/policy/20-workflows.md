@@ -38,8 +38,3 @@
 3. 구현 (`small slices + run-to-boundary`)
 4. 리뷰 에이전트
 5. 결과 통합
-
-### Long-running (design-task → implement-task)
-
-- non-trivial 작업의 설계/실행 스킬. 상세는 각 스킬에서 관리한다.
-- `delivery_strategy=ui-first`면 `UI -> local state/mock -> real API/integration` slice 순서를 유지한다.

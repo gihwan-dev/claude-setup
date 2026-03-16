@@ -19,6 +19,7 @@ from workflow_contract import (
     detect_task_document_mode,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     decide_slice_execution_mode,
+    derive_csv_fanout_docs,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
     PLAN_SECTION_ORDER,
@@ -30,8 +31,11 @@ from workflow_contract import (
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
     TASK_BUNDLE_CORE_DOCS,
+    TASK_BUNDLE_CSV_FANOUT_DOCS,
+    TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+    TASK_BUNDLE_EXECUTION_TOPOLOGIES,
     TASK_BUNDLE_IMPACT_FLAGS,
     TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
     TASK_BUNDLE_TRACEABILITY_IDS,
@@ -621,6 +625,56 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             errors.append(f"raw reference dir must contain placeholder SVGs: {raw_path}")
 
 
+def _validate_csv_fanout_contract(repo_root: Path, errors: list[str]) -> None:
+    design_skill = repo_root / "skills" / "design-task" / "SKILL.md"
+    implement_skill = repo_root / "skills" / "implement-task" / "SKILL.md"
+    design_reference = repo_root / "skills" / "design-task" / "references" / "task-bundle-rules.md"
+    continuity_reference = repo_root / "skills" / "design-task" / "references" / "plan-continuity-rules.md"
+
+    _expect_substrings(
+        design_skill,
+        (
+            "execution_topology",
+            "csv-fanout",
+            "GLOBAL_CONTEXT.md",
+            "MERGE_POLICY.md",
+            "orchestration",
+            "integrator",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        implement_skill,
+        (
+            "execution_topology",
+            "csv-fanout",
+            "keep-local fallback",
+            "spawn_agents_on_csv",
+            "GLOBAL_CONTEXT.md",
+            "MERGE_POLICY.md",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        design_reference,
+        (
+            "Execution Topologies",
+            "GLOBAL_CONTEXT.md",
+            "WORK_ITEMS.csv",
+            "MERGE_POLICY.md",
+        ),
+        errors,
+    )
+    _expect_substrings(
+        continuity_reference,
+        (
+            "Row-level Continuity",
+            "execution_topology",
+        ),
+        errors,
+    )
+
+
 def _validate_generated_projections(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     entries = _read_agent_entries(registry_root)
@@ -716,6 +770,8 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
         errors.append("task bundle impact flags drifted")
     if set(TASK_BUNDLE_DELIVERY_STRATEGIES) != {"standard", "ui-first"}:
         errors.append("task bundle delivery strategies drifted")
+    if set(TASK_BUNDLE_EXECUTION_TOPOLOGIES) != {"keep-local", "csv-fanout", "hybrid"}:
+        errors.append("task bundle execution topologies drifted")
     if "feature" not in TASK_BUNDLE_UI_FIRST_WORK_TYPES or "bugfix" not in TASK_BUNDLE_UI_FIRST_WORK_TYPES:
         errors.append("task bundle ui-first work types drifted")
     if set(TASK_BUNDLE_UI_FIRST_FLAGS) != {"ui_surface_changed", "workflow_changed"}:
@@ -850,6 +906,7 @@ def main() -> int:
     _validate_ui_planning_packet_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(repo_root, errors)
+    _validate_csv_fanout_contract(repo_root, errors)
     _validate_documentation_only_builtins(repo_root, errors)
     _validate_task_documents(repo_root, errors)
 

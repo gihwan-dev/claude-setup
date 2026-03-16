@@ -24,7 +24,14 @@ interface:
     3개 이하`, 순 diff `150 LOC 내외`다. 여러 active task 폴더가 공존하는 것은 정상 경로다. path
     미지정이면 먼저 active 후보를 만들고, 후보가 정확히 1개일 때만 자동 선택해. 후보가 2개
     이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 마. 새 task가 없고 legacy `PLAN.md`만
-    있을 때만 fallback을 허용해. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
+    있을 때만 fallback을 허용해.
+    `task.yaml.execution_topology`가 `csv-fanout`이면 `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`,
+    `orchestration` block을 함께 읽고, 현재 slice 대응 `work-items/*.csv`를 확인해.
+    Codex 환경(`spawn_agents_on_csv` 가용)이면 CSV 행별 row worker를 병렬 실행하고,
+    Codex 없으면 `keep-local` fallback으로 순차 실행해. row worker는 `target_path`에만
+    파일을 생성/수정하고 shared file 수정을 금지해. row worker 완료 후 output CSV를 수집하고
+    실패 행은 1회 재시도, 50% 이상 실패면 중단해. integrator 역할로 `MERGE_POLICY.md`에 따라
+    shared file(barrel exports, route registration 등)을 통합해. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
     사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함해. 메인 스레드가 종료 전 실질 영향 문서를 다시 확인한다고 가정하고, 필요한
     README/docs/task bundle/openapi/schema/runbook diff는 구현 단계에서 validation 전에 같이 반영해.
     `docs/policy`를 건드렸다면 `python3 scripts/sync_instructions.py`와

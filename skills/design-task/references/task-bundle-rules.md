@@ -34,6 +34,11 @@
 - `validation_gate`
 - `current_phase`
 
+optional 키:
+
+- `execution_topology` — `keep-local`(기본), `csv-fanout`, `hybrid` 중 하나.
+- `orchestration` — `csv-fanout` 또는 `hybrid`일 때 필수. `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, `merge_policy`를 포함하는 mapping.
+
 `required_docs`는 `task.yaml` 자신을 제외한 실제 bundle 문서/디렉터리 집합을 적는다.
 `source_of_truth`는 실제 파일 경로만 가리킨다.
 `success_criteria`와 `major_boundaries`는 continuity gate 비교에 직접 사용한다.
@@ -63,6 +68,23 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 - `ui-first`면 `reference-pack`을 먼저 실행해 `DESIGN_REFERENCES/`를 채우고, `figma-less-ui-design`이 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 작성한다.
 - 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 style invention이 아니라 `reuse + delta`를 기록한다.
 - `ui-first`면 UX 방향, behavior/a11y/live 계약, state/fixture 전략이 정리되기 전에는 integration slice를 만들지 않는다.
+
+## Execution Topologies
+
+- `keep-local` — 기본값. 순차 slice 실행. 기존 동작과 동일.
+- `csv-fanout` — slice 내부의 반복 단위를 CSV 행으로 분해하고 병렬 실행. Codex `spawn_agents_on_csv` 기반.
+- `hybrid` — 탐색/분해는 병렬, 코드 통합은 중앙 집중.
+
+csv-fanout 판정 5조건:
+
+1. repeat unit이 명확하다 (e.g., API endpoint, component, page).
+2. 각 unit에 독립 acceptance criteria가 있다.
+3. unit 간 의존이 sparse하다 (shared file이 제한적).
+4. output schema가 고정이다 (row 결과 형식이 일관적).
+5. merge boundary가 명확하다 (integrator가 shared file만 수정).
+
+`delivery_strategy`와 `execution_topology`는 직교 축이다. 모든 조합이 가능하다.
+Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 `keep-local` fallback으로 순차 실행된다.
 
 ## UI Planning Packet (`UX_SPEC.md`)
 
@@ -107,6 +129,35 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 - `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Interaction Model`, `Accessibility Contract`, `Microcopy + Information Expression Rules`는 `SLICE-1` 진입 근거다.
 - `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Task-based Approval Criteria`는 `SLICE-2` 진입 근거다.
 - `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`를 기록한다.
+
+## GLOBAL_CONTEXT.md
+
+`execution_topology`가 `csv-fanout` 또는 `hybrid`일 때 생성한다.
+
+- Token budget — 각 row worker가 받는 최대 context 토큰 수.
+- Layout/Import rules — 생성 파일의 디렉터리 규칙과 import 경로 규칙.
+- Shared-file touch rules — row worker가 수정 불가인 파일 목록과 읽기 전용 규칙.
+
+## WORK_ITEMS.csv
+
+`execution_topology`가 `csv-fanout`일 때 `work-items/` 디렉터리에 최소 1개 생성한다.
+
+필수 컬럼:
+
+- `row_id` — 행 고유 식별자 (e.g., ROW-001).
+- `target_path` — row worker가 생성/수정하는 파일 경로.
+- `acceptance_criteria` — 해당 행의 완료 조건.
+
+추가 컬럼은 task 성격에 따라 자유롭게 추가할 수 있다.
+
+## MERGE_POLICY.md
+
+`execution_topology`가 `csv-fanout` 또는 `hybrid`일 때 생성한다.
+
+- Integrator-only shared files — integrator만 수정 가능한 파일 목록 (e.g., barrel exports, route registration).
+- Row worker 범위 제한 — 각 row worker는 `target_path`에만 파일 생성/수정.
+- Merge 전략 — integrator가 row output을 수집하고 shared file을 단일 패스로 갱신하는 방법.
+- 충돌 처리 — 두 row가 같은 shared file section에 영향을 줄 때의 해결 규칙.
 
 ## Impact Flags
 

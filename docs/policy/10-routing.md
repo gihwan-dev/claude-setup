@@ -19,6 +19,7 @@
 - non-trivial 작업은 `design-task`/`implement-task` 경로를 사용한다.
 - `small slices + run-to-boundary`를 기본으로 사용한다.
 - slice budget(repo-tracked files 3개 이하, 순 diff 150 LOC 내외)을 넘는 handoff는 `split/replan before execution`으로 되돌린다.
+
 ## Exit documentation review
 
 - 모든 lane은 종료 전에 메인 스레드가 실질 영향이 있는 문서만 다시 탐색하고 검토한다.

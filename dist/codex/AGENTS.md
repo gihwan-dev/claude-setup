@@ -56,6 +56,14 @@
 - non-trivial 작업은 `design-task`/`implement-task` 경로를 사용한다.
 - `small slices + run-to-boundary`를 기본으로 사용한다.
 - slice budget(repo-tracked files 3개 이하, 순 diff 150 LOC 내외)을 넘는 handoff는 `split/replan before execution`으로 되돌린다.
+
+## CSV fan-out 경로
+
+- Codex `spawn_agents_on_csv` 기반 병렬 실행. slice 내부 반복 단위를 CSV 행으로 분해한다.
+- Claude Code에서는 `keep-local` fallback으로 순차 실행한다.
+- row worker는 `target_path`에만 파일을 생성/수정하고 shared file 수정을 금지한다.
+- row 단위 slice budget을 적용한다.
+
 ## Exit documentation review
 
 - 모든 lane은 종료 전에 메인 스레드가 실질 영향이 있는 문서만 다시 탐색하고 검토한다.
@@ -105,3 +113,9 @@
 
 - non-trivial 작업의 설계/실행 스킬. 상세는 각 스킬에서 관리한다.
 - `delivery_strategy=ui-first`면 `UI -> local state/mock -> real API/integration` slice 순서를 유지한다.
+
+### CSV fan-out
+
+- `csv-fanout` 또는 `hybrid` execution topology. slice 내부 반복 단위를 CSV 행으로 병렬 실행한다.
+- row worker는 `target_path`에만 파일 생성/수정. shared file은 integrator만 수정한다.
+- Claude Code에서는 `keep-local` fallback으로 순차 실행한다.

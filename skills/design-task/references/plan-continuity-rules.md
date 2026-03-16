@@ -15,6 +15,7 @@
 | Required docs | bootstrap supplement를 normalize한 뒤 동일한 bundle 구성이 필요함 | normalize 후에도 다르면 새 task |
 | Major boundaries | 동일한 `task.yaml.major_boundaries` | 다르면 새 task |
 | Delivery strategy | 동일한 `task.yaml.delivery_strategy` | 다르면 새 task |
+| Execution topology | 동일한 `task.yaml.execution_topology` | 다르면 새 task |
 | Candidate count | 정확히 1개 | 2개 이상이면 ambiguous case |
 
 ## Bootstrap Supplement Normalization
@@ -38,6 +39,16 @@ continuity 비교에서는 post-design bootstrap이 추가한 아래 항목을 t
 7. `Task continuity`에는 필요할 때 `bootstrap supplement preserved`를 함께 기록한다.
 8. 하나라도 다르면 `create-new`를 선택한다.
 9. 후보가 2개 이상이면 자동 선택하지 않고 `Need user decision`에 남긴다.
+
+## Row-level Continuity (csv-fanout)
+
+csv-fanout task를 갱신할 때 기존 work-items CSV의 행 단위 continuity를 유지한다.
+
+- 기존 `row_id`가 변경 없이 유효하면 → skip (이미 완료된 행은 재실행하지 않는다).
+- 기존 `row_id`의 acceptance criteria나 target_path가 변경되었으면 → re-execute.
+- 새 `row_id`가 추가되었으면 → append (기존 결과에 추가 실행).
+- 기존 `row_id`가 삭제되었으면 → superseded (결과 보존, 재실행 안 함).
+- `execution_topology` 자체가 바뀌면 (e.g., keep-local → csv-fanout) → 새 task 생성이 기본이다.
 
 ## Examples
 

@@ -9,6 +9,7 @@ from workflow_contract import (
     AGENT_CONTRACTS_BY_ID,
     AdvisorySliceContext,
     decide_slice_execution_mode,
+    derive_csv_fanout_docs,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
@@ -21,8 +22,11 @@ from workflow_contract import (
     SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    TASK_BUNDLE_CSV_FANOUT_DOCS,
+    TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
+    TASK_BUNDLE_EXECUTION_TOPOLOGIES,
     TASK_BUNDLE_IMPACT_FLAGS,
     TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS,
     TASK_BUNDLE_TRACEABILITY_IDS,
@@ -682,3 +686,83 @@ class WorkflowContractTests(RepoTestCase):
         self.assertReferenceManifestFixture(
             REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task"
         )
+
+    def test_task_bundle_execution_topology_constants(self) -> None:
+        self.assertEqual(
+            set(TASK_BUNDLE_EXECUTION_TOPOLOGIES),
+            {"keep-local", "csv-fanout", "hybrid"},
+        )
+        self.assertEqual(
+            set(TASK_BUNDLE_CSV_FANOUT_DOCS),
+            {"GLOBAL_CONTEXT.md", "MERGE_POLICY.md"},
+        )
+        self.assertIn("row_unit", TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS)
+        self.assertIn("csv", TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS)
+        self.assertIn("merge_policy", TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS)
+
+    def test_fixture_csv_fanout_task_bundle_contract(self) -> None:
+        fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-csv-fanout-task"
+        errors = validate_task_bundle_root(fixture_root)
+        self.assertEqual([], errors, msg="\n".join(errors))
+
+    def test_csv_fanout_fixture_has_orchestration_block(self) -> None:
+        fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-csv-fanout-task"
+        manifest = load_task_bundle_manifest(fixture_root / "task.yaml")
+        self.assertEqual("csv-fanout", manifest.execution_topology)
+        self.assertIsNotNone(manifest.orchestration)
+        self.assertIn("row_unit", manifest.orchestration)
+        self.assertIn("csv", manifest.orchestration)
+        self.assertIn("merge_policy", manifest.orchestration)
+        self.assertIn("GLOBAL_CONTEXT.md", manifest.required_docs)
+        self.assertIn("MERGE_POLICY.md", manifest.required_docs)
+
+    def test_design_task_documents_csv_fanout_contract(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        reference_content = (
+            REPO_ROOT / "skills" / "design-task" / "references" / "task-bundle-rules.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("execution_topology", skill_content)
+        self.assertIn("csv-fanout", skill_content)
+        self.assertIn("GLOBAL_CONTEXT.md", skill_content)
+        self.assertIn("MERGE_POLICY.md", skill_content)
+        self.assertIn("orchestration", skill_content)
+        self.assertIn("integrator", skill_content)
+        self.assertIn("Execution Topologies", reference_content)
+        self.assertIn("GLOBAL_CONTEXT.md", reference_content)
+        self.assertIn("WORK_ITEMS.csv", reference_content)
+        self.assertIn("MERGE_POLICY.md", reference_content)
+
+    def test_implement_task_documents_csv_fanout_contract(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+
+        self.assertIn("execution_topology", skill_content)
+        self.assertIn("csv-fanout", skill_content)
+        self.assertIn("keep-local fallback", skill_content)
+        self.assertIn("spawn_agents_on_csv", skill_content)
+        self.assertIn("GLOBAL_CONTEXT.md", skill_content)
+        self.assertIn("MERGE_POLICY.md", skill_content)
+
+    def test_csv_fanout_continuity_reference_documented(self) -> None:
+        reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"
+        reference_content = reference_path.read_text(encoding="utf-8")
+
+        self.assertIn("Row-level Continuity", reference_content)
+        self.assertIn("execution_topology", reference_content)
+        self.assertIn("skip", reference_content)
+        self.assertIn("re-execute", reference_content)
+        self.assertIn("append", reference_content)
+        self.assertIn("superseded", reference_content)
+
+    def test_derive_csv_fanout_docs_function(self) -> None:
+        self.assertEqual(TASK_BUNDLE_CSV_FANOUT_DOCS, derive_csv_fanout_docs("csv-fanout"))
+        self.assertEqual(tuple(TASK_BUNDLE_CSV_FANOUT_DOCS), derive_csv_fanout_docs("hybrid"))
+        self.assertEqual(tuple(), derive_csv_fanout_docs("keep-local"))
+
+    def test_existing_fixture_without_execution_topology_still_passes(self) -> None:
+        fixture_root = REPO_ROOT / "tests" / "fixtures" / "tasks" / "sample-bundle-task"
+        manifest = load_task_bundle_manifest(fixture_root / "task.yaml")
+        self.assertEqual("keep-local", manifest.execution_topology)
+        self.assertIsNone(manifest.orchestration)
+        errors = validate_task_bundle_root(fixture_root)
+        self.assertEqual([], errors, msg="\n".join(errors))

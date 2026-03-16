@@ -49,6 +49,48 @@
   - `skills`: `python3 scripts/sync_skills_index.py` + `python3 scripts/sync_skills_index.py --check`
   - `agent-registry`: `python3 scripts/sync_agents.py` + `python3 scripts/sync_agents.py --check`
 
+## CSV Fan-out Execution Rules
+
+### 환경 감지
+
+- Codex 환경: `spawn_agents_on_csv` 가용 여부로 판단한다.
+- Claude Code 환경: `keep-local` fallback으로 순차 실행한다.
+
+### Row Worker 제약
+
+- 각 row worker는 CSV의 `target_path`에만 파일을 생성/수정한다.
+- `GLOBAL_CONTEXT.md`의 layout/import rules를 따른다.
+- row worker는 다른 row의 output을 참조하지 않는다 (no cross-row reference).
+- shared file(barrel exports, route registration, package.json)은 수정 금지다.
+
+### Integrator 역할
+
+- 모든 row worker 완료 후 integrator가 shared file을 통합한다.
+- `MERGE_POLICY.md`의 integrator-only 파일 목록에 따라 barrel export, route 등록 등을 갱신한다.
+- row output이 같은 shared file section에 영향을 주면 `row_id` 순서로 적용한다.
+
+### 실패 복구
+
+- 실패한 row는 1회 자동 재시도한다.
+- 재시도 후에도 실패하면 해당 row를 `failed`로 기록하고 나머지를 계속 진행한다.
+- 전체 행의 50% 이상이 실패하면 slice 실행을 중단한다.
+
+### Row-level Continuity
+
+- 이전 실행에서 성공한 `row_id` → skip.
+- acceptance criteria나 target_path가 변경된 `row_id` → re-execute.
+- 새로 추가된 `row_id` → append.
+- 삭제된 `row_id` → superseded (결과 보존).
+
+### STATUS.md 확장 (csv-fanout)
+
+csv-fanout slice의 `STATUS.md`에는 아래 정보를 추가로 기록한다.
+
+- 총 행 수
+- 성공 / 실패 / skip / superseded 행 수
+- 재시도 횟수
+- integrator 결과 (shared file merge 성공/실패)
+
 ## STATUS Contract
 
 ### Template

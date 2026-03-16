@@ -187,6 +187,15 @@ TASK_BUNDLE_IMPACT_FLAGS = _require_str_list(
 TASK_BUNDLE_DELIVERY_STRATEGIES = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_delivery_strategies", path=WORKFLOW_POLICY_PATH
 )
+TASK_BUNDLE_EXECUTION_TOPOLOGIES = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_execution_topologies", path=WORKFLOW_POLICY_PATH
+)
+TASK_BUNDLE_CSV_FANOUT_DOCS = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_csv_fanout_docs", path=WORKFLOW_POLICY_PATH
+)
+TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS = _require_str_list(
+    TASK_DOCUMENTS_POLICY, "bundle_csv_fanout_orchestration_required_keys", path=WORKFLOW_POLICY_PATH
+)
 TASK_BUNDLE_UI_FIRST_WORK_TYPES = _require_str_list(
     TASK_DOCUMENTS_POLICY, "bundle_ui_first_work_types", path=WORKFLOW_POLICY_PATH
 )
@@ -323,6 +332,8 @@ class TaskBundleManifest:
     delivery_strategy: str
     validation_gate: str
     current_phase: str
+    execution_topology: str = "keep-local"
+    orchestration: dict[str, object] | None = None
 
 
 def is_broad_execution_handoff(plan: SliceExecutionPlan) -> bool:
@@ -539,6 +550,13 @@ def load_task_bundle_manifest(path: Path) -> TaskBundleManifest:
     validation_gate = parsed["validation_gate"]
     current_phase = parsed["current_phase"]
 
+    execution_topology = parsed.get("execution_topology", "keep-local")
+    if not isinstance(execution_topology, str) or not execution_topology.strip():
+        execution_topology = "keep-local"
+    orchestration = parsed.get("orchestration")
+    if orchestration is not None and not isinstance(orchestration, dict):
+        raise ValueError(f"{path}: orchestration must be a mapping")
+
     if not all(
         isinstance(value, str) and value.strip()
         for value in (task, goal, work_type, delivery_strategy, validation_gate, current_phase)
@@ -582,7 +600,17 @@ def load_task_bundle_manifest(path: Path) -> TaskBundleManifest:
         delivery_strategy=delivery_strategy,
         validation_gate=validation_gate,
         current_phase=current_phase,
+        execution_topology=execution_topology,
+        orchestration=orchestration if isinstance(orchestration, dict) else None,
     )
+
+
+def derive_csv_fanout_docs(execution_topology: str) -> tuple[str, ...]:
+    if execution_topology == "csv-fanout":
+        return TASK_BUNDLE_CSV_FANOUT_DOCS
+    if execution_topology == "hybrid":
+        return tuple(TASK_BUNDLE_CSV_FANOUT_DOCS)
+    return tuple()
 
 
 def decide_task_bundle_delivery_strategy(work_type: str, impact_flags: tuple[str, ...]) -> str:
@@ -679,6 +707,28 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
         errors.append(f"{task_root}: unsupported impact_flags: {unknown_flags}")
     if manifest.delivery_strategy not in TASK_BUNDLE_DELIVERY_STRATEGIES:
         errors.append(f"{task_root}: unsupported delivery_strategy: {manifest.delivery_strategy}")
+    if manifest.execution_topology not in TASK_BUNDLE_EXECUTION_TOPOLOGIES:
+        errors.append(f"{task_root}: unsupported execution_topology: {manifest.execution_topology}")
+    if manifest.execution_topology in ("csv-fanout", "hybrid"):
+        if manifest.orchestration is None:
+            errors.append(f"{task_root}: csv-fanout/hybrid requires orchestration block")
+        elif manifest.execution_topology == "csv-fanout":
+            missing_orch_keys = sorted(
+                key for key in TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS
+                if key not in manifest.orchestration
+            )
+            if missing_orch_keys:
+                errors.append(f"{task_root}: orchestration missing required keys: {missing_orch_keys}")
+        fanout_docs = derive_csv_fanout_docs(manifest.execution_topology)
+        missing_fanout_docs = sorted(doc for doc in fanout_docs if doc not in manifest.required_docs)
+        if missing_fanout_docs:
+            errors.append(f"{task_root}: required_docs missing csv-fanout docs: {missing_fanout_docs}")
+    if manifest.execution_topology == "csv-fanout":
+        work_items_dir = task_root / "work-items"
+        if not work_items_dir.is_dir():
+            errors.append(f"{task_root}: csv-fanout requires work-items/ directory")
+        elif not list(work_items_dir.glob("*.csv")):
+            errors.append(f"{task_root}: work-items/ must contain at least one .csv file")
     if manifest.validation_gate not in TASK_BUNDLE_VALIDATION_GATES:
         errors.append(f"{task_root}: unsupported validation_gate: {manifest.validation_gate}")
     if manifest.ids != TASK_BUNDLE_TRACEABILITY_IDS:
@@ -697,6 +747,7 @@ def validate_task_bundle_root(task_root: Path) -> list[str]:
     errors.extend(_validate_required_doc_paths(task_root, manifest.required_docs))
 
     expected_docs = set(derive_task_bundle_required_docs(manifest.work_type, manifest.impact_flags))
+    expected_docs.update(derive_csv_fanout_docs(manifest.execution_topology))
     missing_expected_docs = sorted(expected_docs - set(manifest.required_docs))
     if missing_expected_docs:
         errors.append(f"{task_root}: required_docs missing derived docs: {missing_expected_docs}")
