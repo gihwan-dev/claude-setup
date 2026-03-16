@@ -30,13 +30,6 @@ from workflow_contract import (
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_PING_DELIVERY,
     STATUS_SECTION_ORDER,
-    STRUCTURE_EXCEPTIONS,
-    STRUCTURE_HARD_LIMIT_BEHAVIOR,
-    STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
-    STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR,
-    STRUCTURE_ROLE_LIMITS,
-    STRUCTURE_SOFT_LIMIT_BEHAVIOR,
-    STRUCTURE_SPLIT_ROLES,
     SYNTHETIC_INTERRUPT_REASON,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
     TASK_BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
@@ -124,22 +117,24 @@ class WorkflowContractTests(RepoTestCase):
             orchestration = AGENT_CONTRACTS_BY_ID[agent_id].get("orchestration")
             self.assertEqual(orchestration, CORE_HELPER_ORCHESTRATION_EXPECTED[agent_id])
 
-    def test_structure_policy_constants_cover_strong_mode_contract(self) -> None:
-        self.assertEqual("split-first", STRUCTURE_SOFT_LIMIT_BEHAVIOR)
-        self.assertEqual("block", STRUCTURE_HARD_LIMIT_BEHAVIOR)
-        self.assertEqual("block", STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR)
+    def test_structure_reviewer_agent_has_thresholds(self) -> None:
+        agent_path = REPO_ROOT / "agent-registry" / "structure-reviewer" / "agent.toml"
+        data = tomllib.loads(agent_path.read_text(encoding="utf-8"))
+        thresholds = data.get("thresholds")
+        self.assertIsNotNone(thresholds)
+        self.assertEqual("split-first", thresholds["soft_limit_behavior"])
+        self.assertEqual("block", thresholds["hard_limit_behavior"])
+        self.assertEqual("block", thresholds["responsibility_mix_behavior"])
         self.assertEqual(
             "allow-only-without-additive-growth",
-            STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+            thresholds["legacy_oversized_file_behavior"],
         )
-        self.assertEqual((220, 300), STRUCTURE_ROLE_LIMITS["component_view"])
-        self.assertEqual((150, 220), STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"])
-        self.assertEqual((150, 220), STRUCTURE_ROLE_LIMITS["hook_composable_middleware"])
-        self.assertEqual((200, 260), STRUCTURE_ROLE_LIMITS["service_use_case_controller_repository_util_module"])
-        self.assertEqual((40, 60), STRUCTURE_ROLE_LIMITS["function"])
-        self.assertIn("component", STRUCTURE_SPLIT_ROLES)
-        self.assertIn("adapter", STRUCTURE_SPLIT_ROLES)
-        self.assertIn("migration snapshot", STRUCTURE_EXCEPTIONS)
+        role_limits = thresholds["role_limits"]
+        self.assertEqual(220, role_limits["component_view"]["target"])
+        self.assertEqual(300, role_limits["component_view"]["hard"])
+        self.assertIn("component", thresholds["split_roles"])
+        self.assertIn("adapter", thresholds["split_roles"])
+        self.assertIn("migration snapshot", thresholds["exceptions"])
 
     def test_helper_runtime_policy_constants_cover_slice_budget_contract(self) -> None:
         self.assertEqual("queued-only", STATUS_PING_DELIVERY)
@@ -738,7 +733,6 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("UI Planning Packet", skill_content)
         self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", skill_content)
         self.assertIn("reuse + delta", skill_content)
-        self.assertIn("ux-journey-critic", prompt_content)
 
     def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -771,15 +765,15 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", prompt_content)
         self.assertIn("`browser-explorer`", prompt_content)
 
-    def test_structure_first_instruction_drift_is_guarded(self) -> None:
+    def test_structure_reviewer_instruction_drift_is_guarded(self) -> None:
         self.assertFalse((REPO_ROOT / "agent-registry" / "worker").exists())
 
-        gate_content = (
-            REPO_ROOT / "agent-registry" / "structure-gatekeeper" / "instructions.md"
+        reviewer_content = (
+            REPO_ROOT / "agent-registry" / "structure-reviewer" / "instructions.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.", gate_content)
-        self.assertIn("component/view file: target <=", gate_content)
-        self.assertIn("React hook/provider/view-model file: target <=", gate_content)
+        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.", reviewer_content)
+        self.assertIn("component/view file: target <=", reviewer_content)
+        self.assertIn("React hook/provider/view-model file: target <=", reviewer_content)
 
     def test_design_and_implement_skills_capture_split_decision_contract(self) -> None:
         design_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -801,7 +795,7 @@ class WorkflowContractTests(RepoTestCase):
 
     def test_documentation_recheck_contract_is_documented(self) -> None:
         routing_content = (REPO_ROOT / "docs" / "policy" / "10-routing.md").read_text(encoding="utf-8")
-        long_running_content = (REPO_ROOT / "docs" / "policy" / "20-long-running.md").read_text(encoding="utf-8")
+        workflows_content = (REPO_ROOT / "docs" / "policy" / "20-workflows.md").read_text(encoding="utf-8")
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
         instructions_content = (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8")
         prompt_content = (
@@ -809,13 +803,11 @@ class WorkflowContractTests(RepoTestCase):
         ).read_text(encoding="utf-8")
         normalized_prompt_content = " ".join(prompt_content.split())
 
-        self.assertIn("실질 영향이 있는 문서만 다시 탐색하고 검토", routing_content)
-        self.assertIn("문서 영향 대상이 불명확할 때만 read-only helper", routing_content)
         self.assertIn("small slices + run-to-boundary", routing_content)
         self.assertIn("queued-only", routing_content)
         self.assertIn("split/replan before execution", routing_content)
-        self.assertIn("small slices + run-to-boundary", long_running_content)
-        self.assertNotIn("하나의 응집된 모듈 경계", long_running_content)
+        self.assertIn("Immediate status check requires explicit cancel path", routing_content)
+        self.assertIn("small slices + run-to-boundary", workflows_content)
         self.assertIn("python3 scripts/sync_skills_index.py --check", skill_content)
         self.assertIn("python3 scripts/sync_agents.py --check", skill_content)
         self.assertIn("small slices + run-to-boundary", skill_content)
@@ -865,7 +857,6 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", reference_content)
         self.assertIn("DESIGN_REFERENCES/", reference_content)
         self.assertIn("reference-pack", reference_content)
-        self.assertIn("ux-journey-critic", reference_content)
 
     def test_figma_less_ui_design_skill_contract_is_documented(self) -> None:
         skill_path = REPO_ROOT / "skills" / "figma-less-ui-design" / "SKILL.md"

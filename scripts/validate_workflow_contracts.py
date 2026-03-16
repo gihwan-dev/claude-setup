@@ -39,13 +39,6 @@ from workflow_contract import (
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_PING_DELIVERY,
     STATUS_SECTION_ORDER,
-    STRUCTURE_EXCEPTIONS,
-    STRUCTURE_HARD_LIMIT_BEHAVIOR,
-    STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR,
-    STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR,
-    STRUCTURE_ROLE_LIMITS,
-    STRUCTURE_SOFT_LIMIT_BEHAVIOR,
-    STRUCTURE_SPLIT_ROLES,
     SYNTHETIC_INTERRUPT_REASON,
     TASK_BUNDLE_CORE_DOCS,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
@@ -190,96 +183,18 @@ def _expect_heading_sequence(path: Path, headings: tuple[str, ...], errors: list
         errors.append(f"{path}: UI Planning Packet heading order drifted")
 
 
-def _validate_structure_policy(repo_root: Path, errors: list[str]) -> None:
-    workflow_path = repo_root / "policy" / "workflow.toml"
-    payload = _load_toml(workflow_path)
-    structure_policy = payload.get("structure_policy")
-    if not isinstance(structure_policy, dict):
-        errors.append(f"missing [structure_policy]: {workflow_path}")
-        return
-
-    role_limits = structure_policy.get("role_limits")
-    if not isinstance(role_limits, dict):
-        errors.append(f"missing [structure_policy.role_limits]: {workflow_path}")
-    else:
-        expected_limits = {
-            "component_view": (220, 300),
-            "react_hook_provider_view_model": (150, 220),
-            "hook_composable_middleware": (150, 220),
-            "service_use_case_controller_repository_util_module": (200, 260),
-            "function": (40, 60),
-        }
-        if set(role_limits) != set(expected_limits):
-            errors.append("structure_policy.role_limits keys drifted")
-        for key, expected in expected_limits.items():
-            raw_value = role_limits.get(key)
-            if not isinstance(raw_value, dict):
-                errors.append(f"structure_policy.role_limits.{key} must be a table")
-                continue
-            target = raw_value.get("target")
-            hard = raw_value.get("hard")
-            if (target, hard) != expected:
-                errors.append(
-                    f"structure_policy.role_limits.{key} drifted: expected={expected!r} actual={(target, hard)!r}"
-                )
-
-    if STRUCTURE_SOFT_LIMIT_BEHAVIOR != "split-first":
-        errors.append("soft_limit_behavior must remain split-first")
-    if STRUCTURE_HARD_LIMIT_BEHAVIOR != "block":
-        errors.append("hard_limit_behavior must remain block")
-    if STRUCTURE_RESPONSIBILITY_MIX_BEHAVIOR != "block":
-        errors.append("responsibility_mix_behavior must remain block")
-    if STRUCTURE_LEGACY_OVERSIZED_FILE_BEHAVIOR != "allow-only-without-additive-growth":
-        errors.append("legacy_oversized_file_behavior drifted")
-
-    expected_exceptions = (
-        "*.generated.*",
-        "route manifest",
-        "icon registry",
-        "schema declaration files",
-        "migration snapshot",
-        "vendored third-party",
-    )
-    if STRUCTURE_EXCEPTIONS != expected_exceptions:
-        errors.append("structure exceptions drifted")
-
-    expected_split_roles = (
-        "component",
-        "view",
-        "hook",
-        "provider",
-        "view-model",
-        "composable",
-        "middleware",
-        "service",
-        "use-case",
-        "repository",
-        "controller",
-        "util",
-        "adapter",
-    )
-    if STRUCTURE_SPLIT_ROLES != expected_split_roles:
-        errors.append("structure split roles drifted")
-
-
-def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) -> None:
+def _validate_structure_reviewer_instruction_drift(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    gate_path = registry_root / "structure-gatekeeper" / "instructions.md"
-
-    component_target, component_hard = STRUCTURE_ROLE_LIMITS["component_view"]
-    react_hook_target, react_hook_hard = STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"]
-    module_hook_target, module_hook_hard = STRUCTURE_ROLE_LIMITS["hook_composable_middleware"]
-    service_target, service_hard = STRUCTURE_ROLE_LIMITS["service_use_case_controller_repository_util_module"]
-    function_target, function_hard = STRUCTURE_ROLE_LIMITS["function"]
+    reviewer_path = registry_root / "structure-reviewer" / "instructions.md"
 
     _expect_substrings(
-        gate_path,
+        reviewer_path,
         (
-            f"component/view file: target <= {component_target} LOC, hard limit {component_hard}",
-            f"hook/composable/middleware file: target <= {module_hook_target} LOC, hard limit {module_hook_hard}",
-            f"React hook/provider/view-model file: target <= {react_hook_target} LOC, hard limit {react_hook_hard}",
-            f"service/use-case/controller/repository/util/module file: target <= {service_target} LOC, hard limit {service_hard}",
-            f"any function/method: target <= {function_target} LOC, hard limit {function_hard}",
+            "component/view file: target <= 220 LOC, hard limit 300",
+            "hook/composable/middleware file: target <= 150 LOC, hard limit 220",
+            "React hook/provider/view-model file: target <= 150 LOC, hard limit 220",
+            "service/use-case/controller/repository/util/module file: target <= 200 LOC, hard limit 260",
+            "any function/method: target <= 40 LOC, hard limit 60",
             "이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.",
         ),
         errors,
@@ -288,10 +203,9 @@ def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) ->
 
 def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    overview_path = repo_root / "docs" / "policy" / "00-overview.md"
+    core_path = repo_root / "docs" / "policy" / "00-core.md"
     routing_path = repo_root / "docs" / "policy" / "10-routing.md"
-    long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
-    sources_path = repo_root / "docs" / "policy" / "40-sources.md"
+    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     browser_agent_config = registry_root / "browser-explorer" / "agent.toml"
     browser_agent_instructions = registry_root / "browser-explorer" / "instructions.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
@@ -347,47 +261,25 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
     )
 
     _expect_substrings(
-        overview_path,
+        core_path,
         (
-            "브라우저 탐색/재현",
             "browser-explorer",
         ),
         errors,
     )
 
     _expect_substrings(
-        routing_path,
+        workflows_path,
         (
-            "`browser-explorer`",
-            "`explorer`는 레포 탐색용으로 유지한다.",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        long_running_path,
-        (
-            "`browser-explorer`",
-            "`target URL 또는 Electron entry`",
-            "`scenario checklist`",
-            "`evidence checklist`",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        sources_path,
-        (
-            "`browser-explorer`",
-            "`required_helper_agent_ids`",
+            "browser-explorer",
         ),
         errors,
     )
 
 
 def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
+    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     routing_path = repo_root / "docs" / "policy" / "10-routing.md"
-    long_running_path = repo_root / "docs" / "policy" / "20-long-running.md"
     skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
 
     _expect_substrings(
@@ -402,7 +294,7 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
     )
 
     _expect_substrings(
-        long_running_path,
+        workflows_path,
         (
             "small slices + run-to-boundary",
         ),
@@ -544,11 +436,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "UI Planning Packet",
             "UX_BEHAVIOR_ACCESSIBILITY.md",
             "reuse + delta",
-            "ux-journey-critic",
-            "product-planner",
             "web-researcher",
-            "solution-analyst",
-            "structure-planner",
             "architecture-reviewer",
         ),
         errors,
@@ -560,7 +448,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "figma-less-ui-design",
             "UX_BEHAVIOR_ACCESSIBILITY.md",
             "design_references",
-            "ux-journey-critic",
         ),
         errors,
     )
@@ -574,7 +461,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "Interaction Model",
             "DESIGN_REFERENCES/",
             "reuse + delta",
-            "ux-journey-critic",
         ),
         errors,
     )
@@ -1109,8 +995,7 @@ def main() -> int:
     _validate_agent_projection(repo_root, errors)
     _validate_registry_codex_contract(repo_root, errors)
     _validate_helper_orchestration(errors)
-    _validate_structure_policy(repo_root, errors)
-    _validate_structure_instruction_drift(repo_root, errors)
+    _validate_structure_reviewer_instruction_drift(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)
     _validate_ui_planning_packet_contract(repo_root, errors)

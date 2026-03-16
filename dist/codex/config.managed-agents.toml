@@ -13,37 +13,13 @@ config_file = "agents/browser-explorer.toml"
 description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
 config_file = "agents/code-quality-reviewer.toml"
 
-[agents.complexity-analyst]
-description = "clean-code-inspector v2.1 정량 분석 보조 에이전트. 수동 계수보다 quantitative-metrics.json을 우선 사용해 복잡도 축을 해석·검증한다."
-config_file = "agents/complexity-analyst.toml"
-
-[agents.delivery-risk-planner]
-description = "Plan rollout, migration, and operational guardrails before implementation."
-config_file = "agents/delivery-risk-planner.toml"
-
 [agents.explorer]
 description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
 config_file = "agents/explorer-worker.toml"
 
-[agents.product-planner]
-description = "Structure ambiguous requests into goal, scope, and acceptance criteria."
-config_file = "agents/product-planner.toml"
-
-[agents.prompt-systems-designer]
-description = "Design prompt system contracts, evaluation rules, and fallback strategy."
-config_file = "agents/prompt-systems-designer.toml"
-
-[agents.solution-analyst]
-description = "Compare implementation options and tradeoffs with clear decision criteria."
-config_file = "agents/solution-analyst.toml"
-
-[agents.structure-gatekeeper]
-description = "Read-only reviewer for module boundaries, file bloat, responsibility separation, and React structure."
-config_file = "agents/structure-gatekeeper.toml"
-
-[agents.structure-planner]
-description = "Plan common module decomposition and responsibility boundaries before implementation."
-config_file = "agents/structure-planner.toml"
+[agents.structure-reviewer]
+description = "Read-only reviewer for module boundaries, file bloat, responsibility separation, decomposition planning, and quantitative complexity analysis."
+config_file = "agents/structure-reviewer.toml"
 
 [agents.test-engineer]
 description = "Read-only reviewer for regression risk and test-plan/coverage gaps."
@@ -52,10 +28,6 @@ config_file = "agents/test-engineer.toml"
 [agents.type-specialist]
 description = "Read-only reviewer for shared/public types, interfaces, generics, and contract-safety risks."
 config_file = "agents/type-specialist.toml"
-
-[agents.ux-journey-critic]
-description = "Evaluate user journey friction, edge states, and accessibility risks."
-config_file = "agents/ux-journey-critic.toml"
 
 [agents.verification-worker]
 description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."

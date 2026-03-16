@@ -102,9 +102,8 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 
 추가 규칙:
 
-- `ux-journey-critic` planning fan-out은 mandatory 기본값이다.
 - `reference-pack` advisory skill은 `ui-first` planning에서 항상 자동 실행한다.
-- `product-planner`, `web-researcher`, `solution-analyst`, `structure-planner`, `architecture-reviewer`는 조건이 있을 때만 추가한다.
+- `web-researcher`, `structure-reviewer`, `architecture-reviewer`는 조건이 있을 때만 추가한다.
 - `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Interaction Model`, `Accessibility Contract`, `Microcopy + Information Expression Rules`는 `SLICE-1` 진입 근거다.
 - `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Task-based Approval Criteria`는 `SLICE-2` 진입 근거다.
 - `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`를 기록한다.

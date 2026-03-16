@@ -8,17 +8,10 @@ required_helper_agent_ids = [
   "verification-worker",
   "architecture-reviewer",
   "code-quality-reviewer",
-  "complexity-analyst",
+  "structure-reviewer",
   "type-specialist",
   "test-engineer",
-  "structure-gatekeeper",
-  "structure-planner",
   "web-researcher",
-  "solution-analyst",
-  "product-planner",
-  "ux-journey-critic",
-  "delivery-risk-planner",
-  "prompt-systems-designer",
 ]
 documentation_only_builtins = ["monitor"]
 
@@ -48,58 +41,18 @@ terminal_runtime_statuses = [
   "interrupted",
 ]
 
-[quality_preflight]
-max_cyclomatic_complexity = 10
-max_nesting_depth = 2
-
 [review_triggers]
 code_quality_min_changed_files = 3
 architecture_min_changed_files = 7
 architecture_min_boundary_changes = 2
-structure_planner_min_diff_loc = 150
-structure_planner_min_changed_files = 2
+structure_review_min_diff_loc = 150
+structure_review_min_changed_files = 2
 blocking_gate_min_design_docs = 3
 
 [slice_budget]
 max_repo_files = 3
 max_net_loc = 150
 enforcement = "split-before-execution"
-
-[structure_policy]
-soft_limit_behavior = "split-first"
-hard_limit_behavior = "block"
-responsibility_mix_behavior = "block"
-legacy_oversized_file_behavior = "allow-only-without-additive-growth"
-exceptions = [
-  "*.generated.*",
-  "route manifest",
-  "icon registry",
-  "schema declaration files",
-  "migration snapshot",
-  "vendored third-party",
-]
-split_roles = [
-  "component",
-  "view",
-  "hook",
-  "provider",
-  "view-model",
-  "composable",
-  "middleware",
-  "service",
-  "use-case",
-  "repository",
-  "controller",
-  "util",
-  "adapter",
-]
-
-[structure_policy.role_limits]
-component_view = { target = 220, hard = 300 }
-react_hook_provider_view_model = { target = 150, hard = 220 }
-hook_composable_middleware = { target = 150, hard = 220 }
-service_use_case_controller_repository_util_module = { target = 200, hard = 260 }
-function = { target = 40, hard = 60 }
 
 [task_documents]
 plan_section_order = [

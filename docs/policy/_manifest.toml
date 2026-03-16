@@ -1,21 +1,12 @@
 title = "멀티 에이전트 오케스트레이션 정책"
 sections = [
-  "00-overview.md",
+  "00-core.md",
   "10-routing.md",
-  "15-structure-first.md",
-  "20-long-running.md",
-  "30-reviews.md",
-  "40-sources.md",
-  "50-style.md",
+  "20-workflows.md",
 ]
 
-# global AGENTS.md에 포함할 섹션 (~/.codex/AGENTS.md용)
-# 40-sources.md는 레포 구조 전용이므로 제외
 global_sections = [
-  "00-overview.md",
+  "00-core.md",
   "10-routing.md",
-  "15-structure-first.md",
-  "20-long-running.md",
-  "30-reviews.md",
-  "50-style.md",
+  "20-workflows.md",
 ]

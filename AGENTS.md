@@ -38,10 +38,6 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 
 ## Detailed Policy Files
 
-- [00-overview.md](docs/policy/00-overview.md)
+- [00-core.md](docs/policy/00-core.md)
 - [10-routing.md](docs/policy/10-routing.md)
-- [15-structure-first.md](docs/policy/15-structure-first.md)
-- [20-long-running.md](docs/policy/20-long-running.md)
-- [30-reviews.md](docs/policy/30-reviews.md)
-- [40-sources.md](docs/policy/40-sources.md)
-- [50-style.md](docs/policy/50-style.md)
+- [20-workflows.md](docs/policy/20-workflows.md)
