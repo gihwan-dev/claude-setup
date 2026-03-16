@@ -1,6 +1,6 @@
 id = "test-engineer"
 role = "reviewer"
-description = "Read-only reviewer for regression risk and test-plan/coverage gaps."
+description = "Read-only reviewer for test quality, AI-generated test detection, and regression risk."
 source = "codex-builtin"
 
 [projection]

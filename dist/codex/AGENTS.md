@@ -23,7 +23,7 @@
 | `structure-reviewer` | 구조/복잡도 리뷰 + 분해 계획 | Read, Bash, Grep, Glob | non-trivial diff 후 항상 |
 | `architecture-reviewer` | 경계/레이어/public surface 리뷰 | Read, Grep, Glob | public surface 또는 모듈 경계 변경 |
 | `type-specialist` | 타입 계약 안정성 리뷰 | Read, Grep, Glob | shared/public type, generics 변경 |
-| `test-engineer` | 회귀 리스크/테스트 커버리지 | Read, Grep, Glob | 회귀 리스크 또는 테스트 커버리지 공백 |
+| `test-engineer` | 테스트 품질 심사/회귀 리스크 | Read, Grep, Glob | 테스트 코드 변경·추가 또는 회귀 리스크 |
 | `verification-worker` | 검증 결과 분석 | Read, Grep, Glob | 검증 로그가 noisy하거나 multi-step |
 
 ## 에이전트 응답 포맷
@@ -85,7 +85,7 @@
 | structure-reviewer | non-trivial diff 후 항상 |
 | architecture-reviewer | public surface or 모듈 경계 변경 |
 | type-specialist | shared/public type, generics 변경 |
-| test-engineer | 회귀 리스크 or 테스트 커버리지 공백 |
+| test-engineer | 테스트 코드 변경·추가 or 회귀 리스크 or 테스트 커버리지 공백 |
 
 ## 실행 흐름
 

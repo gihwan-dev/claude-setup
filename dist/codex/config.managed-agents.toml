@@ -22,7 +22,7 @@ description = "Read-only reviewer for module boundaries, file bloat, responsibil
 config_file = "agents/structure-reviewer.toml"
 
 [agents.test-engineer]
-description = "Read-only reviewer for regression risk and test-plan/coverage gaps."
+description = "Read-only reviewer for test quality, AI-generated test detection, and regression risk."
 config_file = "agents/test-engineer.toml"
 
 [agents.type-specialist]

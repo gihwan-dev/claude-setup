@@ -20,7 +20,7 @@
 | structure-reviewer | non-trivial diff 후 항상 |
 | architecture-reviewer | public surface or 모듈 경계 변경 |
 | type-specialist | shared/public type, generics 변경 |
-| test-engineer | 회귀 리스크 or 테스트 커버리지 공백 |
+| test-engineer | 테스트 코드 변경·추가 or 회귀 리스크 or 테스트 커버리지 공백 |
 
 ## 실행 흐름
 
