@@ -60,24 +60,27 @@ print("codex config parse ok")
 PY
 ```
 
-## Install Notes
+## Git Hooks (Primary)
 
-- 기준 설치 진입점은 `python3 scripts/install_assets.py`다.
-- `--link`가 기본 권장 모드다.
-- 다만 linked git worktree에서 실행하면 현재 워크트리 변경분으로 sync한 뒤 설치 mode는 자동으로 `copy`로 강등된다.
-- 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
-- `.agents/skills`가 존재하면 legacy overlay로 추가 설치되며, source of truth로 간주하지 않는다.
-- shell wrapper는 legacy 호환용이다.
-- generated drift를 먼저 해소한 뒤 설치한다.
+처음 clone하면 hook을 활성화한다:
 
-## Git Hooks
+    bash scripts/setup-hooks.sh
 
-`bash scripts/setup-hooks.sh`를 1회 실행하면 `core.hooksPath`가 repo의 `hooks/` 디렉토리로 설정된다.
-
-이후 commit, merge, branch switch 시 관련 파일(`agent-registry/`, `skills/`, `docs/policy/`, `policy/`, `scripts/sync_*.py`, `scripts/install_assets.py`, `scripts/workflow_contract.py`)이 바뀌면 `install_assets.py --link`가 자동 실행된다.
+이후 commit, merge, branch switch 시 관련 파일이 바뀌면 `install_assets.py --link`가 자동 실행된다.
 
 - 비활성화: `git config --unset core.hooksPath`
 - 에러가 발생해도 git 동작은 차단하지 않는다 (경고만 출력).
+
+## Manual Install (초기 세팅 / 트러블슈팅)
+
+hooks가 활성화되어 있으면 수동 설치는 보통 불필요하다.
+
+- 기준 진입점: `python3 scripts/install_assets.py`
+- `--link`가 기본 권장 모드다.
+- linked git worktree에서는 설치 mode가 자동으로 `copy`로 강등된다.
+- 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
+- `.agents/skills`가 존재하면 legacy overlay로 추가 설치된다.
+- generated drift를 먼저 해소한 뒤 설치한다.
 
 ## When Unsure
 

@@ -44,7 +44,7 @@ class PolicyGenerationTests(RepoTestCase):
 
         expected_instructions = build_instructions_content(str(manifest["title"]), sections)
         expected_agents = build_agents_content(sections)
-        expected_claude = build_claude_content(sections)
+        expected_claude = build_claude_content()
         expected_global_agents = build_global_agents_content(global_sections)
 
         self.assertEqual(
@@ -64,17 +64,15 @@ class PolicyGenerationTests(RepoTestCase):
             expected_global_agents,
         )
 
-    def test_claude_wrapper_is_compact_and_imports_all_policy_sections(self) -> None:
+    def test_claude_wrapper_imports_agents_and_contributing(self) -> None:
         claude_path = REPO_ROOT / "CLAUDE.md"
         content = claude_path.read_text(encoding="utf-8")
         lines = content.splitlines()
         self.assertLessEqual(len(lines), 200, msg=f"{claude_path} exceeded 200 lines")
 
-        policy_root = REPO_ROOT / "docs" / "policy"
-        manifest = load_manifest(policy_root)
-        for section_name in manifest["sections"]:
-            self.assertIn(f"@docs/policy/{section_name}", content)
+        self.assertIn("@AGENTS.md", content)
         self.assertIn("@CONTRIBUTING.md", content)
+        self.assertNotIn("@docs/policy/", content)
 
     def test_core_policy_section_is_exposed_in_generated_docs(self) -> None:
         agents_content = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")

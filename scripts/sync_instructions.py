@@ -42,7 +42,7 @@ def build_agents_content(sections: list[tuple[str, str]]) -> str:
     detail_links = "\n".join(f"- [{name}](docs/policy/{name})" for name, _ in sections)
     body = f"""# Repository Guidance
 
-Codex용 요약 가이드다. 세부 정책은 `docs/policy/*.md`와 `CONTRIBUTING.md`를 본다.
+세부 정책은 `docs/policy/*.md`와 `CONTRIBUTING.md`를 본다.
 
 ## Core Goal
 
@@ -101,14 +101,12 @@ def build_global_agents_content(sections: list[tuple[str, str]]) -> str:
     return f"{GLOBAL_HEADER}\n\n{preamble}\n\n{body}\n"
 
 
-def build_claude_content(sections: list[tuple[str, str]]) -> str:
-    imports = "\n".join(f"@docs/policy/{name}" for name, _ in sections)
-    body = f"""# Claude Code Project Memory
+def build_claude_content() -> str:
+    body = """# Claude Code Project Memory
 
 루트 메모리는 얇게 유지한다. 세부 정책은 아래 source 파일을 import한다.
 
-{imports}
-
+@AGENTS.md
 @CONTRIBUTING.md
 """
     return f"{HEADER}\n\n{body.strip()}\n"
@@ -152,7 +150,7 @@ def main() -> int:
 
     instructions_content = build_instructions_content(title, sections)
     agents_content = build_agents_content(sections)
-    claude_content = build_claude_content(sections)
+    claude_content = build_claude_content()
     global_agents_content = build_global_agents_content(global_sections)
 
     instructions_ok = check_or_write(instructions_path, instructions_content, args.check)

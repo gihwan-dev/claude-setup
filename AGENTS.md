@@ -3,7 +3,7 @@
 
 # Repository Guidance
 
-Codex용 요약 가이드다. 세부 정책은 `docs/policy/*.md`와 `CONTRIBUTING.md`를 본다.
+세부 정책은 `docs/policy/*.md`와 `CONTRIBUTING.md`를 본다.
 
 ## Core Goal
 
