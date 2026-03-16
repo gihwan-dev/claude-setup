@@ -13,7 +13,7 @@
 - quality preflight 결과는 `keep-local` 또는 `orchestrated-task`로 기록한다.
 - 아래 중 하나라도 해당하면 `orchestrated-task`로 승격한다.
   - 2개 이상 파일 변경이 예상되거나 delegated 기준에 해당함
-  - CC > 10 또는 중첩 > 2
+  - CC 또는 중첩 깊이가 임계값 초과 (`workflow.toml [quality_preflight]` 참조)
   - 대상 기존 코드 파일이 soft limit에 근접하거나 초과했고 책임이 혼재함
   - `structure preflight`에서 `split-first` trigger가 켜짐
   - dead code, unused export/helper, 테스트 중복 정리가 함께 보임
@@ -21,7 +21,7 @@
 - 구현 요청은 `keep-local`이면 기존 fast/deep-solo/delegated lane 규칙으로 처리하고 `design-task`/`implement-task` long-running path는 시작하지 않는다.
 - `orchestrated-task`면 `design-task`가 `work_type + impact_flags + delivery_strategy`를 결정하고 task bundle을 만든 뒤 `implement-task` slice로 진행한다.
 - delegated/long-running hybrid mode default는 `small slices + run-to-boundary`다.
-- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`repo-tracked files 3`, `net diff 150 LOC`)을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
+- broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice budget(`workflow.toml [slice_budget]` 참조)을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
 - `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `delivery_strategy=ui-first`를 사용한다.
 - AI/agent workflow planning이면 `web-researcher` 또는 메인 스레드 직접 웹 조사로 official vendor docs를 우선 확인한다.
 - 구조/공개 경계 리스크가 높으면 `architecture-reviewer` fan-out으로 boundary/public/shared 영향을 먼저 고정한다.

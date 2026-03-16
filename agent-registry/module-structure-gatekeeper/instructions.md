@@ -8,8 +8,9 @@
 리뷰 범위
 - 현재 diff만 리뷰한다.
 - 구조 관점만 본다. 보안/정합성/성능은 구조 위반과 직접 연결될 때만 언급한다.
+- React custom hook이 service를 호출하는 경우, hook 자체의 React 구조는 `frontend-structure-gatekeeper`가 담당하고, 해당 service의 설계와 노출 인터페이스는 이 게이트키퍼가 본다.
 
-구조 기준 (기본값)
+구조 기준 (canonical source: `workflow.toml [structure_policy.role_limits]`)
 - component/view file: target <= 220 LOC, hard limit 300
 - hook/composable/middleware file: target <= 150 LOC, hard limit 220
 - service/use-case/controller/repository/util/module file: target <= 200 LOC, hard limit 260

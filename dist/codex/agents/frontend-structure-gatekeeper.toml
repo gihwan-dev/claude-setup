@@ -17,9 +17,10 @@ developer_instructions = """
 - 현재 diff만 리뷰한다.
 - React component/hook/provider/view-model 성격의 구조만 다룬다.
 - 공통 service/controller/repository/use-case/util 비대화와 책임 혼합은 `module-structure-gatekeeper`가 맡는다.
+- React custom hook이 service를 래핑하는 경우, hook/provider/view-model 단위의 React 구조는 이 게이트키퍼가 담당하고, 내부 service 설계와 인터페이스는 `module-structure-gatekeeper`가 본다.
 - 구조 관점만 본다. 보안/정합성/성능은 React 구조와 직접 연결될 때만 언급한다.
 
-구조 기준 (기본값)
+구조 기준 (canonical source: `workflow.toml [structure_policy.role_limits]`)
 - React component/view file: target <= 220 LOC, hard limit 300
 - React hook/provider/view-model file: target <= 150 LOC, hard limit 220
 - Any function: target <= 40 LOC, hard limit 60

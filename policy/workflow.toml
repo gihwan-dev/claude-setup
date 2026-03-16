@@ -55,6 +55,18 @@ terminal_runtime_statuses = [
   "interrupted",
 ]
 
+[quality_preflight]
+max_cyclomatic_complexity = 10
+max_nesting_depth = 2
+
+[review_triggers]
+code_quality_min_changed_files = 3
+architecture_min_changed_files = 7
+architecture_min_boundary_changes = 2
+structure_planner_min_diff_loc = 150
+structure_planner_min_changed_files = 2
+blocking_gate_min_design_docs = 3
+
 [slice_budget]
 max_repo_files = 3
 max_net_loc = 150

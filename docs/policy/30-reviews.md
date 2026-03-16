@@ -19,24 +19,25 @@
 
 ## 자동 리뷰 트리거
 
+트리거 임계값은 `workflow.toml [review_triggers]`에서 관리한다.
+
 - reviewer는 지적 전용이 아니라 quality preflight lane 판정과 focused gate를 담당한다.
 - quality preflight에서 TS/JS/React 기존 코드는 `explorer`를 기본으로 붙인다.
 - 구조 냄새가 있으면 `complexity-analyst`, `structure-planner`, `test-engineer`를 추가한다.
 - `architecture-reviewer`는 public/shared boundary 예상 시에만 붙인다.
-- `code-quality-reviewer`는 아래 중 하나라도 만족할 때만 실행한다.
-  - 변경 파일이 3개 이상
+- `code-quality-reviewer`는 아래 중 하나라도 만족할 때 실행한다.
+  - 변경 파일 수가 임계값 이상
   - 테스트가 추가되거나 변경됨
   - 에러 처리/동시성/보안 민감 로직이 변경됨
   - 사용자가 명시적으로 리뷰를 요청함
 - `architecture-reviewer`는 아래 중 하나라도 만족하면 실행한다.
-  - 변경 파일 7개 이상
-  - 모듈/패키지 경계 2개 이상 변경
+  - 변경 파일 수가 임계값 이상
+  - 모듈/패키지 경계 변경 수가 임계값 이상
   - public surface 변경 (export, entrypoint, 핵심 설정)
 - `structure-planner`는 아래 조건에서 quality preflight escalation 또는 `design-task` 내부 fan-out으로 실행한다.
   - `structure preflight`에서 `split-first` trigger가 켜진 경우
-  - 예상 diff가 150 LOC 이상인 경우
-  - 예상 변경 파일이 2개 이상인 경우
-  - 대상 기존 코드 파일이 soft limit에 근접하거나 초과해 분해 설계가 필요한 경우
+  - 예상 diff 또는 변경 파일 수가 임계값 이상인 경우
+  - 대상 기존 코드 파일이 soft limit(`workflow.toml [structure_policy.role_limits]`)에 근접하거나 초과해 분해 설계가 필요한 경우
 - `module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.
   - FAIL 판정은 공통 구조 관점에서 P1로 취급한다.
   - 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
