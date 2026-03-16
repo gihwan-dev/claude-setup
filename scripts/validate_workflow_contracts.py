@@ -23,8 +23,8 @@ from workflow_contract import (
     detect_task_document_mode,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     decide_slice_execution_mode,
-    EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
+    expected_reasoning_effort_for,
     FALLBACK_REQUIRES_ACK,
     HelperCloseSnapshot,
     IMMEDIATE_STATUS_CHECK_POLICY,
@@ -121,10 +121,11 @@ def _validate_registry_codex_contract(repo_root: Path, errors: list[str]) -> Non
             continue
 
         reasoning_effort = codex.get("reasoning_effort")
-        if reasoning_effort != EXPECTED_CODEX_REASONING_EFFORT:
+        expected_effort = expected_reasoning_effort_for(agent_id)
+        if reasoning_effort != expected_effort:
             errors.append(
                 f"registry reasoning_effort mismatch for {agent_id}: "
-                f"expected={EXPECTED_CODEX_REASONING_EFFORT!r} actual={reasoning_effort!r} ({path})"
+                f"expected={expected_effort!r} actual={reasoning_effort!r} ({path})"
             )
 
         expected_sandbox = EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only")

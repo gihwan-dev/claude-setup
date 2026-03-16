@@ -13,8 +13,8 @@ from workflow_contract import (
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     decide_slice_execution_mode,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
-    EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
+    expected_reasoning_effort_for,
     FALLBACK_REQUIRES_ACK,
     HelperCloseSnapshot,
     IMMEDIATE_STATUS_CHECK_POLICY,
@@ -656,7 +656,7 @@ class WorkflowContractTests(RepoTestCase):
             )
             self.assertEqual(
                 profile.get("model_reasoning_effort"),
-                EXPECTED_CODEX_REASONING_EFFORT,
+                expected_reasoning_effort_for(agent_id),
                 msg=f"projected agent reasoning effort drifted: {agent_id}",
             )
 

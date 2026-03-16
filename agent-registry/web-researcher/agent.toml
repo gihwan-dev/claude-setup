@@ -16,12 +16,12 @@ timeout_policy = "background-no-close"
 allowed_close_reasons = ["explicit-cancel"]
 
 [repo]
-model = "sonnet"
+model = "haiku"
 tools = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"]
 
 [codex]
 agent_key = "web-researcher"
 config_file = "web-researcher.toml"
 model = "gpt-5.4"
-reasoning_effort = "xhigh"
+reasoning_effort = "medium"
 sandbox_mode = "read-only"

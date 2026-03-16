@@ -16,7 +16,14 @@ required_helper_agent_ids = [
 documentation_only_builtins = ["monitor"]
 
 [codex]
-expected_reasoning_effort = "xhigh"
+default_reasoning_effort = "xhigh"
+
+[codex.reasoning_effort_overrides]
+explorer = "medium"
+web-researcher = "medium"
+verification-worker = "medium"
+code-quality-reviewer = "high"
+browser-explorer = "high"
 
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"

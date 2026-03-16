@@ -226,7 +226,7 @@ def _optional_string_map(value: object, *, label: str) -> dict[str, str]:
 
 def _policy_lists(
     repo_root: Path,
-) -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, object]]:
+) -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, str], dict[str, object]]:
     policy = _load_policy(repo_root)
     projection = policy.get("projection", {})
     codex = policy.get("codex", {})
@@ -245,14 +245,19 @@ def _policy_lists(
         codex.get("sandbox_overrides"),
         label="codex.sandbox_overrides",
     )
-    expected_reasoning_effort = codex.get("expected_reasoning_effort")
-    if not isinstance(expected_reasoning_effort, str) or not expected_reasoning_effort.strip():
-        raise ValueError("missing codex.expected_reasoning_effort in policy/workflow.toml")
+    default_reasoning_effort = codex.get("default_reasoning_effort")
+    if not isinstance(default_reasoning_effort, str) or not default_reasoning_effort.strip():
+        raise ValueError("missing codex.default_reasoning_effort in policy/workflow.toml")
+    reasoning_effort_overrides = _optional_string_map(
+        codex.get("reasoning_effort_overrides"),
+        label="codex.reasoning_effort_overrides",
+    )
     return (
         required_helpers,
         documentation_only,
         sandbox_overrides,
-        expected_reasoning_effort,
+        default_reasoning_effort,
+        reasoning_effort_overrides,
         helper_close,
     )
 
@@ -262,7 +267,8 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
         _required_helper_agent_ids,
         documentation_only_builtins,
         sandbox_overrides,
-        expected_reasoning_effort,
+        default_reasoning_effort,
+        reasoning_effort_overrides,
         _helper_close,
     ) = _policy_lists(repo_root)
 
@@ -307,7 +313,10 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
                 config_file=Path(config_file).name,
                 model=str(profile.get("model", "gpt-5.4")),
                 reasoning_effort=str(
-                    profile.get("model_reasoning_effort", expected_reasoning_effort)
+                    profile.get(
+                        "model_reasoning_effort",
+                        reasoning_effort_overrides.get(agent_key, default_reasoning_effort),
+                    )
                 ),
                 sandbox_mode=str(
                     profile.get(
@@ -397,7 +406,8 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
         _required_helper_agent_ids,
         _documentation_only_builtins,
         sandbox_overrides,
-        expected_reasoning_effort,
+        default_reasoning_effort,
+        reasoning_effort_overrides,
         _helper_close,
     ) = _policy_lists(repo_root)
     for path in sorted((repo_root / "agents").glob("*.md")):
@@ -423,7 +433,7 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
             codex_agent_key=agent_id,
             codex_config_file=f"{agent_id}.toml",
             codex_model="gpt-5.4",
-            codex_reasoning_effort=expected_reasoning_effort,
+            codex_reasoning_effort=reasoning_effort_overrides.get(agent_id, default_reasoning_effort),
             codex_sandbox_mode=_sandbox_for_agent(agent_id, sandbox_overrides),
             orchestration=_existing_orchestration(registry_root, agent_id),
             instructions=_strip_generated_notice(body),
@@ -439,7 +449,8 @@ def _bootstrap_codex_builtins(
         required_helper_agent_ids,
         _documentation_only_builtins,
         _sandbox_overrides,
-        _expected_reasoning_effort,
+        _default_reasoning_effort,
+        _reasoning_effort_overrides,
         helper_close,
     ) = _policy_lists(repo_root)
     profiles = (

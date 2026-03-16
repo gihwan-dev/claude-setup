@@ -3,7 +3,7 @@ name: verification-worker
 role: reviewer
 description: "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
 tools: Read, Grep, Glob
-model: sonnet
+model: haiku
 ---
 
 <!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->

@@ -50,7 +50,6 @@
 
 ## 위임 기본 규칙
 
-- delegated lane의 code diff ownership을 별도 writer에 고정하지 않는다.
 - non-trivial 작업은 `design-task`/`implement-task` 경로를 사용한다.
 - `small slices + run-to-boundary`를 기본으로 사용한다.
 - slice budget(repo-tracked files 3개 이하, 순 diff 150 LOC 내외)을 넘는 handoff는 `split/replan before execution`으로 되돌린다.

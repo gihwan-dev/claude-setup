@@ -3,7 +3,7 @@ name: web-researcher
 role: explorer
 description: "Web research specialist for competitor scans and external solution benchmarking."
 tools: Read, Grep, Glob, WebSearch, WebFetch
-model: sonnet
+model: haiku
 ---
 
 <!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->

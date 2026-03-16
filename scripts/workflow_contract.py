@@ -149,12 +149,22 @@ REQUIRED_HELPER_AGENT_IDS = _require_str_list(
 DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS = _require_str_list(
     PROJECTION_POLICY, "documentation_only_builtins", path=WORKFLOW_POLICY_PATH
 )
-EXPECTED_CODEX_REASONING_EFFORT = _require_str(
-    CODEX_POLICY, "expected_reasoning_effort", path=WORKFLOW_POLICY_PATH
+DEFAULT_CODEX_REASONING_EFFORT = _require_str(
+    CODEX_POLICY, "default_reasoning_effort", path=WORKFLOW_POLICY_PATH
 )
+CODEX_REASONING_EFFORT_OVERRIDES = _optional_str_map(
+    CODEX_POLICY, "reasoning_effort_overrides", path=WORKFLOW_POLICY_PATH
+)
+# Deprecated alias — kept for backward compatibility.
+EXPECTED_CODEX_REASONING_EFFORT = DEFAULT_CODEX_REASONING_EFFORT
+
 EXPECTED_CODEX_SANDBOX_BY_AGENT = _optional_str_map(
     CODEX_POLICY, "sandbox_overrides", path=WORKFLOW_POLICY_PATH
 )
+
+
+def expected_reasoning_effort_for(agent_id: str) -> str:
+    return CODEX_REASONING_EFFORT_OVERRIDES.get(agent_id, DEFAULT_CODEX_REASONING_EFFORT)
 
 STRONG_CLOSE_REASONS = list(
     _require_str_list(HELPER_CLOSE_POLICY, "strong_close_reasons", path=WORKFLOW_POLICY_PATH)

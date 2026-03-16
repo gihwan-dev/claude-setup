@@ -314,9 +314,14 @@ class AgentSyncTests(RepoTestCase):
             self.assertIsInstance(codex, dict)
             self.assertTrue(projection.get("repo"))
             self.assertTrue(projection.get("codex"))
+            effort_overrides = policy["codex"].get("reasoning_effort_overrides", {})
+            expected_effort = effort_overrides.get(
+                "verification-worker",
+                policy["codex"]["default_reasoning_effort"],
+            )
             self.assertEqual(
                 codex.get("reasoning_effort"),
-                policy["codex"]["expected_reasoning_effort"],
+                expected_effort,
             )
             self.assertEqual(codex.get("sandbox_mode"), "read-only")
             self.assertEqual(orchestration.get("blocking_class"), "semi-blocking")
@@ -339,7 +344,7 @@ class AgentSyncTests(RepoTestCase):
             )
             self.assertEqual(
                 generated_profile.get("model_reasoning_effort"),
-                policy["codex"]["expected_reasoning_effort"],
+                expected_effort,
             )
             self.assertEqual(generated_profile.get("sandbox_mode"), "read-only")
             self.assertFalse((repo_root / "agents" / "worker.md").exists())

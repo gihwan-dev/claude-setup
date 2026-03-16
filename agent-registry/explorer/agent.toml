@@ -16,12 +16,12 @@ timeout_policy = "background-no-close"
 allowed_close_reasons = ["explicit-cancel"]
 
 [repo]
-model = "sonnet"
+model = "haiku"
 tools = ["Read", "Grep", "Glob"]
 
 [codex]
 agent_key = "explorer"
 config_file = "explorer-worker.toml"
 model = "gpt-5.4"
-reasoning_effort = "xhigh"
+reasoning_effort = "medium"
 sandbox_mode = "read-only"

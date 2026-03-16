@@ -23,5 +23,5 @@ tools = ["Read", "Bash", "Grep", "Glob"]
 agent_key = "browser-explorer"
 config_file = "browser-explorer.toml"
 model = "gpt-5.4"
-reasoning_effort = "xhigh"
+reasoning_effort = "high"
 sandbox_mode = "danger-full-access"

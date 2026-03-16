@@ -3,7 +3,7 @@ name: explorer
 role: explorer
 description: "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
 tools: Read, Grep, Glob
-model: sonnet
+model: haiku
 ---
 
 <!-- AUTO-GENERATED from agent-registry. Do not edit directly. -->
