@@ -1,7 +1,10 @@
 <!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->
-<!-- Run: python3 scripts/sync_instructions.py -->
+<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->
 
-# 멀티 에이전트 오케스트레이션 정책
+# Multi-Agent Orchestration Policy
+
+이 정책은 모든 프로젝트에 적용되는 Codex global orchestration 규칙이다.
+프로젝트별 추가 규칙은 해당 프로젝트의 `AGENTS.md`를 참조한다.
 
 ## 핵심 목표
 
@@ -113,7 +116,6 @@
 - 모든 lane은 종료 전에 메인 스레드가 실질 영향이 있는 문서만 다시 탐색하고 검토한다.
 - 기본 대상 예시는 `README`, `docs/**`, task bundle docs, `openapi.yaml`, `schema.json`, architecture/change docs, workflow/SSOT runbook docs다.
 - 문서 영향 대상이 불명확할 때만 read-only helper로 후보를 좁힌다.
-- `docs/policy`, `skills`, `agent-registry` 같은 SSOT가 바뀌면 관련 generated projection sync와 대응 `--check`를 통과시킨 뒤 종료한다. <!-- repo-only -->
 
 ## Structure-First Authoring
 
@@ -222,9 +224,6 @@
 - `STATUS.md`의 구현 요약에는 문서 영향 판단을 남기고, `Verification results`에는 관련 sync/check 명령과 pass/fail을 남긴다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
-- `docs/policy`가 바뀌면 `python3 scripts/sync_instructions.py` 후 `python3 scripts/sync_instructions.py --check`를 통과해야 한다. <!-- repo-only -->
-- `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다. <!-- repo-only -->
-- `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다. <!-- repo-only -->
 - 문서 diff도 slice budget에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
 - slice budget 기본값은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 실행 전에 `split/replan before execution`으로 되돌린다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.
@@ -304,38 +303,6 @@
 - 필수 항목은 `핵심결론`, `근거`다.
 - 선택 항목은 `리스크`, `권장 다음 행동`, `추가 확인 필요`다.
 - 원문 출력이 필요하면 최소 발췌만 포함하고 소스 경로를 명시한다.
-
-## Source of Truth
-
-- 정책 authoring source: `docs/policy/*.md`
-- machine-readable workflow/structure contract: `policy/workflow.toml`
-- compiled source doc: `INSTRUCTIONS.md`
-- Codex projection: `AGENTS.md`
-- Claude projection: `CLAUDE.md`
-- agent contract: `agent-registry/<agent-id>/agent.toml` + `instructions.md`
-- generated projections: `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml`
-- skill canonical source: `skills/`
-- skill index + manifest: `skills/INDEX.md`, `skills/manifest.json`
-- `skills/_shared` 같은 internal asset은 catalog/index/generated skill set에는 포함하지 않고, consuming skill의 상대경로 참조를 위해 install-time에만 별도 배포한다.
-- legacy skill overlay: `.agents/skills` (설치 호환용, 기본 source 아님)
-- long-running task public surface: `design-task`, `implement-task`
-- 새 long-running task source of truth는 `tasks/<task-path>/task.yaml`과 bundle 문서(`README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, 전문 문서들)다.
-- greenfield/new-project post-design bootstrap이 적용되면 repo-level implementation rules source는 `docs/ai/ENGINEERING_RULES.md`다.
-- `task.yaml.delivery_strategy`는 새 bundle의 machine-readable execution contract다.
-- `task.yaml.source_of_truth.implementation`은 optional task supplement pointer로 `IMPLEMENTATION_CONTRACT.md`를 가리킬 수 있다.
-- `delivery_strategy=ui-first` task는 `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`을 사용한다.
-- `STATUS.md`는 새 task와 legacy task 모두에서 오케스트레이터 메타 상태 문서로 유지한다.
-- legacy compatibility task만 `PLAN.md`를 source of truth로 유지하고, 새 task에는 `PLAN.md`를 만들지 않는다.
-- `design-task`는 continuity gate를 통과한 경우에만 기존 task를 재사용한다. 새 task는 `task.yaml`, legacy task는 `PLAN.md`를 기준으로 비교하고 `delivery_strategy`가 다르면 새 task를 만든다.
-
-## 세부 규칙
-
-- planning role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- `monitor`는 built-in long-polling/wait 역할로만 문서화하고 repo-managed projection은 만들지 않는다.
-- helper agent(`explorer`, `verification-worker`, `architecture-reviewer`, `code-quality-reviewer`, `type-specialist`, `test-engineer`, `module-structure-gatekeeper`, `frontend-structure-gatekeeper`)는 runtime helper로 보장되어야 하며 각 `agent.toml`의 `[orchestration]` (`blocking_class`, `result_contract`, `close_protocol`, `late_result_policy`, `timeout_policy`, `allowed_close_reasons`)을 SSOT로 유지한다.
-- projected specialized agent(`browser-explorer`)는 generated projection으로 설치될 수 있지만 `required_helper_agent_ids`에는 포함하지 않는다. 명시적인 브라우저 상호작용 task에서만 선택적으로 호출한다.
-- `policy/workflow.toml`의 `[structure_policy]`는 file role별 limit, split-first behavior, legacy oversized file rule의 machine-readable SSOT다.
-- generated projection과 compiled doc은 직접 수정하지 않고 sync로 재생성한다.
 
 ## 언어 및 스타일
 

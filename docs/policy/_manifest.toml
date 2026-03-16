@@ -8,3 +8,14 @@ sections = [
   "40-sources.md",
   "50-style.md",
 ]
+
+# global AGENTS.md에 포함할 섹션 (~/.codex/AGENTS.md용)
+# 40-sources.md는 레포 구조 전용이므로 제외
+global_sections = [
+  "00-overview.md",
+  "10-routing.md",
+  "15-structure-first.md",
+  "20-long-running.md",
+  "30-reviews.md",
+  "50-style.md",
+]

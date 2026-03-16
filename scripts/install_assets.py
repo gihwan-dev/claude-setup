@@ -717,6 +717,12 @@ def main() -> int:
                 previous_managed_names=previous_managed_names,
                 dry_run=args.dry_run,
             )
+            install_path(
+                repo_root / "dist" / "codex" / "AGENTS.md",
+                home / "AGENTS.md",
+                effective_mode,
+                args.dry_run,
+            )
             updated_config = update_codex_config(
                 home, codex_managed_src, dry_run=args.dry_run
             )

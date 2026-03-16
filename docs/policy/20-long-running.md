@@ -73,9 +73,9 @@
 - `STATUS.md`의 구현 요약에는 문서 영향 판단을 남기고, `Verification results`에는 관련 sync/check 명령과 pass/fail을 남긴다.
 - hook 실패로 커밋이 막히면 동일한 커밋 메시지로 `git commit --no-verify`를 1회 재시도한다.
 - `--no-verify` 재시도까지 실패하면 해당 slice를 실패로 기록하고 다음 slice로 진행하지 않는다.
-- `docs/policy`가 바뀌면 `python3 scripts/sync_instructions.py` 후 `python3 scripts/sync_instructions.py --check`를 통과해야 한다.
-- `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다.
-- `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다.
+- `docs/policy`가 바뀌면 `python3 scripts/sync_instructions.py` 후 `python3 scripts/sync_instructions.py --check`를 통과해야 한다. <!-- repo-only -->
+- `skills`가 바뀌면 `python3 scripts/sync_skills_index.py` 후 `python3 scripts/sync_skills_index.py --check`를 통과해야 한다. <!-- repo-only -->
+- `agent-registry`가 바뀌면 `python3 scripts/sync_agents.py` 후 `python3 scripts/sync_agents.py --check`를 통과해야 한다. <!-- repo-only -->
 - 문서 diff도 slice budget에 포함한다. 문서 반영까지 포함해 budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan한다.
 - slice budget 기본값은 small slices 기준으로 `repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`다. 이를 넘기면 실행 전에 `split/replan before execution`으로 되돌린다.
 - 이미 soft limit를 넘긴 파일에 additive diff를 더하는 slice는 strong mode에서 허용하지 않는다.

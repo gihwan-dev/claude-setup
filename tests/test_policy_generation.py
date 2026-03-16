@@ -7,6 +7,7 @@ from support import REPO_ROOT, RepoTestCase
 from sync_instructions import (
     build_agents_content,
     build_claude_content,
+    build_global_agents_content,
     build_instructions_content,
     load_manifest,
     load_sections,
@@ -38,9 +39,13 @@ class PolicyGenerationTests(RepoTestCase):
         self.assertIn("15-structure-first.md", manifest["sections"])
         sections = load_sections(policy_root, list(manifest["sections"]))
 
+        global_section_names = list(manifest.get("global_sections", manifest["sections"]))
+        global_sections = load_sections(policy_root, global_section_names)
+
         expected_instructions = build_instructions_content(str(manifest["title"]), sections)
         expected_agents = build_agents_content(sections)
         expected_claude = build_claude_content(sections)
+        expected_global_agents = build_global_agents_content(global_sections)
 
         self.assertEqual(
             (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8"),
@@ -53,6 +58,10 @@ class PolicyGenerationTests(RepoTestCase):
         self.assertEqual(
             (REPO_ROOT / "CLAUDE.md").read_text(encoding="utf-8"),
             expected_claude,
+        )
+        self.assertEqual(
+            (REPO_ROOT / "dist" / "codex" / "AGENTS.md").read_text(encoding="utf-8"),
+            expected_global_agents,
         )
 
     def test_claude_wrapper_is_compact_and_imports_all_policy_sections(self) -> None:
@@ -72,6 +81,37 @@ class PolicyGenerationTests(RepoTestCase):
         instructions_content = (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8")
         self.assertIn("15-structure-first.md", agents_content)
         self.assertIn("## Structure-First Authoring", instructions_content)
+
+    def test_global_agents_excludes_repo_specific_content(self) -> None:
+        content = (REPO_ROOT / "dist" / "codex" / "AGENTS.md").read_text(encoding="utf-8")
+        # 레포 전용 내용이 없어야 함
+        self.assertNotIn("Source Of Truth", content)
+        self.assertNotIn("Required Commands", content)
+        self.assertNotIn("Detailed Policy Files", content)
+        self.assertNotIn("CONTRIBUTING.md", content)
+        self.assertNotIn("scripts/sync_instructions", content)
+        self.assertNotIn("scripts/sync_agents", content)
+        self.assertNotIn("scripts/sync_skills_index", content)
+        # repo-only 마커가 붙은 라인은 필터링되어야 함
+        self.assertNotIn("repo-only", content)
+        # 핵심 정책 내용은 포함되어야 함
+        self.assertIn("핵심 목표", content)
+        self.assertIn("하드 라우팅 규칙", content)
+        self.assertIn("워크플로우 역할", content)
+        self.assertIn("Structure-First Authoring", content)
+        self.assertIn("언어 및 스타일", content)
+
+    def test_global_agents_manifest_controls_included_sections(self) -> None:
+        policy_root = REPO_ROOT / "docs" / "policy"
+        manifest = load_manifest(policy_root)
+        global_sections = list(manifest.get("global_sections", []))
+        self.assertTrue(len(global_sections) > 0, "global_sections must be defined")
+        # 40-sources.md는 레포 전용이므로 제외되어야 함
+        self.assertNotIn("40-sources.md", global_sections)
+        # 핵심 정책 섹션은 포함되어야 함
+        self.assertIn("00-overview.md", global_sections)
+        self.assertIn("10-routing.md", global_sections)
+        self.assertIn("50-style.md", global_sections)
 
     def test_skills_index_and_manifest_match_skill_frontmatter(self) -> None:
         entries = _collect_skill_entries(REPO_ROOT / "skills")

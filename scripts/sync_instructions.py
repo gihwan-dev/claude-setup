@@ -2,12 +2,18 @@
 from __future__ import annotations
 
 import argparse
+import re
 import tomllib
 import sys
 from pathlib import Path
 
 HEADER = """<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->
 <!-- Run: python3 scripts/sync_instructions.py -->"""
+
+GLOBAL_HEADER = """<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->
+<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->"""
+
+_REPO_ONLY_RE = re.compile(r"<!--\s*repo-only\s*-->")
 
 
 def load_manifest(policy_root: Path) -> dict[str, object]:
@@ -76,6 +82,25 @@ python3 -m unittest discover -s tests -p 'test_*.py'
     return f"{HEADER}\n\n{body.strip()}\n"
 
 
+def _filter_repo_only_lines(text: str) -> str:
+    return "\n".join(
+        line for line in text.splitlines()
+        if not _REPO_ONLY_RE.search(line)
+    )
+
+
+def build_global_agents_content(sections: list[tuple[str, str]]) -> str:
+    body = "\n\n".join(
+        _filter_repo_only_lines(section) for _, section in sections
+    ).strip()
+    preamble = (
+        "# Multi-Agent Orchestration Policy\n\n"
+        "이 정책은 모든 프로젝트에 적용되는 Codex global orchestration 규칙이다.\n"
+        "프로젝트별 추가 규칙은 해당 프로젝트의 `AGENTS.md`를 참조한다."
+    )
+    return f"{GLOBAL_HEADER}\n\n{preamble}\n\n{body}\n"
+
+
 def build_claude_content(sections: list[tuple[str, str]]) -> str:
     imports = "\n".join(f"@docs/policy/{name}" for name, _ in sections)
     body = f"""# Claude Code Project Memory
@@ -111,6 +136,7 @@ def main() -> int:
     instructions_path = repo_root / "INSTRUCTIONS.md"
     agents_path = repo_root / "AGENTS.md"
     claude_path = repo_root / "CLAUDE.md"
+    global_agents_path = repo_root / "dist" / "codex" / "AGENTS.md"
 
     if not policy_root.exists():
         print(f"policy source not found: {policy_root}", file=sys.stderr)
@@ -121,16 +147,21 @@ def main() -> int:
     section_names = list(manifest["sections"])
     sections = load_sections(policy_root, section_names)
 
+    global_section_names = list(manifest.get("global_sections", section_names))
+    global_sections = load_sections(policy_root, global_section_names)
+
     instructions_content = build_instructions_content(title, sections)
     agents_content = build_agents_content(sections)
     claude_content = build_claude_content(sections)
+    global_agents_content = build_global_agents_content(global_sections)
 
     instructions_ok = check_or_write(instructions_path, instructions_content, args.check)
     agents_ok = check_or_write(agents_path, agents_content, args.check)
     claude_ok = check_or_write(claude_path, claude_content, args.check)
+    global_agents_ok = check_or_write(global_agents_path, global_agents_content, args.check)
 
     if args.check:
-        if instructions_ok and agents_ok and claude_ok:
+        if instructions_ok and agents_ok and claude_ok and global_agents_ok:
             print("sync-instructions: up to date")
             return 0
         if not instructions_ok:
@@ -139,11 +170,14 @@ def main() -> int:
             print(f"drift: {agents_path}")
         if not claude_ok:
             print(f"drift: {claude_path}")
+        if not global_agents_ok:
+            print(f"drift: {global_agents_path}")
         return 1
 
     print("ok  INSTRUCTIONS.md")
     print("ok  AGENTS.md")
     print("ok  CLAUDE.md")
+    print("ok  dist/codex/AGENTS.md")
     return 0
 
 
