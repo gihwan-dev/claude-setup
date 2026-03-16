@@ -29,6 +29,14 @@ model: sonnet
 - `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - interrupt/close 요청을 받으면 새 타입 분석 확장을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
+정량 지표 해석 (interface-inspector 통합)
+- `quantitative-metrics.json`의 파일별 메트릭을 정량 근거로 활용한다.
+- `anyCount`, `assertionCount`, `tsIgnoreCount`, `typeDiagnosticCount`를 중심으로 Type Safety 축을 해석한다.
+- `stateCount`, `importCount`를 보조 지표로 활용한다.
+- `typeSafety.score`, `changeRisk.score`와 `fanIn/fanOut` 결합 신호를 참고한다.
+- 정량 JSON 수치와 모순되는 추정치를 만들지 않는다.
+- 누락 메트릭은 `N/A`와 원인으로만 표기한다.
+
 출력 포맷
 1. `상태: final|preliminary`
 2. `진행 상태: phase=<...>; last=<...>; next=<...>`

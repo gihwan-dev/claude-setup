@@ -21,7 +21,6 @@ from workflow_contract import (
     BLOCKING_TIMEOUT_PATH,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     detect_task_document_mode,
-    DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     decide_slice_execution_mode,
     EXPECTED_CODEX_REASONING_EFFORT,
@@ -30,7 +29,6 @@ from workflow_contract import (
     HelperCloseSnapshot,
     IMMEDIATE_STATUS_CHECK_POLICY,
     INVALID_CLOSE_REASON,
-    INTERNAL_PLANNING_ROLE_IDS,
     NON_CANCEL_STATUS_PING_MODE,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
@@ -86,21 +84,6 @@ def _is_projected(projection: dict[str, object]) -> bool:
 def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
 
-    for agent_id in INTERNAL_PLANNING_ROLE_IDS:
-        path = registry_root / agent_id / "agent.toml"
-        if not path.exists():
-            errors.append(f"missing planning-role config: {path}")
-            continue
-        data = _load_toml(path)
-        projection = data.get("projection")
-        if not isinstance(projection, dict):
-            errors.append(f"missing [projection]: {path}")
-            continue
-        if projection.get("repo") is not False or projection.get("codex") is not False:
-            errors.append(
-                f"planning-role projection must be disabled (repo=false,codex=false): {path}"
-            )
-
     for agent_id in REQUIRED_HELPER_AGENT_IDS:
         path = registry_root / agent_id / "agent.toml"
         if not path.exists():
@@ -118,19 +101,6 @@ def _validate_agent_projection(repo_root: Path, errors: list[str]) -> None:
         repo_cfg = data.get("repo")
         if not isinstance(repo_cfg, dict):
             errors.append(f"helper must define [repo] for Claude projection: {path}")
-
-    for agent_id in DISABLED_WRITABLE_PROJECTION_AGENT_IDS:
-        path = registry_root / agent_id / "agent.toml"
-        if not path.exists():
-            errors.append(f"missing disabled projection config: {path}")
-            continue
-        data = _load_toml(path)
-        projection = data.get("projection")
-        if not isinstance(projection, dict):
-            errors.append(f"missing [projection]: {path}")
-            continue
-        if projection.get("repo") is not False or projection.get("codex") is not False:
-            errors.append(f"projection must remain disabled for {agent_id}: {path}")
 
     for path in sorted(registry_root.glob("*/agent.toml")):
         data = _load_toml(path)
@@ -294,10 +264,7 @@ def _validate_structure_policy(repo_root: Path, errors: list[str]) -> None:
 
 def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    module_gate_path = registry_root / "module-structure-gatekeeper" / "instructions.md"
-    frontend_gate_path = registry_root / "frontend-structure-gatekeeper" / "instructions.md"
-    project_planner_path = registry_root / "project-planner" / "instructions.md"
-    project_planner_contract = registry_root / "project-planner" / "agent.toml"
+    gate_path = registry_root / "structure-gatekeeper" / "instructions.md"
 
     component_target, component_hard = STRUCTURE_ROLE_LIMITS["component_view"]
     react_hook_target, react_hook_hard = STRUCTURE_ROLE_LIMITS["react_hook_provider_view_model"]
@@ -306,42 +273,17 @@ def _validate_structure_instruction_drift(repo_root: Path, errors: list[str]) ->
     function_target, function_hard = STRUCTURE_ROLE_LIMITS["function"]
 
     _expect_substrings(
-        module_gate_path,
+        gate_path,
         (
             f"component/view file: target <= {component_target} LOC, hard limit {component_hard}",
             f"hook/composable/middleware file: target <= {module_hook_target} LOC, hard limit {module_hook_hard}",
+            f"React hook/provider/view-model file: target <= {react_hook_target} LOC, hard limit {react_hook_hard}",
             f"service/use-case/controller/repository/util/module file: target <= {service_target} LOC, hard limit {service_hard}",
             f"any function/method: target <= {function_target} LOC, hard limit {function_hard}",
-            "이미 soft limit를 넘긴 파일에 additive diff를 더하면 `fail`이다.",
+            "이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.",
         ),
         errors,
     )
-
-    _expect_substrings(
-        frontend_gate_path,
-        (
-            f"React component/view file: target <= {component_target} LOC, hard limit {component_hard}",
-            f"React hook/provider/view-model file: target <= {react_hook_target} LOC, hard limit {react_hook_hard}",
-            f"Any function: target <= {function_target} LOC, hard limit {function_hard}",
-            "이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 `FAIL`이다.",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        project_planner_path,
-        (
-            "`task.yaml` bundle",
-            "legacy fallback compatibility",
-            "`PLAN.md`는 legacy fallback",
-            "split-first",
-        ),
-        errors,
-    )
-
-    project_planner_contract_text = project_planner_contract.read_text(encoding="utf-8")
-    if "PLAN.md 및 STATUS.md를 단일 진실원" in project_planner_contract_text:
-        errors.append("project-planner agent description still treats PLAN.md as primary source")
 
 
 def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> None:
@@ -352,7 +294,6 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
     sources_path = repo_root / "docs" / "policy" / "40-sources.md"
     browser_agent_config = registry_root / "browser-explorer" / "agent.toml"
     browser_agent_instructions = registry_root / "browser-explorer" / "instructions.md"
-    project_planner_path = registry_root / "project-planner" / "instructions.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
 
     if not browser_agent_config.exists():
@@ -383,9 +324,6 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
         if codex.get("sandbox_mode") != "danger-full-access":
             errors.append("browser-explorer sandbox_mode must remain danger-full-access")
 
-    if "browser-explorer" in REQUIRED_HELPER_AGENT_IDS:
-        errors.append("browser-explorer must not be added to required_helper_agent_ids")
-
     _expect_substrings(
         browser_agent_instructions,
         (
@@ -393,17 +331,6 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
             "`target URL 또는 Electron entry`",
             "`상태: final|preliminary`",
             "자동 실행 금지",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        project_planner_path,
-        (
-            "`browser-explorer`",
-            "`target URL 또는 Electron entry`",
-            "`scenario checklist`",
-            "`evidence checklist`",
         ),
         errors,
     )
@@ -552,7 +479,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     implement_skill = repo_root / "skills" / "implement-task" / "SKILL.md"
     implement_prompt = repo_root / "skills" / "implement-task" / "agents" / "openai.yaml"
     design_task_path = repo_root / "docs" / "policy" / "21-design-task.md"
-    planner_path = repo_root / "agent-registry" / "project-planner" / "instructions.md"
 
     for required_path in (
         figma_less_skill,
@@ -746,20 +672,6 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         ),
         errors,
     )
-    _expect_substrings(
-        planner_path,
-        (
-            "reference-pack",
-            "figma-less-ui-design",
-            "UI Planning Packet",
-            "UX_BEHAVIOR_ACCESSIBILITY.md",
-            "reuse + delta",
-            "ux-journey-critic",
-            "state matrix",
-        ),
-        errors,
-    )
-
     for fixture_path in (
         repo_root / "tests" / "fixtures" / "tasks" / "sample-bundle-task" / "UX_SPEC.md",
         repo_root / "tests" / "fixtures" / "tasks" / "sample-pending-bootstrap-task" / "UX_SPEC.md",

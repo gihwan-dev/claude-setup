@@ -9,11 +9,11 @@
 | reviewer | 읽기 전용 | quality preflight 승격 판정과 구조/검증 게이트 |
 | verifier | 읽기 전용 | 검증/테스트 결과 분석 |
 
-## Internal Planning Roles
+## Planning Roles
 
 - `web-researcher`, `solution-analyst`, `product-planner`, `structure-planner`, `ux-journey-critic`, `delivery-risk-planner`, `prompt-systems-designer`
-- 위 role은 `design-task` 내부 fan-out 전용이며 user-facing install/projection 대상이 아니다.
-- 장시간 대기/폴링 감시는 built-in `monitor`만 사용하고 repo-managed projection은 만들지 않는다.
+- planning role은 `design-task` 내부 fan-out 우선이며, 독립 호출도 가능하다.
+- 장시간 대기/폴링 감시는 built-in `monitor`만 사용한다.
 - UI 영향 long-running planning은 `ux-journey-critic`를 mandatory 기본값으로 두고, `product-planner`, `web-researcher`, `solution-analyst`, `structure-planner`, `architecture-reviewer`만 goal/scope 모호성, external benchmark, option comparison, 구조 분해, public/shared boundary 리스크가 있을 때 conditional로 추가한다.
 - AI/agent workflow planning은 `web-researcher`를 official vendor docs 우선 조사 용도로 사용한다.
 
@@ -38,12 +38,9 @@
   - `structure preflight`에서 `split-first` trigger가 켜진 경우
   - 예상 diff 또는 변경 파일 수가 임계값 이상인 경우
   - 대상 기존 코드 파일이 soft limit(`workflow.toml [structure_policy.role_limits]`)에 근접하거나 초과해 분해 설계가 필요한 경우
-- `module-structure-gatekeeper`는 비trivial code diff 이후 실행한다.
-  - FAIL 판정은 공통 구조 관점에서 P1로 취급한다.
+- `structure-gatekeeper`는 비trivial code diff 이후 실행한다. frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`)도 함께 커버한다.
+  - FAIL 판정은 공통/React 구조 관점에서 P1로 취급한다.
   - 이미 soft limit를 넘긴 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
-- `frontend-structure-gatekeeper`는 비trivial frontend diff(`*.tsx`, `*.jsx`, `src/components/**`, `src/hooks/**`, `src/features/**`) 이후 추가 실행한다.
-  - FAIL 판정은 React 구조 관점에서 P1로 취급한다.
-  - 이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 strong mode에서 FAIL이다.
 - `type-specialist`는 shared/public types, generics, public contract 변경 시 실행한다.
 - `test-engineer`는 회귀 리스크가 크거나 테스트 커버리지 공백이 있을 때 실행한다.
 

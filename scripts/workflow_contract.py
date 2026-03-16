@@ -166,18 +166,9 @@ LONG_RUNNING_PUBLIC_SURFACE = _require_str_list(
 REQUIRED_HELPER_AGENT_IDS = _require_str_list(
     PROJECTION_POLICY, "required_helper_agent_ids", path=WORKFLOW_POLICY_PATH
 )
-DISABLED_WRITABLE_PROJECTION_AGENT_IDS = _require_str_list(
-    PROJECTION_POLICY,
-    "disabled_writable_projection_agent_ids",
-    path=WORKFLOW_POLICY_PATH,
-)
 DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS = _require_str_list(
     PROJECTION_POLICY, "documentation_only_builtins", path=WORKFLOW_POLICY_PATH
 )
-INTERNAL_PLANNING_ROLE_IDS = _require_str_list(
-    PROJECTION_POLICY, "internal_planning_role_ids", path=WORKFLOW_POLICY_PATH
-)
-
 EXPECTED_CODEX_REASONING_EFFORT = _require_str(
     CODEX_POLICY, "expected_reasoning_effort", path=WORKFLOW_POLICY_PATH
 )
@@ -720,10 +711,8 @@ def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
         )
     if helper_id == "test-engineer":
         return slice_context.regression_risk_notable or slice_context.coverage_gap
-    if helper_id == "module-structure-gatekeeper":
+    if helper_id == "structure-gatekeeper":
         return slice_context.diff_is_nontrivial
-    if helper_id == "frontend-structure-gatekeeper":
-        return slice_context.diff_is_nontrivial and slice_context.is_frontend_slice
 
     return False
 

@@ -4,36 +4,29 @@ long_running = ["design-task", "implement-task"]
 [projection]
 required_helper_agent_ids = [
   "explorer",
+  "browser-explorer",
   "verification-worker",
   "architecture-reviewer",
   "code-quality-reviewer",
+  "complexity-analyst",
   "type-specialist",
   "test-engineer",
-  "module-structure-gatekeeper",
-  "frontend-structure-gatekeeper",
-]
-disabled_writable_projection_agent_ids = [
-  "frontend-developer",
-  "qa-engineer",
-  "refactoring-expert",
-  "typescript-pro",
-  "storybook-specialist",
-  "prompt-engineer",
-  "project-planner",
-]
-documentation_only_builtins = ["monitor"]
-internal_planning_role_ids = [
+  "structure-gatekeeper",
+  "structure-planner",
   "web-researcher",
   "solution-analyst",
   "product-planner",
-  "structure-planner",
   "ux-journey-critic",
   "delivery-risk-planner",
   "prompt-systems-designer",
 ]
+documentation_only_builtins = ["monitor"]
 
 [codex]
 expected_reasoning_effort = "xhigh"
+
+[codex.sandbox_overrides]
+browser-explorer = "danger-full-access"
 
 [helper_close]
 strong_close_reasons = ["explicit-cancel"]

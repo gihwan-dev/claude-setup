@@ -113,7 +113,7 @@ class AgentSyncTests(RepoTestCase):
         self.assertEqual(slice_budget.get("enforcement"), SLICE_BUDGET_ENFORCEMENT)
 
     def test_browser_explorer_is_projected_with_danger_full_access_profile(self) -> None:
-        self.assertNotIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)
+        self.assertIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)
 
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
         payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))

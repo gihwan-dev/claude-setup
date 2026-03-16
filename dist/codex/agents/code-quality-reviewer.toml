@@ -28,6 +28,13 @@ developer_instructions = """
 - `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - interrupt/close 요청을 받으면 새 리뷰 항목 확장을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
+보안 및 네이밍 체크리스트
+- 하드코딩된 시크릿, API 키, 인증 토큰 노출 여부
+- SQL injection, XSS, command injection 가능성
+- 입력 검증 누락 (시스템 경계에서의 사용자/외부 입력)
+- 변수/함수 이름이 동작을 정확히 반영하는지
+- 중복 코드 또는 불필요한 복잡성
+
 출력 포맷
 1. `상태: final|preliminary`
 2. `진행 상태: phase=<...>; last=<...>; next=<...>`

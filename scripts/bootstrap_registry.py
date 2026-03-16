@@ -226,7 +226,7 @@ def _optional_string_map(value: object, *, label: str) -> dict[str, str]:
 
 def _policy_lists(
     repo_root: Path,
-) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, object]]:
+) -> tuple[tuple[str, ...], tuple[str, ...], dict[str, str], str, dict[str, object]]:
     policy = _load_policy(repo_root)
     projection = policy.get("projection", {})
     codex = policy.get("codex", {})
@@ -236,10 +236,6 @@ def _policy_lists(
     required_helpers = _string_list(
         projection.get("required_helper_agent_ids"),
         label="projection.required_helper_agent_ids",
-    )
-    planning_roles = _string_list(
-        projection.get("internal_planning_role_ids"),
-        label="projection.internal_planning_role_ids",
     )
     documentation_only = _string_list(
         projection.get("documentation_only_builtins"),
@@ -254,7 +250,6 @@ def _policy_lists(
         raise ValueError("missing codex.expected_reasoning_effort in policy/workflow.toml")
     return (
         required_helpers,
-        planning_roles,
         documentation_only,
         sandbox_overrides,
         expected_reasoning_effort,
@@ -262,28 +257,9 @@ def _policy_lists(
     )
 
 
-def _validate_planning_role_templates(repo_root: Path) -> None:
-    (
-        _required_helpers,
-        planning_role_ids,
-        _documentation_only,
-        _sandbox_overrides,
-        _effort,
-        _helper_close,
-    ) = _policy_lists(repo_root)
-    templates = _planning_role_templates()
-    missing_templates = sorted(
-        agent_id for agent_id in planning_role_ids if agent_id not in templates
-    )
-    if missing_templates:
-        joined = ", ".join(missing_templates)
-        raise ValueError(f"missing planning role template(s): {joined}")
-
-
 def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
     (
         _required_helper_agent_ids,
-        _planning_role_ids,
         documentation_only_builtins,
         sandbox_overrides,
         expected_reasoning_effort,
@@ -419,7 +395,6 @@ def _repo_tools_for_helper(agent_key: str) -> list[str]:
 def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
     (
         _required_helper_agent_ids,
-        _planning_role_ids,
         _documentation_only_builtins,
         sandbox_overrides,
         expected_reasoning_effort,
@@ -462,7 +437,6 @@ def _bootstrap_codex_builtins(
 ) -> None:
     (
         required_helper_agent_ids,
-        _planning_role_ids,
         _documentation_only_builtins,
         _sandbox_overrides,
         _expected_reasoning_effort,
@@ -503,185 +477,10 @@ def _bootstrap_codex_builtins(
         )
 
 
-def _planning_role_templates() -> dict[str, dict[str, str]]:
-    return {
-        "web-researcher": {
-            "role": "explorer",
-            "description": "Web research specialist for competitor scans and external solution benchmarking.",
-            "instructions": """너는 web-researcher다.
-
-핵심 임무
-- 경쟁사/대안/최신 사례를 신뢰 가능한 출처로 조사한다.
-- 사실과 해석을 분리해 보고한다.
-
-규칙
-- 출처 링크와 날짜를 반드시 남긴다.
-- 확인된 사실과 추정을 분리한다.
-- 과장된 결론을 피하고 의사결정에 필요한 비교 축을 제시한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (source 링크 + 날짜)
-3. 리스크/불확실성
-4. 권장 다음 행동""",
-        },
-        "solution-analyst": {
-            "role": "reviewer",
-            "description": "Compare implementation options and tradeoffs with clear decision criteria.",
-            "instructions": """너는 solution-analyst다.
-
-핵심 임무
-- 최소 2개 이상의 현실적 옵션을 비교한다.
-- 비용/복잡도/리스크/확장성 기준으로 트레이드오프를 정리한다.
-
-규칙
-- 결론보다 비교 근거를 우선 제시한다.
-- 선택/비선택 사유를 분리한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (옵션별 비교 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "product-planner": {
-            "role": "orchestrator",
-            "description": "Structure ambiguous requests into goal, scope, and acceptance criteria.",
-            "instructions": """너는 product-planner다.
-
-핵심 임무
-- 모호한 요청을 실행 가능한 요구사항으로 구조화한다.
-- goal/scope/acceptance/open questions를 명확히 만든다.
-
-규칙
-- 사용자 가치와 성공 기준을 먼저 고정한다.
-- 구현 디테일보다 제품 동작/경계 정의를 우선한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (요구사항/컨텍스트 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "structure-planner": {
-            "role": "reviewer",
-            "description": "Plan cohesive file/module splits before large refactors or boundary changes.",
-            "instructions": """너는 structure-planner다.
-
-핵심 임무
-- 큰 변경을 안전한 slice와 모듈 경계로 분해한다.
-- 무엇을 유지하고 어디를 나눌지 구조 기준으로 제안한다.
-
-규칙
-- diff budget, 파일 책임, 경계 안정성을 기준으로 판단한다.
-- 구현 세부보다 분해 순서와 검증 포인트를 우선한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (구조 분해 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "ux-journey-critic": {
-            "role": "reviewer",
-            "description": "Evaluate user journey friction, edge states, and accessibility risks.",
-            "instructions": """너는 ux-journey-critic이다.
-
-핵심 임무
-- 사용자 여정의 마찰 지점을 찾고 개선 우선순위를 제시한다.
-- empty/error/loading/permission edge case를 점검한다.
-
-규칙
-- 주관적 미감보다 사용성 리스크를 우선한다.
-- 접근성 영향(키보드/스크린리더)을 최소한으로라도 점검한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (journey 단계별 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "delivery-risk-planner": {
-            "role": "reviewer",
-            "description": "Plan rollout, migration, and operational guardrails before implementation.",
-            "instructions": """너는 delivery-risk-planner다.
-
-핵심 임무
-- 배포/마이그레이션/운영 리스크를 사전에 식별한다.
-- stop/replan 조건과 완화 전략을 정의한다.
-
-규칙
-- 영향 범위와 rollback 가능성을 명확히 적는다.
-- 관측 가능성(로그/모니터링) 요구를 포함한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (리스크 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-        "prompt-systems-designer": {
-            "role": "reviewer",
-            "description": "Design prompt system contracts, evaluation rules, and fallback strategy.",
-            "instructions": """너는 prompt-systems-designer다.
-
-핵심 임무
-- 프롬프트 시스템의 입력/출력 계약과 실패 복구 정책을 설계한다.
-- 평가 기준과 fallback 체계를 제시한다.
-
-규칙
-- 모델/툴 경계를 명확히 분리한다.
-- 재현 가능한 평가 기준을 포함한다.
-
-출력 포맷
-1. 핵심결론
-2. 근거 (계약/평가 근거)
-3. 리스크
-4. 권장 다음 행동""",
-        },
-    }
-
-
-def _bootstrap_planning_roles(repo_root: Path, registry_root: Path) -> None:
-    (
-        _required_helpers,
-        planning_role_ids,
-        _documentation_only,
-        _sandbox_overrides,
-        _effort,
-        _helper_close,
-    ) = (
-        _policy_lists(repo_root)
-    )
-    templates = _planning_role_templates()
-    for agent_id in planning_role_ids:
-        template = templates[agent_id]
-        _write_registry_entry(
-            registry_root,
-            agent_id=agent_id,
-            role=template["role"],
-            description=template["description"],
-            source="planning-role",
-            repo_projection=False,
-            codex_projection=False,
-            repo_model=None,
-            repo_tools=[],
-            codex_agent_key=None,
-            codex_config_file=None,
-            codex_model=None,
-            codex_reasoning_effort=None,
-            codex_sandbox_mode=None,
-            orchestration=None,
-            instructions=template["instructions"],
-        )
-
-
 def bootstrap_from_current(repo_root: Path, registry_root: Path) -> None:
-    _validate_planning_role_templates(repo_root)
     builtin_profiles = _load_codex_builtin_profiles(repo_root)
     _bootstrap_repo_agents(repo_root, registry_root)
     _bootstrap_codex_builtins(repo_root, registry_root, builtin_profiles)
-    _bootstrap_planning_roles(repo_root, registry_root)
     print(f"ok  {registry_root}")
 
 

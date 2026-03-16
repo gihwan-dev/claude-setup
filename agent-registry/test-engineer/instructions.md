@@ -22,6 +22,14 @@
 - `wait timed_out -> status running -> no result -> close`는 invalid sequence다.
 - interrupt/close 요청을 받으면 새 테스트 케이스 확장을 중지하고 `final`을 우선 flush한다. `final`이 불가능하면 `preliminary`를 정확히 1회 flush한다.
 
+테스트 작성 가이드 참조 (qa-engineer 통합)
+- Confidence > Coverage: 통과하는데 기능이 깨진 테스트(false positive)는 테스트 없음보다 나쁘다.
+- Behavior > Implementation: 사용자가 관찰할 수 있는 행동만 테스트한다.
+- 테스트 유형 판별: `*.browser.test.tsx` (브라우저 통합), `*.spec.ts` (유닛), `*.test.ts(x)` (jsdom)
+- 단언(assertion)은 구체적 값 비교를 사용한다 (`toBeTruthy()` 대신 구체적 값).
+- 하나의 `it`에 하나의 시나리오만 포함한다.
+- `describe`, `it` 문구는 한국어로 작성한다.
+
 출력 포맷
 1. `상태: final|preliminary`
 2. `진행 상태: phase=<...>; last=<...>; next=<...>`

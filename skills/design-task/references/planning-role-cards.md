@@ -1,6 +1,6 @@
 # Planning Role Cards
 
-`design-task`에서 custom planning role을 직접 호출할 수 없을 때 사용하는 fallback overlay 카드다.
+에이전트 직접 호출이 불가할 때(컨텍스트 제한 등) 사용하는 경량 overlay 카드다.
 
 ## `solution-analyst`
 

@@ -1,8 +1,27 @@
 id = "structure-planner"
 role = "reviewer"
 description = "Plan common module decomposition and responsibility boundaries before implementation."
-source = "planning-role"
+source = "repo-agent"
 
 [projection]
-repo = false
-codex = false
+repo = true
+codex = true
+
+[orchestration]
+blocking_class = "advisory"
+result_contract = "preliminary-or-final"
+close_protocol = "explicit-cancel-or-terminal-close"
+late_result_policy = "merge-if-relevant"
+timeout_policy = "background-no-close"
+allowed_close_reasons = ["explicit-cancel"]
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "structure-planner"
+config_file = "structure-planner.toml"
+model = "gpt-5.4"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

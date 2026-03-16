@@ -1,8 +1,0 @@
-id = "qa-engineer"
-role = "implementer"
-description = "테스트 전문가 에이전트. 가성비 높고 신뢰할 수 있는 테스트 스위트를 작성한다. 팀 작업 시 구현 완료 후 테스트 작성 담당으로 활용. 매핑 스킬: test"
-source = "repo-agent"
-
-[projection]
-repo = false
-codex = false

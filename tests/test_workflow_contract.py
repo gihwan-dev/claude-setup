@@ -12,7 +12,6 @@ from workflow_contract import (
     BLOCKING_TIMEOUT_PATH,
     CORE_HELPER_ORCHESTRATION_EXPECTED,
     decide_slice_execution_mode,
-    DISABLED_WRITABLE_PROJECTION_AGENT_IDS,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_REASONING_EFFORT,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
@@ -666,16 +665,6 @@ class WorkflowContractTests(RepoTestCase):
                 msg=f"projected agent reasoning effort drifted: {agent_id}",
             )
 
-    def test_disabled_specialized_writers_remain_unprojected(self) -> None:
-        for agent_id in DISABLED_WRITABLE_PROJECTION_AGENT_IDS:
-            payload = tomllib.loads(
-                (REPO_ROOT / "agent-registry" / agent_id / "agent.toml").read_text(encoding="utf-8")
-            )
-            projection = payload.get("projection")
-            self.assertIsInstance(projection, dict, msg=f"missing projection for {agent_id}")
-            self.assertFalse(projection.get("repo"), msg=f"repo projection unexpectedly enabled: {agent_id}")
-            self.assertFalse(projection.get("codex"), msg=f"codex projection unexpectedly enabled: {agent_id}")
-
     def test_documentation_only_builtins_are_not_repo_managed(self) -> None:
         managed_payload = tomllib.loads(
             (REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml").read_text(encoding="utf-8")
@@ -785,22 +774,12 @@ class WorkflowContractTests(RepoTestCase):
     def test_structure_first_instruction_drift_is_guarded(self) -> None:
         self.assertFalse((REPO_ROOT / "agent-registry" / "worker").exists())
 
-        module_gate_content = (
-            REPO_ROOT / "agent-registry" / "module-structure-gatekeeper" / "instructions.md"
+        gate_content = (
+            REPO_ROOT / "agent-registry" / "structure-gatekeeper" / "instructions.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `fail`이다.", module_gate_content)
-
-        frontend_gate_content = (
-            REPO_ROOT / "agent-registry" / "frontend-structure-gatekeeper" / "instructions.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("이미 soft limit를 넘긴 React 파일에 additive diff를 더하면 `FAIL`이다.", frontend_gate_content)
-
-        project_planner_content = (
-            REPO_ROOT / "agent-registry" / "project-planner" / "instructions.md"
-        ).read_text(encoding="utf-8")
-        self.assertIn("`task.yaml` bundle", project_planner_content)
-        self.assertIn("legacy fallback", project_planner_content)
-        self.assertNotIn("`tasks/<task-path>/PLAN.md`", project_planner_content)
+        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.", gate_content)
+        self.assertIn("component/view file: target <=", gate_content)
+        self.assertIn("React hook/provider/view-model file: target <=", gate_content)
 
     def test_design_and_implement_skills_capture_split_decision_contract(self) -> None:
         design_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")

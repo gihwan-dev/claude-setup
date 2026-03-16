@@ -1,8 +1,0 @@
-id = "refactoring-expert"
-role = "implementer"
-description = "코드 품질 개선 전문가. React/TypeScript 코드를 비판적으로 분석하고, 복잡도를 낮추며, 미사용 코드를 제거한다. 팀 작업 시 코드 품질 개선 담당으로 활용. 매핑 스킬: react-refactoring, complexity-refactor, code-cleaner, clean-code-inspector"
-source = "repo-agent"
-
-[projection]
-repo = false
-codex = false
