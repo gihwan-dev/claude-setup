@@ -25,7 +25,7 @@ web-researcher = "medium"
 verification-worker = "medium"
 code-quality-reviewer = "high"
 browser-explorer = "high"
-writer = "high"
+writer = "xhigh"
 
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"

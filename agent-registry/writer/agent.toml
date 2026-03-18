@@ -14,6 +14,6 @@ tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 [codex]
 agent_key = "writer"
 config_file = "writer.toml"
-model = "gpt-5.4"
-reasoning_effort = "high"
+model = "gpt-5.4-mini"
+reasoning_effort = "xhigh"
 sandbox_mode = "danger-full-access"

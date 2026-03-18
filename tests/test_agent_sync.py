@@ -118,7 +118,7 @@ class AgentSyncTests(RepoTestCase):
 
         profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
         self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
-        self.assertEqual(profile.get("model_reasoning_effort"), "high")
+        self.assertEqual(profile.get("model_reasoning_effort"), "xhigh")
 
     def test_projected_agents_do_not_expose_extra_writable_roles(self) -> None:
         for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
