@@ -31,7 +31,13 @@ interface:
     Codex 없으면 `keep-local` fallback으로 순차 실행해. row worker는 `target_path`에만
     파일을 생성/수정하고 shared file 수정을 금지해. row worker 완료 후 output CSV를 수집하고
     실패 행은 1회 재시도, 50% 이상 실패면 중단해. integrator 역할로 `MERGE_POLICY.md`에 따라
-    shared file(barrel exports, route registration 등)을 통합해. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
+    shared file(barrel exports, route registration 등)을 통합해.
+    현재 slice의 변경 대상이 2+ 파일이고 파일 경계가 명확하며 shared file 직접 수정이 불필요하면
+    `writer` 에이전트 위임을 고려해. writer handoff에는 `target_path`, `change_spec`, `context_files`,
+    `validation_command`, `slice_budget`을 포함해. writer 결과가 `상태: blocked`이면 직접 구현으로
+    전환하고, `상태: final`이면 shared file 통합 후 focused validation으로 넘어가.
+    병렬 writer가 필요하면 `isolation: worktree`로 독립 실행하고 파일 간 의존이 없어야 해.
+    브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
     사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함해. 메인 스레드가 종료 전 실질 영향 문서를 다시 확인한다고 가정하고, 필요한
     README/docs/task bundle/openapi/schema/runbook diff는 구현 단계에서 validation 전에 같이 반영해.
     `docs/policy`를 건드렸다면 `python3 scripts/sync_instructions.py`와

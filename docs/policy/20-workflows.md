@@ -2,9 +2,9 @@
 
 | 작업 유형 | 조사 단계 | 구현 단계 | 리뷰 단계 |
 |-----------|----------|----------|----------|
-| 기능 구현 | explorer, web-researcher | main-thread | code-quality-reviewer, structure-reviewer, [architecture-reviewer], [type-specialist], test-engineer |
-| 버그 수정 | explorer, [browser-explorer] | main-thread | code-quality-reviewer, test-engineer |
-| 리팩토링 | explorer, structure-reviewer | main-thread | structure-reviewer, [architecture-reviewer], code-quality-reviewer |
+| 기능 구현 | explorer, web-researcher | main-thread, [writer] | code-quality-reviewer, structure-reviewer, [architecture-reviewer], [type-specialist], test-engineer |
+| 버그 수정 | explorer, [browser-explorer] | main-thread, [writer] | code-quality-reviewer, test-engineer |
+| 리팩토링 | explorer, structure-reviewer | main-thread, [writer] | structure-reviewer, [architecture-reviewer], code-quality-reviewer |
 | 코드 리뷰 | explorer | — | code-quality-reviewer, structure-reviewer, architecture-reviewer, type-specialist |
 | 리서치 | explorer, web-researcher, [browser-explorer] | — | — |
 | 프로토타이핑 | web-researcher | main-thread | [verification-worker] |
@@ -36,5 +36,9 @@
 1. explorer/web-researcher 조사
 2. 메인 의사결정
 3. 구현 (`small slices + run-to-boundary`)
-4. 리뷰 에이전트
-5. 결과 통합
+   - 메인 스레드 직접 작성 (기본)
+   - writer 위임 (대규모, 파일 경계 명확)
+   - 병렬 writer (worktree isolation, 파일 간 무의존)
+4. 메인 스레드 focused validation + shared file 통합
+5. 리뷰 에이전트
+6. 결과 통합

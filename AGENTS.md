@@ -30,7 +30,7 @@ python3 -m unittest discover -s tests -p 'test_*.py'
 
 ## Important Constraints
 
-- delegated lane에서는 code diff ownership을 별도 writer에 고정하지 않는다.
+- delegated lane에서 writer 위임은 조건부다. 메인 스레드가 기본 구현자이며, 대규모 변경 시 파일 경계가 명확한 작업만 writer에 위임한다.
 - planning role은 internal-only다.
 - `skills/`가 canonical source다.
 - `.agents/skills`는 install-time legacy overlay일 뿐 canonical source가 아니다.

@@ -45,6 +45,11 @@ description: >
 3e. `csv-fanout`이면 integrator 역할로 shared file(barrel exports, route registration 등)을 `MERGE_POLICY.md` 규칙에 따라 통합한다.
 4. `delivery_strategy=ui-first`면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json`을 함께 읽는다. `SLICE-1`은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고, `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval criteria를 읽는다.
 5. 현재 slice 범위를 고정한 뒤 structure preflight 후 code/doc diff를 적용한다. `split-first trigger`가 켜지면 기존 파일 append 대신 같은 slice 안에서 분해 경계를 먼저 고정하고, 범위를 줄이지 못하면 `exact split proposal`로 되돌린다.
+5a. writer 위임 판정: 현재 slice의 변경 대상이 2+ 파일이고 파일 경계가 명확하며 shared file 직접 수정이 불필요하면 `writer` 에이전트 위임을 고려한다. 병렬 writer가 가능하려면 대상 파일 간 의존이 없어야 한다.
+5b. writer 위임 시 handoff에는 `target_path`(수정 허용 파일 목록), `change_spec`(변경 사양), `context_files`(참조 파일), `validation_command`(검증 명령), `slice_budget`(파일/LOC 상한)을 포함한다.
+5c. writer 결과가 `상태: blocked`이면 메인 스레드가 직접 구현으로 전환하거나 split/replan한다.
+5d. writer 결과가 `상태: final`이면 메인 스레드가 shared file 통합(barrel exports, route registration 등)을 수행하고 focused validation으로 넘어간다.
+5e. 병렬 writer 사용 시 `isolation: worktree`로 독립 git worktree에서 실행하고, 완료 후 메인 스레드가 diff를 통합한다.
 6. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를 사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
 8. 검증이 통과하면 커밋을 수행하고 `STATUS.md`를 manager-facing 요약으로 갱신한다.
@@ -62,6 +67,9 @@ description: >
 - focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
 - 문서/SSOT 변경이 있으면 필요한 sync와 `--check`까지 끝난 뒤 종료한다.
 - `csv-fanout`에서 row worker는 `target_path`에만 파일을 생성/수정한다. shared file 직접 수정을 금지한다.
+- `writer`는 `target_path` 밖의 파일을 수정하지 않는다. shared file은 메인 스레드가 통합한다.
+- `writer`는 git commit을 수행하지 않는다. 커밋은 메인 스레드 전용이다.
+- 병렬 writer 간 같은 파일을 동시에 수정하지 않는다. 파일 경계 충돌이 감지되면 순차 실행으로 전환한다.
 - `MERGE_POLICY.md`에 명시된 integrator-only 파일은 integrator 역할만 수정한다.
 - Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 keep-local fallback으로 순차 실행된다.
 

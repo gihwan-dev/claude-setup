@@ -12,6 +12,7 @@ required_helper_agent_ids = [
   "type-specialist",
   "test-engineer",
   "web-researcher",
+  "writer",
 ]
 documentation_only_builtins = ["monitor"]
 
@@ -24,9 +25,11 @@ web-researcher = "medium"
 verification-worker = "medium"
 code-quality-reviewer = "high"
 browser-explorer = "high"
+writer = "high"
 
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"
+writer = "danger-full-access"
 
 [review_triggers]
 code_quality_min_changed_files = 3

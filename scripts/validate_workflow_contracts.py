@@ -241,6 +241,69 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
     )
 
 
+def _validate_writer_agent_contract(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    core_path = repo_root / "docs" / "policy" / "00-core.md"
+    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
+    writer_agent_config = registry_root / "writer" / "agent.toml"
+    writer_agent_instructions = registry_root / "writer" / "instructions.md"
+    implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
+
+    if not writer_agent_config.exists():
+        errors.append(f"missing writer agent config: {writer_agent_config}")
+        return
+
+    payload = _load_toml(writer_agent_config)
+    if payload.get("role") != "writer":
+        errors.append("writer role must remain writer")
+    if payload.get("source") != "repo-agent":
+        errors.append("writer source must remain repo-agent")
+
+    projection = payload.get("projection")
+    if not isinstance(projection, dict):
+        errors.append(f"missing [projection]: {writer_agent_config}")
+    else:
+        if projection.get("repo") is not True or projection.get("codex") is not True:
+            errors.append("writer projection must stay enabled for repo/codex")
+
+    codex = payload.get("codex")
+    if not isinstance(codex, dict):
+        errors.append(f"missing [codex]: {writer_agent_config}")
+    else:
+        if codex.get("agent_key") != "writer":
+            errors.append("writer codex.agent_key drifted")
+        if codex.get("config_file") != "writer.toml":
+            errors.append("writer codex.config_file drifted")
+        if codex.get("sandbox_mode") != "danger-full-access":
+            errors.append("writer sandbox_mode must remain danger-full-access")
+
+    _expect_substrings(
+        writer_agent_instructions,
+        (
+            "`target_path`",
+            "`change_spec`",
+            "`상태: final|blocked|partial`",
+            "shared file",
+            "git commit",
+            "`slice_budget`",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        implement_task_skill_path,
+        (
+            "`writer`",
+            "`target_path`",
+            "`change_spec`",
+        ),
+        errors,
+    )
+
+    _expect_substrings(core_path, ("writer",), errors)
+    _expect_substrings(workflows_path, ("writer",), errors)
+
+
 def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
     workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     routing_path = repo_root / "docs" / "policy" / "10-routing.md"
@@ -902,6 +965,7 @@ def main() -> int:
     _validate_registry_codex_contract(repo_root, errors)
     _validate_structure_reviewer_instruction_drift(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
+    _validate_writer_agent_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)
     _validate_ui_planning_packet_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)

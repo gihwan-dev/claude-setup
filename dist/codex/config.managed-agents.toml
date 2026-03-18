@@ -36,3 +36,7 @@ config_file = "agents/verification-worker.toml"
 [agents.web-researcher]
 description = "Web research specialist for competitor scans and external solution benchmarking."
 config_file = "agents/web-researcher.toml"
+
+[agents.writer]
+description = "Delegated code writer for bounded file-scoped implementation slices. Use only when main-thread delegates explicit write scope with target_path constraints."
+config_file = "agents/writer.toml"

@@ -98,6 +98,28 @@ class AgentSyncTests(RepoTestCase):
         profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
         self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
 
+    def test_writer_agent_is_projected_with_danger_full_access_profile(self) -> None:
+        self.assertIn("writer", REQUIRED_HELPER_AGENT_IDS)
+
+        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
+        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
+        agents = payload.get("agents")
+        self.assertIsInstance(agents, dict)
+
+        writer_entry = agents.get("writer")
+        self.assertIsInstance(writer_entry, dict)
+        self.assertEqual(
+            writer_entry.get("config_file"),
+            "agents/writer.toml",
+        )
+
+        profile_path = REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml"
+        self.assertTrue(profile_path.exists(), msg=f"missing writer profile {profile_path}")
+
+        profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
+        self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
+        self.assertEqual(profile.get("model_reasoning_effort"), "high")
+
     def test_projected_agents_do_not_expose_extra_writable_roles(self) -> None:
         for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
             payload = tomllib.loads(path.read_text(encoding="utf-8"))

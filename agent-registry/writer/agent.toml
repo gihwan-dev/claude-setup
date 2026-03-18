@@ -1,0 +1,19 @@
+id = "writer"
+role = "writer"
+description = "Delegated code writer for bounded file-scoped implementation slices. Use only when main-thread delegates explicit write scope with target_path constraints."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+
+[codex]
+agent_key = "writer"
+config_file = "writer.toml"
+model = "gpt-5.4"
+reasoning_effort = "high"
+sandbox_mode = "danger-full-access"
