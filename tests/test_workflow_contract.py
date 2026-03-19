@@ -544,6 +544,29 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("UX_SPEC.md", prompt_content)
         self.assertIn("UX_BEHAVIOR_ACCESSIBILITY.md", prompt_content)
         self.assertIn("`browser-explorer`", prompt_content)
+        self.assertIn("allow_implicit_invocation: false", prompt_content)
+
+    def test_design_and_implement_task_are_explicit_only(self) -> None:
+        design_skill_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        implement_skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        design_prompt_content = (
+            REPO_ROOT / "skills" / "design-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        implement_prompt_content = (
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("explicitly writes `design-task` or `$design-task`", design_skill_content)
+        self.assertNotIn('"설계해줘"', design_skill_content)
+        self.assertNotIn('"계획 세워줘"', design_skill_content)
+        self.assertIn("allow_implicit_invocation: false", design_prompt_content)
+
+        self.assertIn("explicitly writes `implement-task` or", implement_skill_content)
+        self.assertIn("`$implement-task`", implement_skill_content)
+        self.assertNotIn("`구현해줘`", implement_skill_content)
+        self.assertNotIn("`다음 단계 진행해`", implement_skill_content)
+        self.assertNotIn("`계속해`", implement_skill_content)
+        self.assertIn("allow_implicit_invocation: false", implement_prompt_content)
 
     def test_structure_reviewer_instruction_drift_is_guarded(self) -> None:
         self.assertFalse((REPO_ROOT / "agent-registry" / "worker").exists())

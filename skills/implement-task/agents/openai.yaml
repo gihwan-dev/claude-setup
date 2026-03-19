@@ -49,4 +49,4 @@ interface:
     -> main focused validation -> commit` 순서를 지키고, 초기 STATUS는
     `Current slice=Not started.` / `Next slice=SLICE-1` 기준을 유지해
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

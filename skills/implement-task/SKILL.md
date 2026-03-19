@@ -1,9 +1,10 @@
 ---
 name: implement-task
 description: >
-  Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md` fallback.
-  "구현해줘", "다음 단계 진행해", "계속해" 요청에서 사용하며, `slice implementation ->
-  main focused validation -> commit -> STATUS.md update` 흐름으로 다음 slice를 진행한다.
+  Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md`
+  fallback. Invoke only when the user explicitly writes `implement-task` or
+  `$implement-task`. Use the `slice implementation -> main focused validation ->
+  commit -> STATUS.md update` flow for the next approved slice.
 ---
 
 # Implement Task
@@ -12,10 +13,7 @@ description: >
 
 ## Trigger
 
-- `구현해줘`
-- `다음 단계 진행해`
-- `계속해`
-- 설계가 끝난 bundle 또는 legacy task의 실행 요청
+- 사용자가 정확한 스킬명 `implement-task` 또는 `$implement-task`를 직접 적었을 때만 호출한다.
 
 ## Required Inputs
 
@@ -53,7 +51,7 @@ description: >
 6. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를 사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
 7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
 8. 검증이 통과하면 커밋을 수행하고 `STATUS.md`를 manager-facing 요약으로 갱신한다.
-9. `계속해`는 slice 1개에서 종료하고, `끝까지` 모드는 stop/replan 조건을 만날 때까지 같은 순서를 반복한다.
+9. 기본 single-slice mode는 slice 1개에서 종료하고, run-to-boundary mode는 stop/replan 조건을 만날 때까지 같은 순서를 반복한다.
 
 ## Guardrails
 
