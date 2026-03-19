@@ -300,7 +300,9 @@ class AdvisorySliceContext:
     coverage_gap: bool = False
     diff_is_nontrivial: bool = False
     is_frontend_slice: bool = False
-    needs_discovery: bool = False
+    needs_repo_exploration: bool = False
+    needs_external_research: bool = False
+    needs_browser_repro: bool = False
     can_change_current_decision: bool = True
 
 
@@ -372,7 +374,11 @@ def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
         return False
 
     if helper_id == "explorer":
-        return slice_context.needs_discovery
+        return slice_context.needs_repo_exploration
+    if helper_id == "web-researcher":
+        return slice_context.needs_external_research
+    if helper_id == "browser-explorer":
+        return slice_context.needs_browser_repro
     if helper_id == "architecture-reviewer":
         return (
             slice_context.files_changed >= 7

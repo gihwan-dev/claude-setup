@@ -261,6 +261,30 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertTrue(should_spawn_advisory_helper(context))
 
+    def test_should_spawn_explorer_for_repo_exploration(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="explorer",
+            needs_repo_exploration=True,
+            can_change_current_decision=True,
+        )
+        self.assertTrue(should_spawn_advisory_helper(context))
+
+    def test_should_spawn_web_researcher_for_external_research(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="web-researcher",
+            needs_external_research=True,
+            can_change_current_decision=True,
+        )
+        self.assertTrue(should_spawn_advisory_helper(context))
+
+    def test_should_spawn_browser_explorer_for_browser_repro(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="browser-explorer",
+            needs_browser_repro=True,
+            can_change_current_decision=True,
+        )
+        self.assertTrue(should_spawn_advisory_helper(context))
+
     def test_should_spawn_advisory_helper_selects_react_state_reviewer_for_frontend_slice(self) -> None:
         context = AdvisorySliceContext(
             helper_id="react-state-reviewer",

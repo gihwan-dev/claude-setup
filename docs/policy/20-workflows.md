@@ -34,8 +34,8 @@
 
 ### Delegated flow
 
-1. explorer/web-researcher 조사
-2. 메인 의사결정
+1. 조사 helper가 필요한 read-only 근거를 수집한다.
+2. 메인 스레드는 조사 결과를 통합해 의사결정한다.
 3. 구현 (`small slices + run-to-boundary`)
    - 메인 스레드 직접 작성 (기본)
    - writer 위임 (대규모, 파일 경계 명확)

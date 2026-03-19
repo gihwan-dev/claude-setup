@@ -136,6 +136,13 @@ def _expect_substrings(path: Path, substrings: tuple[str, ...], errors: list[str
             errors.append(f"{path}: missing required contract snippet: {substring}")
 
 
+def _forbid_substrings(path: Path, substrings: tuple[str, ...], errors: list[str]) -> None:
+    content = path.read_text(encoding="utf-8")
+    for substring in substrings:
+        if substring in content:
+            errors.append(f"{path}: forbidden contract snippet present: {substring}")
+
+
 def _expect_heading_sequence(path: Path, headings: tuple[str, ...], errors: list[str]) -> None:
     content = path.read_text(encoding="utf-8")
     actual = [
@@ -461,7 +468,10 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "UX_BEHAVIOR_ACCESSIBILITY.md",
             "reuse + delta",
             "web-researcher",
+            "browser-explorer",
             "architecture-reviewer",
+            "메인 스레드는 read-only 조사 결과를 통합만 한다.",
+            "helper unavailable이면 직접 조사로 대체하지 말고 blocked로 보고한다.",
         ),
         errors,
     )
@@ -472,6 +482,27 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "figma-less-ui-design",
             "UX_BEHAVIOR_ACCESSIBILITY.md",
             "design_references",
+            "`browser-explorer`",
+            "메인 스레드 직접 웹 조사는 금지해.",
+            "blocked로 보고해.",
+        ),
+        errors,
+    )
+    _forbid_substrings(
+        design_skill,
+        (
+            "## Multi-Agent Usage (Optional)",
+            "필요할 때만 read-only 병렬 에이전트를 사용한다.",
+            "메인 스레드에서 직접 웹 조사 수행",
+            "### Fallback Rules (Runtime Unavailable)",
+        ),
+        errors,
+    )
+    _forbid_substrings(
+        design_prompt,
+        (
+            "`web-researcher` 또는 메인 스레드 직접 웹 조사",
+            "또는 메인 스레드 직접 웹 조사로 official vendor docs",
         ),
         errors,
     )
@@ -867,6 +898,30 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     quiet_slice = AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)
     if should_spawn_advisory_helper(quiet_slice):
         errors.append("small/low-risk slice should not spawn advisory reviewer")
+
+    repo_exploration_slice = AdvisorySliceContext(
+        helper_id="explorer",
+        needs_repo_exploration=True,
+        can_change_current_decision=True,
+    )
+    if not should_spawn_advisory_helper(repo_exploration_slice):
+        errors.append("explorer must spawn for repo exploration slices")
+
+    external_research_slice = AdvisorySliceContext(
+        helper_id="web-researcher",
+        needs_external_research=True,
+        can_change_current_decision=True,
+    )
+    if not should_spawn_advisory_helper(external_research_slice):
+        errors.append("web-researcher must spawn for external research slices")
+
+    browser_repro_slice = AdvisorySliceContext(
+        helper_id="browser-explorer",
+        needs_browser_repro=True,
+        can_change_current_decision=True,
+    )
+    if not should_spawn_advisory_helper(browser_repro_slice):
+        errors.append("browser-explorer must spawn for browser repro slices")
 
     risky_slice = AdvisorySliceContext(
         helper_id="code-quality-reviewer",

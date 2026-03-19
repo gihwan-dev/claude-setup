@@ -13,12 +13,14 @@
 - public API/schema/config/migration/shared type/cross-module boundary 변경이 없음
 - 원인과 대상 파일이 명확함
 - 검증을 1개 집중 체크로 마무리할 수 있음
+- read-only 조사/탐색/외부 리서치/브라우저 재현이 핵심 작업이 아님
 
 ## 위임 기본 규칙
 
 - non-trivial 작업은 `design-task`/`implement-task` 경로를 사용한다.
 - `small slices + run-to-boundary`를 기본으로 사용한다.
 - slice budget(repo-tracked files 3개 이하, 순 diff 150 LOC 내외)을 넘는 handoff는 `split/replan before execution`으로 되돌린다.
+- read-only 탐색/리서치/브라우저 재현은 각각 `explorer`/`web-researcher`/`browser-explorer`가 담당한다. 메인 스레드는 결과만 통합하고, helper unavailable이면 blocked로 보고한다.
 
 ## Writer 위임 조건
 

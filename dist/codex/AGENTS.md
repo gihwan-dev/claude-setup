@@ -8,7 +8,7 @@
 
 ## 핵심 원칙
 
-- 메인 스레드는 의사결정과 구현에 집중한다. 대규모 변경 시 파일 경계가 명확한 코드 작성은 writer에 위임할 수 있다.
+- 메인 스레드는 의사결정과 구현에 집중한다. 대규모 코드 작성 위임은 writer 조건을 따른다.
 - 조사/리뷰는 에이전트에 적극 위임하고 병렬 활용한다.
 - 에이전트 결과는 하나의 의사결정 가능한 요약으로 통합한다.
 
@@ -52,12 +52,14 @@
 - public API/schema/config/migration/shared type/cross-module boundary 변경이 없음
 - 원인과 대상 파일이 명확함
 - 검증을 1개 집중 체크로 마무리할 수 있음
+- read-only 조사/탐색/외부 리서치/브라우저 재현이 핵심 작업이 아님
 
 ## 위임 기본 규칙
 
 - non-trivial 작업은 `design-task`/`implement-task` 경로를 사용한다.
 - `small slices + run-to-boundary`를 기본으로 사용한다.
 - slice budget(repo-tracked files 3개 이하, 순 diff 150 LOC 내외)을 넘는 handoff는 `split/replan before execution`으로 되돌린다.
+- read-only 탐색/리서치/브라우저 재현은 각각 `explorer`/`web-researcher`/`browser-explorer`가 담당한다. 메인 스레드는 결과만 통합하고, helper unavailable이면 blocked로 보고한다.
 
 ## Writer 위임 조건
 
@@ -114,8 +116,8 @@
 
 ### Delegated flow
 
-1. explorer/web-researcher 조사
-2. 메인 의사결정
+1. 조사 helper가 필요한 read-only 근거를 수집한다.
+2. 메인 스레드는 조사 결과를 통합해 의사결정한다.
 3. 구현 (`small slices + run-to-boundary`)
    - 메인 스레드 직접 작성 (기본)
    - writer 위임 (대규모, 파일 경계 명확)
