@@ -15,6 +15,7 @@
 | `structure-reviewer` | 구조/복잡도 리뷰 + 분해 계획 | Read, Bash, Grep, Glob | non-trivial diff 후 항상 |
 | `architecture-reviewer` | 경계/레이어/public surface 리뷰 | Read, Grep, Glob | public surface 또는 모듈 경계 변경 |
 | `type-specialist` | 타입 계약 안정성 리뷰 | Read, Grep, Glob | shared/public type, generics 변경 |
+| `react-state-reviewer` | React 상태 관리 리뷰 | Read, Grep, Glob | React/TSX 파일 변경, frontend slice |
 | `test-engineer` | 테스트 품질 심사/회귀 리스크 | Read, Grep, Glob | 테스트 코드 변경·추가 또는 회귀 리스크 |
 | `verification-worker` | 검증 결과 분석 | Read, Grep, Glob | 검증 로그가 noisy하거나 multi-step |
 | `writer` | 범위 제한 코드 작성 | Read, Write, Edit, Bash, Grep, Glob | 대규모 변경에서 파일 경계가 명확한 위임 작성 |

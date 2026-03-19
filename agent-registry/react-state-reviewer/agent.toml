@@ -1,0 +1,19 @@
+id = "react-state-reviewer"
+role = "reviewer"
+description = "Read-only reviewer for React state management anti-patterns, unnecessary useEffect+setState, and type-safe state modeling."
+source = "repo-agent"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "react-state-reviewer"
+config_file = "react-state-reviewer.toml"
+model = "gpt-5.4"
+reasoning_effort = "xhigh"
+sandbox_mode = "read-only"

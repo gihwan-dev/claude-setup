@@ -396,6 +396,8 @@ def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
         return slice_context.regression_risk_notable or slice_context.coverage_gap
     if helper_id == "structure-reviewer":
         return slice_context.diff_is_nontrivial
+    if helper_id == "react-state-reviewer":
+        return slice_context.is_frontend_slice
 
     return False
 

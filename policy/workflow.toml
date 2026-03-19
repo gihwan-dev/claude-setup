@@ -10,6 +10,7 @@ required_helper_agent_ids = [
   "code-quality-reviewer",
   "structure-reviewer",
   "type-specialist",
+  "react-state-reviewer",
   "test-engineer",
   "web-researcher",
   "writer",

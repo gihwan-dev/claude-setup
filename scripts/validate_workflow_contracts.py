@@ -688,6 +688,63 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             errors.append(f"raw reference dir must contain placeholder SVGs: {raw_path}")
 
 
+def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    core_path = repo_root / "docs" / "policy" / "00-core.md"
+    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
+    agent_config = registry_root / "react-state-reviewer" / "agent.toml"
+    agent_instructions = registry_root / "react-state-reviewer" / "instructions.md"
+
+    if not agent_config.exists():
+        errors.append(f"missing react-state-reviewer config: {agent_config}")
+        return
+
+    payload = _load_toml(agent_config)
+    if payload.get("role") != "reviewer":
+        errors.append("react-state-reviewer role must remain reviewer")
+    if payload.get("source") != "repo-agent":
+        errors.append("react-state-reviewer source must remain repo-agent")
+
+    projection = payload.get("projection")
+    if not isinstance(projection, dict):
+        errors.append(f"missing [projection]: {agent_config}")
+    else:
+        if projection.get("repo") is not True or projection.get("codex") is not True:
+            errors.append("react-state-reviewer projection must stay enabled for repo/codex")
+
+    codex = payload.get("codex")
+    if not isinstance(codex, dict):
+        errors.append(f"missing [codex]: {agent_config}")
+    else:
+        if codex.get("agent_key") != "react-state-reviewer":
+            errors.append("react-state-reviewer codex.agent_key drifted")
+        if codex.get("config_file") != "react-state-reviewer.toml":
+            errors.append("react-state-reviewer codex.config_file drifted")
+        if codex.get("sandbox_mode") != "read-only":
+            errors.append("react-state-reviewer sandbox_mode must remain read-only")
+
+    if not agent_instructions.exists():
+        errors.append(f"missing react-state-reviewer instructions: {agent_instructions}")
+        return
+
+    _expect_substrings(
+        agent_instructions,
+        (
+            "useEffect",
+            "setState",
+            "discriminated union",
+            "exhaustive",
+            "파생",
+            "CRITICAL",
+            "boolean 플래그",
+        ),
+        errors,
+    )
+
+    _expect_substrings(core_path, ("react-state-reviewer",), errors)
+    _expect_substrings(workflows_path, ("react-state-reviewer",), errors)
+
+
 def _validate_csv_fanout_contract(repo_root: Path, errors: list[str]) -> None:
     design_skill = repo_root / "skills" / "design-task" / "SKILL.md"
     implement_skill = repo_root / "skills" / "implement-task" / "SKILL.md"
@@ -818,6 +875,22 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     )
     if not should_spawn_advisory_helper(risky_slice):
         errors.append("triggered advisory reviewer was not selected by spawn gate")
+
+    frontend_slice = AdvisorySliceContext(
+        helper_id="react-state-reviewer",
+        is_frontend_slice=True,
+        can_change_current_decision=True,
+    )
+    if not should_spawn_advisory_helper(frontend_slice):
+        errors.append("react-state-reviewer must spawn for frontend slices")
+
+    non_frontend_slice = AdvisorySliceContext(
+        helper_id="react-state-reviewer",
+        is_frontend_slice=False,
+        can_change_current_decision=True,
+    )
+    if should_spawn_advisory_helper(non_frontend_slice):
+        errors.append("react-state-reviewer must not spawn for non-frontend slices")
 
     if "task.yaml" not in TASK_BUNDLE_CORE_DOCS:
         errors.append("task bundle core docs must include task.yaml")
@@ -966,6 +1039,7 @@ def main() -> int:
     _validate_structure_reviewer_instruction_drift(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
     _validate_writer_agent_contract(repo_root, errors)
+    _validate_react_state_reviewer_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)
     _validate_ui_planning_packet_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)

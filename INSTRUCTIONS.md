@@ -20,6 +20,7 @@
 | `structure-reviewer` | 구조/복잡도 리뷰 + 분해 계획 | Read, Bash, Grep, Glob | non-trivial diff 후 항상 |
 | `architecture-reviewer` | 경계/레이어/public surface 리뷰 | Read, Grep, Glob | public surface 또는 모듈 경계 변경 |
 | `type-specialist` | 타입 계약 안정성 리뷰 | Read, Grep, Glob | shared/public type, generics 변경 |
+| `react-state-reviewer` | React 상태 관리 리뷰 | Read, Grep, Glob | React/TSX 파일 변경, frontend slice |
 | `test-engineer` | 테스트 품질 심사/회귀 리스크 | Read, Grep, Glob | 테스트 코드 변경·추가 또는 회귀 리스크 |
 | `verification-worker` | 검증 결과 분석 | Read, Grep, Glob | 검증 로그가 noisy하거나 multi-step |
 | `writer` | 범위 제한 코드 작성 | Read, Write, Edit, Bash, Grep, Glob | 대규모 변경에서 파일 경계가 명확한 위임 작성 |
@@ -79,10 +80,10 @@
 
 | 작업 유형 | 조사 단계 | 구현 단계 | 리뷰 단계 |
 |-----------|----------|----------|----------|
-| 기능 구현 | explorer, web-researcher | main-thread, [writer] | code-quality-reviewer, structure-reviewer, [architecture-reviewer], [type-specialist], test-engineer |
-| 버그 수정 | explorer, [browser-explorer] | main-thread, [writer] | code-quality-reviewer, test-engineer |
-| 리팩토링 | explorer, structure-reviewer | main-thread, [writer] | structure-reviewer, [architecture-reviewer], code-quality-reviewer |
-| 코드 리뷰 | explorer | — | code-quality-reviewer, structure-reviewer, architecture-reviewer, type-specialist |
+| 기능 구현 | explorer, web-researcher | main-thread, [writer] | code-quality-reviewer, structure-reviewer, [architecture-reviewer], [type-specialist], [react-state-reviewer], test-engineer |
+| 버그 수정 | explorer, [browser-explorer] | main-thread, [writer] | code-quality-reviewer, [react-state-reviewer], test-engineer |
+| 리팩토링 | explorer, structure-reviewer | main-thread, [writer] | structure-reviewer, [architecture-reviewer], [react-state-reviewer], code-quality-reviewer |
+| 코드 리뷰 | explorer | — | code-quality-reviewer, structure-reviewer, architecture-reviewer, type-specialist, [react-state-reviewer] |
 | 리서치 | explorer, web-researcher, [browser-explorer] | — | — |
 | 프로토타이핑 | web-researcher | main-thread | [verification-worker] |
 | 문서 작업 | explorer | main-thread | — |
@@ -97,6 +98,7 @@
 | structure-reviewer | non-trivial diff 후 항상 |
 | architecture-reviewer | public surface or 모듈 경계 변경 |
 | type-specialist | shared/public type, generics 변경 |
+| react-state-reviewer | React/TSX 파일 변경 + frontend slice |
 | test-engineer | 테스트 코드 변경·추가 or 회귀 리스크 or 테스트 커버리지 공백 |
 
 ## 실행 흐름

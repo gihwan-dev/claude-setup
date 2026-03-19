@@ -261,6 +261,25 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertTrue(should_spawn_advisory_helper(context))
 
+    def test_should_spawn_advisory_helper_selects_react_state_reviewer_for_frontend_slice(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="react-state-reviewer",
+            is_frontend_slice=True,
+            can_change_current_decision=True,
+        )
+        self.assertTrue(should_spawn_advisory_helper(context))
+
+    def test_should_spawn_advisory_helper_skips_react_state_reviewer_for_non_frontend_slice(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="react-state-reviewer",
+            is_frontend_slice=False,
+            can_change_current_decision=True,
+        )
+        self.assertFalse(should_spawn_advisory_helper(context))
+
+    def test_react_state_reviewer_is_in_required_helper_agent_ids(self) -> None:
+        self.assertIn("react-state-reviewer", REQUIRED_HELPER_AGENT_IDS)
+
     def test_task_bundle_policy_constants_cover_new_workflow(self) -> None:
         self.assertIn("feature", TASK_BUNDLE_WORK_TYPES)
         self.assertIn("ops", TASK_BUNDLE_WORK_TYPES)

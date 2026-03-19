@@ -17,6 +17,10 @@ config_file = "agents/code-quality-reviewer.toml"
 description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
 config_file = "agents/explorer-worker.toml"
 
+[agents.react-state-reviewer]
+description = "Read-only reviewer for React state management anti-patterns, unnecessary useEffect+setState, and type-safe state modeling."
+config_file = "agents/react-state-reviewer.toml"
+
 [agents.structure-reviewer]
 description = "Read-only reviewer for module boundaries, file bloat, responsibility separation, decomposition planning, and quantitative complexity analysis."
 config_file = "agents/structure-reviewer.toml"
