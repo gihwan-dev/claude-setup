@@ -27,6 +27,8 @@
 ## Direct Execution Guardrail
 
 - direct execution이어도 멀티 에이전트 탐색은 생략하지 않는다.
+- 서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.
+- 메인 에이전트는 helper fan-out 뒤 병렬로 개인 작업을 하지 않고, 필요한 후속 탐색은 결과를 받은 뒤 최소 범위로만 수행한다.
 - `scripts/workflow_contract.py`의 slice budget 판단을 그대로 재사용한다.
 - broad handoff면 `split-replan`이다.
 - 허용 가능한 slice만 `small slices + run-to-boundary`로 진행한다.

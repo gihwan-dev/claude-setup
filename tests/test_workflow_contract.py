@@ -585,14 +585,23 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertIn("/multi-work", skill_content)
         self.assertIn("멀티 에이전트 탐색", skill_content)
+        self.assertIn(
+            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            skill_content,
+        )
         self.assertIn("`design-task`", skill_content)
         self.assertIn("`implement-task`", skill_content)
         self.assertIn("direct execution", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/routing-contract.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
+        self.assertIn("`wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지", prompt_content)
         self.assertIn("Helper Matrix", reference_content)
         self.assertIn("Routing Matrix", reference_content)
+        self.assertIn(
+            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            reference_content,
+        )
         self.assertIn("small slices + run-to-boundary", reference_content)
 
     def test_multi_review_skill_contract_is_documented(self) -> None:
@@ -608,14 +617,23 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("read-only", skill_content)
         self.assertIn("reviewer-matrix.md", skill_content)
         self.assertIn("current worktree diff 대 `HEAD`", skill_content)
+        self.assertIn(
+            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            skill_content,
+        )
         self.assertIn("findings first, summary second", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/reviewer-matrix.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
+        self.assertIn("`wait`/결과 수집 외 다른 파일 읽기", prompt_content)
         self.assertIn("summary second", prompt_content)
         self.assertIn("Target Precedence", reference_content)
         self.assertIn("Baseline Reviewers", reference_content)
         self.assertIn("Conditional Reviewers", reference_content)
+        self.assertIn(
+            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            reference_content,
+        )
 
     def test_multi_work_helper_derivation_and_route_defaults(self) -> None:
         self.assertEqual(DEFAULT_MULTI_WORK_EXPLORATION_HELPERS, derive_multi_work_helpers())
