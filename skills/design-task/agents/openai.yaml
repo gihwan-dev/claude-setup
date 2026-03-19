@@ -57,4 +57,4 @@ interface:
     validation owner, focused validation, split decision, stop/replan conditions를 명시해.
     `STATUS.md` 초기값은 `Current slice=Not started.` / `Next slice=SLICE-1`로 맞춰.
 policy:
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

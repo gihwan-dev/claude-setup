@@ -485,6 +485,15 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "`browser-explorer`",
             "메인 스레드 직접 웹 조사는 금지해.",
             "blocked로 보고해.",
+            "allow_implicit_invocation: false",
+        ),
+        errors,
+    )
+
+    _expect_substrings(
+        implement_prompt,
+        (
+            "allow_implicit_invocation: false",
         ),
         errors,
     )

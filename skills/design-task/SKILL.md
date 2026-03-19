@@ -1,11 +1,11 @@
 ---
 name: design-task
 description: >
-  Large or ambiguous non-trivial task planning skill. Use when the user asks to "설계해줘",
-  "계획 세워줘", "어떻게 쪼갤지 정리해줘", or explicitly asks for no code changes on work
-  that should enter the long-running path. Build or update a tasks/{task-path}/task.yaml
-  bundle via a continuity gate, derive `delivery_strategy` for UI-impact work, generate
-  SPEC_VALIDATION.md, and keep legacy PLAN.md tasks only as fallback compatibility.
+  Large or ambiguous non-trivial task planning skill. Invoke only when the user
+  explicitly writes `design-task` or `$design-task`. Build or update a
+  tasks/{task-path}/task.yaml bundle via a continuity gate, derive
+  `delivery_strategy` for UI-impact work, generate SPEC_VALIDATION.md, and keep
+  legacy PLAN.md tasks only as fallback compatibility.
 ---
 
 # Workflow: Design Task
