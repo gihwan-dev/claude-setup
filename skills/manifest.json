@@ -109,6 +109,16 @@
       "path": "skills/korean-cognitive-code-explainer/SKILL.md"
     },
     {
+      "name": "multi-review",
+      "description": "Explicit multi-agent review entry for the current diff or a user-specified target.",
+      "path": "skills/multi-review/SKILL.md"
+    },
+    {
+      "name": "multi-work",
+      "description": "Explicit multi-agent work entry that explores first and routes to planning, task-bundle execution, or direct execution.",
+      "path": "skills/multi-work/SKILL.md"
+    },
+    {
       "name": "pm-spec-from-code",
       "description": "Convert implemented code into PM-perspective spec documents focusing on user-facing behavior and rules. 코드로 구현된 기능을 기획자(PM) 시선의 간결한 스펙 문서로 변환한다. 사용자 관점 동작, 규칙, 제약, 예외, 비목표를 명확한 bullet로 정리하고 함수/변수/컴포넌트 내부 구현 등 기술 상세는 제외한다. \"테이블 리사이즈 기능 스펙 문서 만들어줘\", \"코드 기준으로 기능 스펙 정리해줘\", \"기획 문서 형태로 요약해줘\" 같은 요청에서 사용한다.",
       "path": "skills/pm-spec-from-code/SKILL.md"

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import tomllib
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TypeAlias
 
@@ -283,6 +283,19 @@ ADVISORY_HELPER_AGENT_IDS = tuple(
     if agent_id != "verification-worker"
 )
 
+DEFAULT_MULTI_WORK_EXPLORATION_HELPERS = ("explorer", "structure-reviewer")
+BASELINE_MULTI_REVIEW_HELPERS = (
+    "structure-reviewer",
+    "code-quality-reviewer",
+    "test-engineer",
+)
+OPTIONAL_MULTI_REVIEW_HELPERS = (
+    "architecture-reviewer",
+    "type-specialist",
+    "react-state-reviewer",
+    "browser-explorer",
+)
+
 
 @dataclass(frozen=True)
 class AdvisorySliceContext:
@@ -304,6 +317,15 @@ class AdvisorySliceContext:
     needs_external_research: bool = False
     needs_browser_repro: bool = False
     can_change_current_decision: bool = True
+
+
+@dataclass(frozen=True)
+class MultiWorkRoutingContext:
+    plan_mode: bool = False
+    user_requested_plan: bool = False
+    existing_task_bundle_available: bool = False
+    work_is_large_or_ambiguous: bool = False
+    continuity_or_bundle_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -366,6 +388,29 @@ def decide_slice_execution_mode(plan: SliceExecutionPlan) -> SliceExecutionDecis
     )
 
 
+def derive_multi_work_helpers(
+    *,
+    needs_external_research: bool = False,
+    needs_browser_repro: bool = False,
+) -> tuple[str, ...]:
+    helpers = list(DEFAULT_MULTI_WORK_EXPLORATION_HELPERS)
+    if needs_external_research:
+        helpers.append("web-researcher")
+    if needs_browser_repro:
+        helpers.append("browser-explorer")
+    return tuple(helpers)
+
+
+def decide_multi_work_route(context: MultiWorkRoutingContext) -> str:
+    if context.plan_mode or context.user_requested_plan:
+        return "design-task"
+    if context.existing_task_bundle_available:
+        return "implement-task"
+    if context.work_is_large_or_ambiguous or context.continuity_or_bundle_required:
+        return "design-task"
+    return "direct-execution"
+
+
 def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
     helper_id = slice_context.helper_id
     if helper_id not in ADVISORY_HELPER_AGENT_IDS:
@@ -406,6 +451,15 @@ def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
         return slice_context.is_frontend_slice
 
     return False
+
+
+def derive_multi_review_helpers(slice_context: AdvisorySliceContext) -> tuple[str, ...]:
+    helpers = list(BASELINE_MULTI_REVIEW_HELPERS)
+    for helper_id in OPTIONAL_MULTI_REVIEW_HELPERS:
+        candidate = replace(slice_context, helper_id=helper_id)
+        if should_spawn_advisory_helper(candidate):
+            helpers.append(helper_id)
+    return tuple(helpers)
 
 
 def extract_level1_headings(markdown: str) -> list[str]:

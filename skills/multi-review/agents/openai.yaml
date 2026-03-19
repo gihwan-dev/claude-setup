@@ -1,0 +1,11 @@
+interface:
+  display_name: "Multi Review"
+  short_description: "Multi-agent review entry for the current diff or a selected target"
+  default_prompt: >
+    $multi-review 먼저 `references/reviewer-matrix.md`를 읽고 멀티 에이전트 리뷰를 실행해.
+    baseline reviewer와 조건부 reviewer 추가는 reference와 `scripts/workflow_contract.py`
+    helper 기준을 따라. 기본 대상은 current worktree diff vs `HEAD`고, 사용자가
+    path/commit/range를 주면 그 대상을 우선해. 리뷰는 read-only로 유지하고, 결과는 findings
+    first, summary second 형식으로 severity 순 정렬해.
+policy:
+  allow_implicit_invocation: false
