@@ -8,12 +8,18 @@ from support import REPO_ROOT, RepoTestCase
 from workflow_contract import (
     AGENT_CONTRACTS_BY_ID,
     AdvisorySliceContext,
+    BASELINE_MULTI_REVIEW_HELPERS,
+    DEFAULT_MULTI_WORK_EXPLORATION_HELPERS,
+    decide_multi_work_route,
     decide_slice_execution_mode,
     derive_csv_fanout_docs,
+    derive_multi_review_helpers,
+    derive_multi_work_helpers,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
     LONG_RUNNING_PUBLIC_SURFACE,
+    MultiWorkRoutingContext,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
     SliceExecutionPlan,
@@ -567,6 +573,107 @@ class WorkflowContractTests(RepoTestCase):
         self.assertNotIn("`다음 단계 진행해`", implement_skill_content)
         self.assertNotIn("`계속해`", implement_skill_content)
         self.assertIn("allow_implicit_invocation: false", implement_prompt_content)
+
+    def test_multi_work_skill_contract_is_documented(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "multi-work" / "SKILL.md").read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "multi-work" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        reference_content = (
+            REPO_ROOT / "skills" / "multi-work" / "references" / "routing-contract.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("/multi-work", skill_content)
+        self.assertIn("멀티 에이전트 탐색", skill_content)
+        self.assertIn("`design-task`", skill_content)
+        self.assertIn("`implement-task`", skill_content)
+        self.assertIn("direct execution", skill_content)
+        self.assertIn("allow_implicit_invocation: false", prompt_content)
+        self.assertIn("references/routing-contract.md", prompt_content)
+        self.assertIn("scripts/workflow_contract.py", prompt_content)
+        self.assertIn("Helper Matrix", reference_content)
+        self.assertIn("Routing Matrix", reference_content)
+        self.assertIn("small slices + run-to-boundary", reference_content)
+
+    def test_multi_review_skill_contract_is_documented(self) -> None:
+        skill_content = (REPO_ROOT / "skills" / "multi-review" / "SKILL.md").read_text(encoding="utf-8")
+        prompt_content = (
+            REPO_ROOT / "skills" / "multi-review" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+        reference_content = (
+            REPO_ROOT / "skills" / "multi-review" / "references" / "reviewer-matrix.md"
+        ).read_text(encoding="utf-8")
+
+        self.assertIn("/multi-review", skill_content)
+        self.assertIn("read-only", skill_content)
+        self.assertIn("reviewer-matrix.md", skill_content)
+        self.assertIn("current worktree diff 대 `HEAD`", skill_content)
+        self.assertIn("findings first, summary second", skill_content)
+        self.assertIn("allow_implicit_invocation: false", prompt_content)
+        self.assertIn("references/reviewer-matrix.md", prompt_content)
+        self.assertIn("scripts/workflow_contract.py", prompt_content)
+        self.assertIn("summary second", prompt_content)
+        self.assertIn("Target Precedence", reference_content)
+        self.assertIn("Baseline Reviewers", reference_content)
+        self.assertIn("Conditional Reviewers", reference_content)
+
+    def test_multi_work_helper_derivation_and_route_defaults(self) -> None:
+        self.assertEqual(DEFAULT_MULTI_WORK_EXPLORATION_HELPERS, derive_multi_work_helpers())
+        self.assertEqual(
+            ("explorer", "structure-reviewer", "web-researcher"),
+            derive_multi_work_helpers(needs_external_research=True),
+        )
+        self.assertEqual(
+            ("explorer", "structure-reviewer", "browser-explorer"),
+            derive_multi_work_helpers(needs_browser_repro=True),
+        )
+        self.assertEqual(
+            "design-task",
+            decide_multi_work_route(MultiWorkRoutingContext(plan_mode=True)),
+        )
+        self.assertEqual(
+            "implement-task",
+            decide_multi_work_route(MultiWorkRoutingContext(existing_task_bundle_available=True)),
+        )
+        self.assertEqual(
+            "design-task",
+            decide_multi_work_route(MultiWorkRoutingContext(work_is_large_or_ambiguous=True)),
+        )
+        self.assertEqual(
+            "direct-execution",
+            decide_multi_work_route(MultiWorkRoutingContext()),
+        )
+
+    def test_multi_review_helper_derivation_uses_baseline_and_conditional_reviewers(self) -> None:
+        quiet_helpers = derive_multi_review_helpers(
+            AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)
+        )
+        self.assertEqual(BASELINE_MULTI_REVIEW_HELPERS, quiet_helpers)
+
+        risky_frontend_helpers = derive_multi_review_helpers(
+            AdvisorySliceContext(
+                helper_id="code-quality-reviewer",
+                files_changed=7,
+                public_surface_changed=True,
+                shared_types_changed=True,
+                public_contract_changed=True,
+                is_frontend_slice=True,
+                needs_browser_repro=True,
+                can_change_current_decision=True,
+            )
+        )
+        self.assertEqual(
+            (
+                "structure-reviewer",
+                "code-quality-reviewer",
+                "test-engineer",
+                "architecture-reviewer",
+                "type-specialist",
+                "react-state-reviewer",
+                "browser-explorer",
+            ),
+            risky_frontend_helpers,
+        )
 
     def test_structure_reviewer_instruction_drift_is_guarded(self) -> None:
         self.assertFalse((REPO_ROOT / "agent-registry" / "worker").exists())

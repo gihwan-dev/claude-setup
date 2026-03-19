@@ -1,0 +1,13 @@
+interface:
+  display_name: "Multi Work"
+  short_description: "Multi-agent work entry that explores first and routes the task"
+  default_prompt: >
+    $multi-work 먼저 `references/routing-contract.md`를 읽고 멀티 에이전트 탐색을 수행해.
+    최소 helper 2개를 사용하고, helper 조합과 route 판정은 reference와
+    `scripts/workflow_contract.py` 기준을 그대로 따라. plan mode거나 계획/설계 의도면
+    `design-task`, 승인된 task bundle 실행이면 `implement-task`, 그 외 작고 bounded한 작업만
+    direct execution lane으로 처리해. direct execution이어도 탐색을 생략하지 말고
+    `split-replan`, `small slices + run-to-boundary`, writer 기준을 그대로 유지해. 리뷰는
+    자동 실행하지 말고 필요 시 `multi-review` explicit step을 남겨.
+policy:
+  allow_implicit_invocation: false

@@ -16,12 +16,18 @@ from sync_agents import (
 )
 from workflow_contract import (
     AdvisorySliceContext,
+    BASELINE_MULTI_REVIEW_HELPERS,
+    DEFAULT_MULTI_WORK_EXPLORATION_HELPERS,
+    decide_multi_work_route,
     detect_task_document_mode,
+    derive_multi_review_helpers,
+    derive_multi_work_helpers,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     decide_slice_execution_mode,
     derive_csv_fanout_docs,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
+    MultiWorkRoutingContext,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
     SliceExecutionPlan,
@@ -728,6 +734,116 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             errors.append(f"raw reference dir must contain placeholder SVGs: {raw_path}")
 
 
+def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) -> None:
+    multi_work_skill = repo_root / "skills" / "multi-work" / "SKILL.md"
+    multi_work_prompt = repo_root / "skills" / "multi-work" / "agents" / "openai.yaml"
+    multi_work_reference = repo_root / "skills" / "multi-work" / "references" / "routing-contract.md"
+    multi_review_skill = repo_root / "skills" / "multi-review" / "SKILL.md"
+    multi_review_prompt = repo_root / "skills" / "multi-review" / "agents" / "openai.yaml"
+    multi_review_reference = repo_root / "skills" / "multi-review" / "references" / "reviewer-matrix.md"
+
+    for required_path in (
+        multi_work_skill,
+        multi_work_prompt,
+        multi_work_reference,
+        multi_review_skill,
+        multi_review_prompt,
+        multi_review_reference,
+    ):
+        if not required_path.exists():
+            errors.append(f"missing multi-entry skill contract file: {required_path}")
+
+    if multi_work_skill.exists():
+        _expect_substrings(
+            multi_work_skill,
+            (
+                "/multi-work",
+                "멀티 에이전트 탐색",
+                "`design-task`",
+                "`implement-task`",
+                "direct execution",
+                "`multi-review`",
+            ),
+            errors,
+        )
+    if multi_work_prompt.exists():
+        _expect_substrings(
+            multi_work_prompt,
+            (
+                "allow_implicit_invocation: false",
+                "references/routing-contract.md",
+                "scripts/workflow_contract.py",
+                "`design-task`",
+                "`implement-task`",
+                "direct execution lane",
+                "`multi-review`",
+            ),
+            errors,
+        )
+    if multi_work_reference.exists():
+        _expect_substrings(
+            multi_work_reference,
+            (
+                "Helper Matrix",
+                "`explorer`",
+                "`structure-reviewer`",
+                "`web-researcher`",
+                "`browser-explorer`",
+                "Routing Matrix",
+                "`design-task`",
+                "`implement-task`",
+                "direct execution",
+                "split-replan",
+                "small slices + run-to-boundary",
+            ),
+            errors,
+        )
+
+    if multi_review_skill.exists():
+        _expect_substrings(
+            multi_review_skill,
+            (
+                "/multi-review",
+                "read-only",
+                "reviewer-matrix.md",
+                "current worktree diff 대 `HEAD`",
+                "findings first, summary second",
+            ),
+            errors,
+        )
+    if multi_review_prompt.exists():
+        _expect_substrings(
+            multi_review_prompt,
+            (
+                "allow_implicit_invocation: false",
+                "references/reviewer-matrix.md",
+                "scripts/workflow_contract.py",
+                "current worktree diff vs `HEAD`",
+                "summary second",
+            ),
+            errors,
+        )
+    if multi_review_reference.exists():
+        _expect_substrings(
+            multi_review_reference,
+            (
+                "Target Precedence",
+                "current worktree diff vs `HEAD`",
+                "Baseline Reviewers",
+                "`structure-reviewer`",
+                "`code-quality-reviewer`",
+                "`test-engineer`",
+                "Conditional Reviewers",
+                "`architecture-reviewer`",
+                "`type-specialist`",
+                "`react-state-reviewer`",
+                "`browser-explorer`",
+                "findings first, summary second",
+            ),
+            errors,
+        )
+
+
 def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     core_path = repo_root / "docs" / "policy" / "00-core.md"
@@ -956,6 +1072,57 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     if should_spawn_advisory_helper(non_frontend_slice):
         errors.append("react-state-reviewer must not spawn for non-frontend slices")
 
+    if derive_multi_work_helpers() != DEFAULT_MULTI_WORK_EXPLORATION_HELPERS:
+        errors.append("multi-work default helper derivation drifted")
+    if derive_multi_work_helpers(needs_external_research=True) != (
+        "explorer",
+        "structure-reviewer",
+        "web-researcher",
+    ):
+        errors.append("multi-work external-research helper derivation drifted")
+    if decide_multi_work_route(MultiWorkRoutingContext(plan_mode=True)) != "design-task":
+        errors.append("multi-work must route plan mode to design-task")
+    if decide_multi_work_route(
+        MultiWorkRoutingContext(existing_task_bundle_available=True)
+    ) != "implement-task":
+        errors.append("multi-work must route approved task bundles to implement-task")
+    if decide_multi_work_route(
+        MultiWorkRoutingContext(work_is_large_or_ambiguous=True)
+    ) != "design-task":
+        errors.append("multi-work must route large or ambiguous work to design-task")
+    if decide_multi_work_route(MultiWorkRoutingContext()) != "direct-execution":
+        errors.append("multi-work default route must be direct-execution")
+
+    quiet_review_helpers = derive_multi_review_helpers(
+        AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)
+    )
+    if quiet_review_helpers != BASELINE_MULTI_REVIEW_HELPERS:
+        errors.append("multi-review baseline reviewer derivation drifted")
+
+    risky_frontend_helpers = derive_multi_review_helpers(
+        AdvisorySliceContext(
+            helper_id="code-quality-reviewer",
+            files_changed=7,
+            public_surface_changed=True,
+            shared_types_changed=True,
+            public_contract_changed=True,
+            is_frontend_slice=True,
+            needs_browser_repro=True,
+            can_change_current_decision=True,
+        )
+    )
+    expected_risky_frontend_helpers = (
+        "structure-reviewer",
+        "code-quality-reviewer",
+        "test-engineer",
+        "architecture-reviewer",
+        "type-specialist",
+        "react-state-reviewer",
+        "browser-explorer",
+    )
+    if risky_frontend_helpers != expected_risky_frontend_helpers:
+        errors.append("multi-review conditional reviewer derivation drifted")
+
     if "task.yaml" not in TASK_BUNDLE_CORE_DOCS:
         errors.append("task bundle core docs must include task.yaml")
     if "task" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS or "required_docs" not in TASK_BUNDLE_REQUIRED_TASK_YAML_KEYS:
@@ -1106,6 +1273,7 @@ def main() -> int:
     _validate_react_state_reviewer_contract(repo_root, errors)
     _validate_writer_runtime_docs(repo_root, errors)
     _validate_ui_planning_packet_contract(repo_root, errors)
+    _validate_multi_entry_skills_contract(repo_root, errors)
     _validate_generated_projections(repo_root, errors)
     _validate_policy_functions(repo_root, errors)
     _validate_csv_fanout_contract(repo_root, errors)
