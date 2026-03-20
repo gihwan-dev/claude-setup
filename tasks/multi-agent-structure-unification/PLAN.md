@@ -58,7 +58,7 @@ refactor
   - `structure-planner` 일반화
   - 정책/skill/orchestration 문구를 공통 구조 리뷰 기준으로 갱신
 - 변경 경계:
-  - `INSTRUCTIONS.md`
+  - `policy/workflow.toml`
   - `scripts/workflow_contract.py`
   - `skills/design-task/SKILL.md`
   - `skills/design-task/references/planning-role-cards.md`
@@ -99,7 +99,7 @@ refactor
   - focused validation 및 install dry-run 확인
   - advisory review 반영
 - 변경 경계:
-  - generated `AGENTS.md`, `CLAUDE.md`, `dist/codex/**`, `agents/**`
+  - generated helper projections under `dist/codex/**`, `agents/**`
 - 예상 파일 수:
   - generated boundary 예외
 - validation owner:
@@ -109,7 +109,6 @@ refactor
 
 # Verification
 
-- `python3 scripts/sync_instructions.py --check`
 - `python3 scripts/sync_agents.py --check`
 - `python3 scripts/validate_workflow_contracts.py`
 - `python3 scripts/install_assets.py --target codex --dry-run`
@@ -119,4 +118,4 @@ refactor
 
 - `module-structure-gatekeeper`를 helper 집합/managed config/installer validation 세 경로에 일관되게 반영하지 못하면 중단한다.
 - legacy top-level helper cleanup이 기존 사용자 config의 unrelated section을 훼손할 위험이 있으면 정밀 migration으로 재설계한다.
-- policy 문구 변경이 `sync_instructions` generated output과 충돌하면 원문(`INSTRUCTIONS.md`) 기준으로 다시 정렬한다.
+- workflow contract 문구 변경이 generated helper output과 충돌하면 canonical source 기준으로 다시 정렬한다.

@@ -40,11 +40,9 @@ interface:
     브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
     사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함해. 메인 스레드가 종료 전 실질 영향 문서를 다시 확인한다고 가정하고, 필요한
     README/docs/task bundle/openapi/schema/runbook diff는 구현 단계에서 validation 전에 같이 반영해.
-    `docs/policy`를 건드렸다면 `python3 scripts/sync_instructions.py`와
-    `python3 scripts/sync_instructions.py --check`, `skills`를 건드렸다면
-    `python3 scripts/sync_skills_index.py`와 `python3 scripts/sync_skills_index.py --check`,
-    `agent-registry`를 건드렸다면 `python3 scripts/sync_agents.py`와
-    `python3 scripts/sync_agents.py --check`를 실행하고 결과를 STATUS/verification에 남겨. 문서
+    `skills`를 건드렸다면 `python3 scripts/sync_skills_index.py`와
+    `python3 scripts/sync_skills_index.py --check`, `agent-registry`를 건드렸다면
+    `python3 scripts/sync_agents.py`와 `python3 scripts/sync_agents.py --check`를 실행하고 결과를 STATUS/verification에 남겨. 문서
     diff까지 포함해 slice budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan해. `slice implementation
     -> main focused validation -> commit` 순서를 지키고, 초기 STATUS는
     `Current slice=Not started.` / `Next slice=SLICE-1` 기준을 유지해

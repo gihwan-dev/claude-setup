@@ -23,6 +23,12 @@ REPO_NOTICE_LINE_1 = "<!-- AUTO-GENERATED from agent-registry. Do not edit direc
 REPO_NOTICE_LINE_2 = "<!-- Run: python3 scripts/sync_agents.py -->"
 CODEX_NOTICE_LINE_1 = "# AUTO-GENERATED from agent-registry. Do not edit directly."
 CODEX_NOTICE_LINE_2 = "# Run: python3 scripts/sync_agents.py"
+LEGACY_RULE_NOTICE_LINE_1 = "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->"
+LEGACY_RULE_NOTICE_LINE_2 = {
+    "<!-- Run: python3 scripts/sync_instructions.py -->",
+    "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
+}
+LEGACY_GLOBAL_RULE_FILENAMES = ("AGENTS.md", "CLAUDE.md", "INSTRUCTIONS.md")
 MANAGED_BLOCK_PATTERN = re.compile(
     rf"{re.escape(BEGIN_MANAGED)}\n(.*?)\n{re.escape(END_MANAGED)}\n?",
     re.DOTALL,
@@ -107,13 +113,11 @@ def resolve_install_mode(repo_root: Path, requested_mode: str, *, dry_run: bool)
 
 def run_sync(repo_root: Path, dry_run: bool) -> None:
     scripts_dir = repo_root / "scripts"
-    sync_instructions = scripts_dir / "sync_instructions.py"
     sync_agents = scripts_dir / "sync_agents.py"
     sync_skills_index = scripts_dir / "sync_skills_index.py"
     python = sys.executable
 
     commands = [
-        [python, str(sync_instructions), "--check" if dry_run else ""],
         [python, str(sync_agents), "--check" if dry_run else ""],
         [python, str(sync_skills_index), "--check" if dry_run else ""],
     ]
@@ -501,6 +505,60 @@ def _prune_file(path: Path, *, reason: str, dry_run: bool) -> None:
     print(f"prune {path} ({reason})")
 
 
+def _resolve_without_error(path: Path) -> Path:
+    try:
+        return path.resolve(strict=False)
+    except OSError:
+        return path.absolute()
+
+
+def _is_within(root: Path, candidate: Path) -> bool:
+    try:
+        candidate.relative_to(root)
+        return True
+    except ValueError:
+        return False
+
+
+def _legacy_rule_symlink_points_to_repo(path: Path, repo_root: Path) -> bool:
+    if not path.is_symlink():
+        return False
+    return _is_within(
+        _resolve_without_error(repo_root),
+        _resolve_without_error(path),
+    )
+
+
+def _is_repo_managed_legacy_rule_file(path: Path) -> bool:
+    if path.name not in LEGACY_GLOBAL_RULE_FILENAMES:
+        return False
+    lines = _read_text(path).splitlines()
+    if not lines or lines[0].strip() != LEGACY_RULE_NOTICE_LINE_1:
+        return False
+    if len(lines) == 1:
+        return True
+    return lines[1].strip() in LEGACY_RULE_NOTICE_LINE_2
+
+
+def prune_legacy_global_rule_files(
+    *,
+    home: Path,
+    repo_root: Path,
+    dry_run: bool,
+) -> None:
+    for filename in LEGACY_GLOBAL_RULE_FILENAMES:
+        path = home / filename
+        if not path.exists() and not path.is_symlink():
+            continue
+        if _legacy_rule_symlink_points_to_repo(path, repo_root):
+            reason = "repo-managed legacy global rule symlink"
+        elif _is_repo_managed_legacy_rule_file(path):
+            reason = "repo-managed legacy global rule file"
+        else:
+            continue
+        _prune_file(path, reason=reason, dry_run=dry_run)
+
+
 def prune_claude_agents(
     *,
     agents_dir: Path,
@@ -683,6 +741,11 @@ def main() -> int:
             expected_skill_names,
             dry_run=args.dry_run,
         )
+        prune_legacy_global_rule_files(
+            home=home,
+            repo_root=repo_root,
+            dry_run=args.dry_run,
+        )
 
         if target == "claude":
             install_entries(
@@ -716,12 +779,6 @@ def main() -> int:
                 expected_names=expected_codex_agent_names,
                 previous_managed_names=previous_managed_names,
                 dry_run=args.dry_run,
-            )
-            install_path(
-                repo_root / "dist" / "codex" / "AGENTS.md",
-                home / "AGENTS.md",
-                effective_mode,
-                args.dry_run,
             )
             updated_config = update_codex_config(
                 home, codex_managed_src, dry_run=args.dry_run

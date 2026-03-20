@@ -6,19 +6,12 @@
 
 | 작업 | 수정 위치 | 직접 수정 금지 |
 |------|-----------|----------------|
-| 정책 수정 | `docs/policy/*.md` | `INSTRUCTIONS.md`, `AGENTS.md`, `CLAUDE.md` |
 | agent 수정 | `agent-registry/<agent-id>/agent.toml`, `agent-registry/<agent-id>/instructions.md` | `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml` |
 | skill 수정 | `skills/<skill-name>/...` | `skills/INDEX.md`, `skills/manifest.json`, 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
 `skills/`가 canonical source다. `.agents/skills`는 기본 source가 아니라 설치 호환을 위한 legacy overlay로만 취급한다.
 
 ## Runbook
-
-### 정책 수정
-
-1. `docs/policy/*.md`를 수정한다.
-2. `python3 scripts/sync_instructions.py`
-3. `python3 scripts/sync_instructions.py --check`
 
 ### agent 수정
 
@@ -40,7 +33,6 @@
 보통 아래 순서면 충분하다.
 
 ```bash
-python3 scripts/sync_instructions.py --check
 python3 scripts/sync_agents.py --check
 python3 scripts/sync_skills_index.py --check
 python3 scripts/validate_workflow_contracts.py
@@ -81,10 +73,11 @@ hooks가 활성화되어 있으면 수동 설치는 보통 불필요하다.
 - 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
 - `.agents/skills`가 존재하면 legacy overlay로 추가 설치된다.
 - generated drift를 먼저 해소한 뒤 설치한다.
+- repo-managed legacy global rule markdown은 설치하지 않고 stale top-level rule files만 안전하게 prune한다.
 
 ## When Unsure
 
 1. 어떤 파일이 source of truth인지 먼저 확인한다.
 2. generated 파일은 재생성으로 맞춘다.
 3. 설치 문제는 `--dry-run`으로 먼저 확인한다.
-4. 그래도 모호하면 [README.md](./README.md)와 `docs/policy/*.md`를 다시 읽는다.
+4. 그래도 모호하면 [README.md](./README.md), 관련 `skills/`, `agent-registry/`를 다시 읽는다.

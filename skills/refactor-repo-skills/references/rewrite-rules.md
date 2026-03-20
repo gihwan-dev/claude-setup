@@ -6,7 +6,7 @@
 
 기준일: 2026-03-14
 
-- OpenAI Codex `AGENTS.md` guide: main instruction file는 짧게 유지하고, 계층 구조와 탐색성을 높인다.
+- OpenAI instruction guide: main instruction text는 짧게 유지하고, 계층 구조와 탐색성을 높인다.
 - OpenAI skill-creator: `SKILL.md`는 핵심 workflow만 두고 상세는 `references/`나 `scripts/`로 분리한다.
 - OpenAI Codex prompting guide: 장황한 upfront ceremony보다 명확한 목표, 경계, 실행 규칙을 우선한다.
 - Anthropic Claude Code memory: root memory는 얇게 유지하고 `@import` 또는 분리 파일로 구조화한다.
@@ -55,7 +55,7 @@
 - canonical source는 항상 `skills/`다.
 - generated 파일은 직접 수정하지 않고 sync로만 맞춘다.
 - v1 범위는 `skills/`와 generated sync로 제한한다.
-- `docs/policy`, `agent-registry`, root `AGENTS.md`, root `CLAUDE.md`는 참고만 하고 직접 수정하지 않는다.
+- `agent-registry`와 non-skill repo infrastructure는 참고만 하고 직접 수정하지 않는다.
 
 ## Rewrite Checklist
 

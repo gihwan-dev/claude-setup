@@ -35,13 +35,13 @@ refactor
 
 ## Repo evidence
 
-- `INSTRUCTIONS.md`, `skills/implement-task/SKILL.md`는 이미 `wait timeout != stalled`, `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 규칙을 문서화하고 있다.
+- `skills/implement-task/SKILL.md`, `skills/implement-task/references/execution-rules.md`는 이미 `wait timeout != stalled`, `observe -> inspect/status ping -> interrupt flush -> drain grace -> close 판단` 규칙을 문서화하고 있다.
 - `scripts/workflow_contract.py`와 `scripts/validate_workflow_contracts.py`는 기존에는 orchestration 메타데이터/문구 일치만 검증하고, advisory close/spawn 판단 함수는 제공하지 않았다.
 - `tests/test_workflow_stability.py`는 문구/직렬화/managed config 드리프트 중심 테스트만 갖고 있고, `timed_out -> running -> close` 시퀀스를 직접 reject하는 테스트가 없었다.
 
 ## External evidence
 
-- 없음. 이 작업은 repo-local SSOT와 generated projection 동기화 범위다.
+- 없음. 이 작업은 repo-local source와 generated helper projection 동기화 범위다.
 
 ## Options considered
 
@@ -103,10 +103,10 @@ refactor
 ## Slice 2
 
 - Change boundary:
-  - `INSTRUCTIONS.md`
   - `README.md`
   - `CONTRIBUTING.md`
   - `skills/implement-task/SKILL.md`
+  - `skills/implement-task/references/execution-rules.md`
   - `skills/implement-task/agents/openai.yaml`
   - `agent-registry/project-planner/instructions.md`
   - advisory helper 관련 `agent-registry/*/agent.toml`
@@ -116,7 +116,7 @@ refactor
 - Validation owner:
   - main thread
 - Focused validation plan:
-  - `python3 scripts/sync_instructions.py --check`
+  - `python3 scripts/sync_skills_index.py --check`
   - `python3 scripts/validate_workflow_contracts.py`
 - Stop / Replan trigger:
   - source policy와 agent registry phrasing이 generated projection과 충돌할 때
@@ -125,15 +125,15 @@ refactor
 
 - Change boundary:
   - `tests/test_workflow_stability.py`
-  - generated `AGENTS.md`, `CLAUDE.md`, `agents/*.md`, `dist/codex/**`
+  - generated `agents/*.md`, `dist/codex/**`
 - Expected files:
   - generated/test boundary 예외
 - Validation owner:
   - main thread
 - Focused validation plan:
-  - `python3 scripts/sync_instructions.py`
+  - `python3 scripts/sync_skills_index.py`
   - `python3 scripts/sync_agents.py`
-  - `python3 scripts/sync_instructions.py --check`
+  - `python3 scripts/sync_skills_index.py --check`
   - `python3 scripts/sync_agents.py --check`
   - `python3 scripts/validate_workflow_contracts.py`
   - `python3 -m unittest tests/test_workflow_stability.py`
@@ -142,9 +142,9 @@ refactor
 
 # Verification
 
-- `python3 scripts/sync_instructions.py`
+- `python3 scripts/sync_skills_index.py`
 - `python3 scripts/sync_agents.py`
-- `python3 scripts/sync_instructions.py --check`
+- `python3 scripts/sync_skills_index.py --check`
 - `python3 scripts/sync_agents.py --check`
 - `python3 scripts/validate_workflow_contracts.py`
 - `python3 -m unittest tests/test_workflow_stability.py`

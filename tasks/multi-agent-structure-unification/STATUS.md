@@ -10,7 +10,7 @@
 - `sync_agents.py`가 builtin helper까지 managed config에 포함하도록 수정했다.
 - `install_assets.py`에 managed block 전체 agent 기준 cleanup, dry-run aware helper validation, write-before-parse 방지 로직을 추가했다.
 - `validate_workflow_contracts.py`와 workflow tests에 generated helper 존재 검증/legacy migration 테스트를 추가했다.
-- `sync_instructions.py`, `sync_agents.py`를 실행해 generated 문서를 재생성했다.
+- `sync_agents.py`를 실행해 generated helper projection을 재생성했다.
 - `python3 scripts/install_assets.py --target codex` 로 `~/.codex/config.toml` managed block과 helper profile 설치를 적용했다.
 - code-quality review에서 발견된 duplicate non-helper agent migration P1을 수정했다.
 
@@ -33,10 +33,8 @@
 - PASS: `python3 -m py_compile scripts/install_assets.py scripts/validate_workflow_contracts.py tests/test_workflow_stability.py`
 - PASS: `python3 -m unittest tests.test_workflow_stability.WorkflowContractTests.test_remove_managed_agent_sections_preserves_unmanaged_agents`
 - PASS: `python3 -m unittest tests.test_workflow_stability.WorkflowContractTests.test_update_codex_config_removes_duplicate_non_helper_agent_tables`
-- PASS: `python3 scripts/sync_instructions.py`
 - PASS: `python3 scripts/sync_agents.py`
 - PASS: `python3 scripts/install_assets.py --target codex`
-- PASS: `python3 scripts/sync_instructions.py --check`
 - PASS: `python3 scripts/sync_agents.py --check`
 - PASS: `python3 scripts/validate_workflow_contracts.py`
 - PASS: `python3 scripts/install_assets.py --target codex --dry-run`

@@ -19,9 +19,9 @@
 
 # Verification results
 
-- PASS: `python3 scripts/sync_instructions.py`
+- PASS: `python3 scripts/sync_skills_index.py`
 - PASS: `python3 scripts/sync_agents.py`
-- PASS: `python3 scripts/sync_instructions.py --check`
+- PASS: `python3 scripts/sync_skills_index.py --check`
 - PASS: `python3 scripts/sync_agents.py --check`
 - PASS: `python3 scripts/validate_workflow_contracts.py`
 - PASS: `python3 -m unittest tests/test_workflow_stability.py`

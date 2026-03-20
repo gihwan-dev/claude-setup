@@ -13,9 +13,9 @@ fi
 _WATCHED_PATTERNS=(
   "agent-registry/"
   "skills/"
-  "docs/policy/"
   "policy/"
-  "scripts/sync_*.py"
+  "scripts/sync_agents.py"
+  "scripts/sync_skills_index.py"
   "scripts/install_assets.py"
   "scripts/workflow_contract.py"
 )

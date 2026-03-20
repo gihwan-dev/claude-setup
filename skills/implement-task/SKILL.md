@@ -79,6 +79,6 @@ description: >
 
 - bundle이면 `EXECUTION_PLAN.md`, legacy면 `PLAN.md`의 검증 명령을 우선 사용한다.
 - 검증 명령이 비어 있을 때만 repo-aware fallback을 사용한다.
-- `skills`, `docs/policy`, `agent-registry` 같은 SSOT를 바꿨다면 대응 sync + `--check`를 실행한다.
+- `skills`, `agent-registry` 같은 SSOT를 바꿨다면 대응 sync + `--check`를 실행한다.
 - `skills`를 바꿨다면 `python3 scripts/sync_skills_index.py --check`를 포함한다.
 - `agent-registry`를 바꿨다면 `python3 scripts/sync_agents.py --check`를 포함한다.

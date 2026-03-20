@@ -496,8 +496,9 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("Deferred", skill_content)
         self.assertIn("Banned/Avoid", skill_content)
         self.assertIn("bootstrap-project-rules:start", skill_content)
-        self.assertIn("AGENTS.md", prompt_content)
-        self.assertIn("CLAUDE.md", prompt_content)
+        self.assertIn("README.md", prompt_content)
+        self.assertNotIn("AGENTS.md", prompt_content)
+        self.assertNotIn("CLAUDE.md", prompt_content)
         self.assertIn("Decision Catalog", decision_reference)
         self.assertIn("Managed Section Markers", template_reference)
 
@@ -722,30 +723,28 @@ class WorkflowContractTests(RepoTestCase):
         self.assertNotIn("하나의 응집된 모듈 경계", implement_content)
 
     def test_documentation_recheck_contract_is_documented(self) -> None:
-        routing_content = (REPO_ROOT / "docs" / "policy" / "10-routing.md").read_text(encoding="utf-8")
-        workflows_content = (REPO_ROOT / "docs" / "policy" / "20-workflows.md").read_text(encoding="utf-8")
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
-        instructions_content = (REPO_ROOT / "INSTRUCTIONS.md").read_text(encoding="utf-8")
+        reference_content = (
+            REPO_ROOT / "skills" / "implement-task" / "references" / "execution-rules.md"
+        ).read_text(encoding="utf-8")
         prompt_content = (
             REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
         ).read_text(encoding="utf-8")
         normalized_prompt_content = " ".join(prompt_content.split())
 
-        self.assertIn("small slices + run-to-boundary", routing_content)
-        self.assertIn("split/replan before execution", routing_content)
-        self.assertIn("small slices + run-to-boundary", workflows_content)
         self.assertIn("python3 scripts/sync_skills_index.py --check", skill_content)
         self.assertIn("python3 scripts/sync_agents.py --check", skill_content)
         self.assertIn("small slices + run-to-boundary", skill_content)
         self.assertIn("slice implementation -> main focused validation -> commit", skill_content)
-        self.assertIn("small slices + run-to-boundary", instructions_content)
+        self.assertIn("split/replan before execution", reference_content)
+        self.assertIn("실질 영향 문서를 다시 확인", reference_content)
         self.assertIn("실질 영향 문서를 다시 확인", normalized_prompt_content)
         self.assertIn("small slices + run-to-boundary", normalized_prompt_content)
         self.assertIn("slice implementation -> main focused validation -> commit", normalized_prompt_content)
         self.assertIn("split/replan before execution", normalized_prompt_content)
-        self.assertIn("python3 scripts/sync_instructions.py", normalized_prompt_content)
         self.assertIn("python3 scripts/sync_skills_index.py", normalized_prompt_content)
         self.assertIn("python3 scripts/sync_agents.py", normalized_prompt_content)
+        self.assertNotIn("python3 scripts/sync_instructions.py", normalized_prompt_content)
 
     def test_plan_continuity_reference_exists_with_core_rules(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"

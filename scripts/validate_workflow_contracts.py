@@ -180,9 +180,6 @@ def _validate_structure_reviewer_instruction_drift(repo_root: Path, errors: list
 
 def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    core_path = repo_root / "docs" / "policy" / "00-core.md"
-    routing_path = repo_root / "docs" / "policy" / "10-routing.md"
-    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     browser_agent_config = registry_root / "browser-explorer" / "agent.toml"
     browser_agent_instructions = registry_root / "browser-explorer" / "instructions.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
@@ -237,27 +234,8 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
         errors,
     )
 
-    _expect_substrings(
-        core_path,
-        (
-            "browser-explorer",
-        ),
-        errors,
-    )
-
-    _expect_substrings(
-        workflows_path,
-        (
-            "browser-explorer",
-        ),
-        errors,
-    )
-
-
 def _validate_writer_agent_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    core_path = repo_root / "docs" / "policy" / "00-core.md"
-    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     writer_agent_config = registry_root / "writer" / "agent.toml"
     writer_agent_instructions = registry_root / "writer" / "instructions.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
@@ -313,17 +291,14 @@ def _validate_writer_agent_contract(repo_root: Path, errors: list[str]) -> None:
         errors,
     )
 
-    _expect_substrings(core_path, ("writer",), errors)
-    _expect_substrings(workflows_path, ("writer",), errors)
-
-
 def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
-    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
-    routing_path = repo_root / "docs" / "policy" / "10-routing.md"
     skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
+    reference_path = (
+        repo_root / "skills" / "implement-task" / "references" / "execution-rules.md"
+    )
 
     _expect_substrings(
-        routing_path,
+        reference_path,
         (
             "small slices + run-to-boundary",
             "split/replan before execution",
@@ -332,9 +307,10 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
     )
 
     _expect_substrings(
-        workflows_path,
+        reference_path,
         (
             "small slices + run-to-boundary",
+            "실질 영향 문서를 다시 확인",
         ),
         errors,
     )
@@ -544,7 +520,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "component source",
             "Storybook/screenshot tooling",
             "token source path",
-            "do/don't only",
+            "root global memory markdown",
             "UX ownership",
         ),
         errors,
@@ -559,7 +535,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "component source",
             "Storybook/screenshot tooling",
             "token source path",
-            "do/don't only",
+            "root global memory markdown",
         ),
         errors,
     )
@@ -852,8 +828,6 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
 
 def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
-    core_path = repo_root / "docs" / "policy" / "00-core.md"
-    workflows_path = repo_root / "docs" / "policy" / "20-workflows.md"
     agent_config = registry_root / "react-state-reviewer" / "agent.toml"
     agent_instructions = registry_root / "react-state-reviewer" / "instructions.md"
 
@@ -902,10 +876,6 @@ def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) 
         ),
         errors,
     )
-
-    _expect_substrings(core_path, ("react-state-reviewer",), errors)
-    _expect_substrings(workflows_path, ("react-state-reviewer",), errors)
-
 
 def _validate_csv_fanout_contract(repo_root: Path, errors: list[str]) -> None:
     design_skill = repo_root / "skills" / "design-task" / "SKILL.md"

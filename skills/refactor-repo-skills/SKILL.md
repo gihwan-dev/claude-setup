@@ -4,7 +4,7 @@ description: >
   Repository-specific execution skill for refactoring verbose local skills. Audit `skills/*/SKILL.md`,
   score verbosity and structure smells, then rewrite only the top 1-3 candidates or a user-specified
   skill/path so the source of truth stays concise. Keep scope to `skills/` and generated skill index
-  sync only; do not edit `docs/policy` or `agent-registry`.
+  sync only; do not edit `agent-registry` or non-skill repo infrastructure.
 ---
 
 # Refactor Repo Skills
@@ -17,7 +17,7 @@ description: >
 - 사용자가 `skill name` 또는 `path`를 주면 해당 대상만 수정한다.
 - 대상이 없으면 감사 결과 상위 1~3개만 수정한다.
 - generated 파일(`skills/INDEX.md`, `skills/manifest.json`)은 직접 수정하지 않고 sync로만 맞춘다.
-- v1 범위는 `skills/`와 generated sync뿐이다. `docs/policy`, `agent-registry`, root `AGENTS.md`, root `CLAUDE.md`는 수정하지 않는다.
+- v1 범위는 `skills/`와 generated sync뿐이다. `agent-registry`와 non-skill repo infrastructure는 수정하지 않는다.
 - `SKILL.md` 본문에는 workflow, selection logic, guardrail만 남긴다.
 - 변형, 상세 기준, 예시, 장문 rationale은 `references/`로 이동한다.
 - 불필요한 fallback, 중복 checklist, 반복 explanation, 장문 non-goal은 제거한다.

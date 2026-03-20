@@ -19,6 +19,7 @@ from install_assets import (
     _remove_managed_agent_sections,
     install_path,
     expected_generated_skill_names,
+    prune_legacy_global_rule_files,
     prune_generated_skills,
     resolve_install_mode,
     run_sync,
@@ -151,12 +152,64 @@ class InstallAssetsTests(RepoTestCase):
                 msg=f"install_assets dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
             )
             self.assertIn("skill canonical source:", completed.stdout)
+            self.assertNotIn(str(codex_home / "AGENTS.md"), completed.stdout)
             legacy_overlay_root = REPO_ROOT / ".agents" / "skills"
             if legacy_overlay_root.exists():
                 self.assertIn("legacy overlay detected:", completed.stdout)
             else:
                 self.assertNotIn("legacy overlay detected:", completed.stdout)
             self.assertIn("internal skill asset:", completed.stdout)
+
+    def test_install_assets_dry_run_reports_legacy_global_rule_cleanup(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            claude_home = root / ".claude"
+            codex_home = root / ".codex"
+            (claude_home / "skills").mkdir(parents=True)
+            (codex_home / "agents").mkdir(parents=True)
+            (codex_home / "config.toml").write_text(
+                'model = "gpt-5.4"\n[features]\napps = true\n',
+                encoding="utf-8",
+            )
+            (claude_home / "CLAUDE.md").write_text(
+                "\n".join(
+                    [
+                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
+                        "<!-- Run: python3 scripts/sync_instructions.py -->",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (codex_home / "AGENTS.md").write_text(
+                "\n".join(
+                    [
+                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
+                        "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            completed = self.run_cmd(
+                "python3",
+                "scripts/install_assets.py",
+                "--dry-run",
+                "--target",
+                "all",
+                env={
+                    "CLAUDE_HOME": str(claude_home),
+                    "CODEX_HOME": str(codex_home),
+                },
+            )
+
+            self.assertEqual(
+                completed.returncode,
+                0,
+                msg=f"install_assets legacy cleanup dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
+            )
+            self.assertIn("repo-managed legacy global rule file", completed.stdout)
 
     def test_codex_managed_block_contains_required_helpers(self) -> None:
         # managed config를 실제 파일로 사용해 업데이트 결과에 필수 helper가 포함되는지 확인
@@ -175,7 +228,7 @@ class InstallAssetsTests(RepoTestCase):
             for agent_id in REQUIRED_HELPER_AGENT_IDS:
                 self.assertIn(agent_id, agents)
 
-    def test_run_sync_includes_sync_skills_index(self) -> None:
+    def test_run_sync_includes_only_current_sync_commands(self) -> None:
         calls: list[list[str]] = []
 
         def fake_run(command: list[str], cwd: Path, check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -186,9 +239,46 @@ class InstallAssetsTests(RepoTestCase):
             run_sync(REPO_ROOT, dry_run=True)
 
         flattened = [" ".join(call) for call in calls]
-        self.assertTrue(any("scripts/sync_instructions.py --check" in call for call in flattened))
         self.assertTrue(any("scripts/sync_agents.py --check" in call for call in flattened))
         self.assertTrue(any("scripts/sync_skills_index.py --check" in call for call in flattened))
+        self.assertFalse(any("scripts/sync_instructions.py" in call for call in flattened))
+
+    def test_prune_legacy_global_rule_files_removes_only_repo_managed_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            repo_root = root / "repo"
+            home = root / ".codex"
+            repo_root.mkdir()
+            home.mkdir()
+
+            managed_copy = home / "AGENTS.md"
+            managed_copy.write_text(
+                "\n".join(
+                    [
+                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
+                        "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            repo_managed_target = repo_root / "CLAUDE.md"
+            repo_managed_target.write_text("legacy target\n", encoding="utf-8")
+            (home / "CLAUDE.md").symlink_to(repo_managed_target)
+
+            unrelated = home / "INSTRUCTIONS.md"
+            unrelated.write_text("# personal notes\n", encoding="utf-8")
+
+            prune_legacy_global_rule_files(
+                home=home,
+                repo_root=repo_root,
+                dry_run=False,
+            )
+
+            self.assertFalse(managed_copy.exists())
+            self.assertFalse((home / "CLAUDE.md").exists())
+            self.assertTrue(unrelated.exists())
 
     def test_remove_managed_agent_sections_preserves_unmanaged_agents(self) -> None:
         sample = "\n".join(

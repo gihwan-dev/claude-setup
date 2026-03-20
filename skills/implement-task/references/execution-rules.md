@@ -27,6 +27,7 @@
 ## Structure And Handoff Rules
 
 - 각 slice 실행 전에는 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저 고정한다.
+- hybrid mode default는 `small slices + run-to-boundary`다.
 - pre-edit 상태 보고는 1회 structure preflight만 허용하고 첫 edit 전 추가 checkpoint 요청은 금지한다.
 - split-first trigger가 켜지면 target file append 대신 같은 slice 안에서 새 모듈 추출 또는 `blocked + exact split proposal`로 되돌린다.
 - broad `setup`/`skeleton`/`wrapper`/`docs` handoff이거나 slice hard guardrail을 넘는 PREP-0 스타일 handoff는 실행 전에 `split/replan before execution`으로 되돌린다.
@@ -45,7 +46,6 @@
 - Python repo는 `pyproject.toml` 또는 `tests/`/`test_*.py`를 기준으로 `python3 -m unittest discover`를 후보로 본다.
 - 안전한 기본 검증을 추론할 수 없으면 사용자 확인 전까지 중단한다.
 - SSOT sync/check가 필요하면 아래 fallback을 사용한다.
-  - `docs/policy`: `python3 scripts/sync_instructions.py` + `python3 scripts/sync_instructions.py --check`
   - `skills`: `python3 scripts/sync_skills_index.py` + `python3 scripts/sync_skills_index.py --check`
   - `agent-registry`: `python3 scripts/sync_agents.py` + `python3 scripts/sync_agents.py --check`
 

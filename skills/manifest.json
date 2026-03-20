@@ -5,7 +5,7 @@
   "skills": [
     {
       "name": "bootstrap-project-rules",
-      "description": "Post-design bootstrap workflow for greenfield or newly shaped work. Use after `design-task` and before `implement-task` when the task bundle is ready but the repo still needs implementation rules: repo baseline `docs/ai/ENGINEERING_RULES.md`, task supplement `tasks/{task-path}/IMPLEMENTATION_CONTRACT.md`, and managed updates to root `AGENTS.md`, `CLAUDE.md`, and optional `README.md`. Lock only the core stack and architectural rules now; keep optional libraries as deferred decisions with explicit triggers.",
+      "description": "Post-design bootstrap workflow for greenfield or newly shaped work. Use after `design-task` and before `implement-task` when the task bundle is ready but the repo still needs implementation rules: repo baseline `docs/ai/ENGINEERING_RULES.md`, task supplement `tasks/{task-path}/IMPLEMENTATION_CONTRACT.md`, and optional managed links in root `README.md`. Lock only the core stack and architectural rules now; keep optional libraries as deferred decisions with explicit triggers.",
       "path": "skills/bootstrap-project-rules/SKILL.md"
     },
     {
@@ -135,7 +135,7 @@
     },
     {
       "name": "refactor-repo-skills",
-      "description": "Repository-specific execution skill for refactoring verbose local skills. Audit `skills/*/SKILL.md`, score verbosity and structure smells, then rewrite only the top 1-3 candidates or a user-specified skill/path so the source of truth stays concise. Keep scope to `skills/` and generated skill index sync only; do not edit `docs/policy` or `agent-registry`.",
+      "description": "Repository-specific execution skill for refactoring verbose local skills. Audit `skills/*/SKILL.md`, score verbosity and structure smells, then rewrite only the top 1-3 candidates or a user-specified skill/path so the source of truth stays concise. Keep scope to `skills/` and generated skill index sync only; do not edit `agent-registry` or non-skill repo infrastructure.",
       "path": "skills/refactor-repo-skills/SKILL.md"
     },
     {

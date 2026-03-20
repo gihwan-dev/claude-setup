@@ -26,28 +26,15 @@
 # Open Risks
 ```
 
-## Managed Section Markers
+## `README.md` Managed Section Markers
 
-모든 root 문서 갱신은 아래 marker 안에서만 수행한다.
+root `README.md` 갱신은 아래 marker 안에서만 수행한다.
 
 ```markdown
 <!-- bootstrap-project-rules:start -->
 ...managed content...
 <!-- bootstrap-project-rules:end -->
 ```
-
-## `AGENTS.md` Managed Section
-
-- Read first docs
-- Exact commands
-- Architecture map
-- Hard rules / known quirks
-
-## `CLAUDE.md` Managed Section
-
-- Short memory bullets
-- `@docs/ai/ENGINEERING_RULES.md`
-- task-specific contract read reminder
 
 ## `README.md` Managed Section
 
