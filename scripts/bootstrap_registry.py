@@ -340,6 +340,15 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
         description = meta.get("description", "").strip() or f"{agent_id} agent"
         tools = [item.strip() for item in meta.get("tools", "").split(",") if item.strip()]
         repo_model = meta.get("model", "sonnet").strip() or "sonnet"
+        codex_model = "gpt-5.4"
+        existing_registry_entry = registry_root / agent_id / "agent.toml"
+        if existing_registry_entry.exists():
+            existing_payload = _load_toml(existing_registry_entry)
+            existing_codex = existing_payload.get("codex")
+            if isinstance(existing_codex, dict):
+                existing_model = existing_codex.get("model")
+                if isinstance(existing_model, str) and existing_model.strip():
+                    codex_model = existing_model
 
         _write_registry_entry(
             registry_root,
@@ -353,7 +362,7 @@ def _bootstrap_repo_agents(repo_root: Path, registry_root: Path) -> None:
             repo_tools=tools,
             codex_agent_key=agent_id,
             codex_config_file=f"{agent_id}.toml",
-            codex_model="gpt-5.4",
+            codex_model=codex_model,
             codex_reasoning_effort=reasoning_effort_overrides.get(agent_id, default_reasoning_effort),
             codex_sandbox_mode=_sandbox_for_agent(agent_id, sandbox_overrides),
             instructions=_strip_generated_notice(body),

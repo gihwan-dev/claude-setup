@@ -2,7 +2,7 @@
 # Run: python3 scripts/sync_agents.py
 
 model = "gpt-5.4"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 
 developer_instructions = """

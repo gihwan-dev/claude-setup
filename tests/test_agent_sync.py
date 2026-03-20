@@ -117,8 +117,47 @@ class AgentSyncTests(RepoTestCase):
         self.assertTrue(profile_path.exists(), msg=f"missing writer profile {profile_path}")
 
         profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
+        self.assertEqual(profile.get("model"), "gpt-5.4-mini")
         self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
-        self.assertEqual(profile.get("model_reasoning_effort"), "xhigh")
+        self.assertEqual(profile.get("model_reasoning_effort"), "medium")
+
+    def test_exploration_and_summary_agents_use_mini_low_profiles(self) -> None:
+        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
+        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
+        agents = payload.get("agents")
+        self.assertIsInstance(agents, dict)
+
+        expected_profiles = {
+            "explorer": "explorer-worker.toml",
+            "web-researcher": "web-researcher.toml",
+            "verification-worker": "verification-worker.toml",
+        }
+
+        for agent_id, profile_name in expected_profiles.items():
+            entry = agents.get(agent_id)
+            self.assertIsInstance(entry, dict, msg=f"missing generated helper {agent_id}")
+            self.assertEqual(entry.get("config_file"), f"agents/{profile_name}")
+
+            profile_path = REPO_ROOT / "dist" / "codex" / "agents" / profile_name
+            self.assertTrue(profile_path.exists(), msg=f"missing {agent_id} profile {profile_path}")
+
+            profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
+            self.assertEqual(profile.get("model"), "gpt-5.4-mini")
+            self.assertEqual(profile.get("model_reasoning_effort"), "low")
+
+    def test_repo_managed_profiles_do_not_use_xhigh(self) -> None:
+        managed_paths = [
+            REPO_ROOT / "policy" / "workflow.toml",
+            *sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")),
+            *sorted((REPO_ROOT / "dist" / "codex" / "agents").glob("*.toml")),
+        ]
+
+        for path in managed_paths:
+            self.assertNotIn(
+                '"xhigh"',
+                path.read_text(encoding="utf-8"),
+                msg=f"xhigh unexpectedly present in managed profile surface: {path}",
+            )
 
     def test_projected_agents_do_not_expose_extra_writable_roles(self) -> None:
         for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
@@ -311,3 +350,79 @@ class AgentSyncTests(RepoTestCase):
                     bootstrap_registry.bootstrap_from_current(repo_root, registry_root)
 
             self.assertEqual(list(registry_root.glob("*")), [])
+
+    def test_bootstrap_registry_preserves_existing_repo_agent_codex_model(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            repo_root = root / "repo"
+            registry_root = root / "registry"
+            codex_home = root / ".codex"
+            self._seed_minimal_bootstrap_repo(repo_root)
+            self._write_text(
+                repo_root / "agents" / "writer.md",
+                "\n".join(
+                    [
+                        "---",
+                        "name: writer",
+                        "role: writer",
+                        'description: "Delegated code writer"',
+                        "tools: Read, Write, Edit, Bash, Grep, Glob",
+                        "model: sonnet",
+                        "---",
+                        "",
+                        "writer instructions",
+                        "",
+                    ]
+                ),
+            )
+            self._write_text(
+                registry_root / "writer" / "agent.toml",
+                "\n".join(
+                    [
+                        'id = "writer"',
+                        'role = "writer"',
+                        'description = "Delegated code writer"',
+                        'source = "repo-agent"',
+                        "",
+                        "[projection]",
+                        "repo = true",
+                        "codex = true",
+                        "",
+                        "[repo]",
+                        'model = "sonnet"',
+                        'tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]',
+                        "",
+                        "[codex]",
+                        'agent_key = "writer"',
+                        'config_file = "writer.toml"',
+                        'model = "gpt-5.4-mini"',
+                        'reasoning_effort = "medium"',
+                        'sandbox_mode = "danger-full-access"',
+                        "",
+                    ]
+                ),
+            )
+            self._write_text(
+                registry_root / "writer" / "instructions.md",
+                "writer instructions\n",
+            )
+            self._write_text(
+                codex_home / "config.toml",
+                "\n".join(
+                    [
+                        'model = "gpt-5.4"',
+                        "",
+                        "[agents]",
+                        "",
+                    ]
+                ),
+            )
+
+            with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=False):
+                bootstrap_registry.bootstrap_from_current(repo_root, registry_root)
+
+            payload = tomllib.loads((registry_root / "writer" / "agent.toml").read_text(encoding="utf-8"))
+            codex = payload.get("codex")
+            self.assertIsInstance(codex, dict)
+            self.assertEqual(codex.get("model"), "gpt-5.4-mini")
+            self.assertEqual(codex.get("reasoning_effort"), "medium")

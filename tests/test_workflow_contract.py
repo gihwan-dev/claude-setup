@@ -463,6 +463,11 @@ class WorkflowContractTests(RepoTestCase):
                 msg=f"projected agent sandbox mismatch: {agent_id}",
             )
             self.assertEqual(
+                profile.get("model"),
+                codex.get("model"),
+                msg=f"projected agent model drifted: {agent_id}",
+            )
+            self.assertEqual(
                 profile.get("model_reasoning_effort"),
                 expected_reasoning_effort_for(agent_id),
                 msg=f"projected agent reasoning effort drifted: {agent_id}",

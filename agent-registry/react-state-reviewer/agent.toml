@@ -15,5 +15,5 @@ tools = ["Read", "Grep", "Glob"]
 agent_key = "react-state-reviewer"
 config_file = "react-state-reviewer.toml"
 model = "gpt-5.4"
-reasoning_effort = "xhigh"
+reasoning_effort = "high"
 sandbox_mode = "read-only"

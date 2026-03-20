@@ -15,5 +15,5 @@ tools = ["Read", "Grep", "Glob"]
 agent_key = "test-engineer"
 config_file = "test-engineer.toml"
 model = "gpt-5.4"
-reasoning_effort = "xhigh"
+reasoning_effort = "high"
 sandbox_mode = "read-only"

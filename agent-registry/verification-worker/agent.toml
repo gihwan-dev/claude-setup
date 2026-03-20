@@ -14,6 +14,6 @@ tools = ["Read", "Grep", "Glob"]
 [codex]
 agent_key = "verification-worker"
 config_file = "verification-worker.toml"
-model = "gpt-5.4"
-reasoning_effort = "medium"
+model = "gpt-5.4-mini"
+reasoning_effort = "low"
 sandbox_mode = "read-only"
