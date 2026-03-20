@@ -1,6 +1,6 @@
 # Document Templates
 
-`bootstrap-project-rules`가 생성하거나 갱신하는 문서는 아래 section order를 따른다.
+Documents created or updated by `bootstrap-project-rules` must follow the section order below.
 
 ## `docs/ai/ENGINEERING_RULES.md`
 
@@ -28,7 +28,7 @@
 
 ## `README.md` Managed Section Markers
 
-root `README.md` 갱신은 아래 marker 안에서만 수행한다.
+Update the root `README.md` only inside the markers below.
 
 ```markdown
 <!-- bootstrap-project-rules:start -->
@@ -39,5 +39,5 @@ root `README.md` 갱신은 아래 marker 안에서만 수행한다.
 ## `README.md` Managed Section
 
 - `AI Workflow`
-- implementation rules doc link
-- task contract update rule
+- implementation-rules doc link
+- task-contract update rule

@@ -7,33 +7,32 @@ description: >
   convergence shortcuts, and 3-pass PENCIL-inspired synthesis.
   Detects execution environment to choose between Agent Teams (normal mode)
   and Task Orchestration (plan mode).
-  Use when the user prefixes with "deep think", "딥씽크", "깊게 생각해", or requests
-  thorough analysis. Best for complex architecture, debugging, algorithmic, or
-  multi-domain problems. NOT for simple lookups.
+  Use when the user prefixes with `deep think`, uses an equivalent phrase meaning
+  "think deeply", or requests thorough analysis. Best for complex architecture,
+  debugging, algorithmic, or multi-domain problems. NOT for simple lookups.
   Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.
 ---
 
 # Deep Think v2
 
-복잡한 문제를 tier 기반 다중 시각 분석으로 다루는 reasoning workflow다.
+This is a reasoning workflow for complex problems using tier-based, multi-perspective analysis.
 
 ## Trigger
 
 - `deep think`
-- `딥씽크`
-- `깊게 생각해`
-- 아키텍처, 디버깅, 알고리즘, 다분야 trade-off처럼 단일 패스로 답하기 어려운 문제
+- any equivalent request meaning "think deeply"
+- problems that are hard to answer in a single pass, such as architecture, debugging, algorithms, or multi-domain trade-offs
 
-단순 조회, 짧은 사실 확인, 명백한 한 파일 수정에는 쓰지 않는다.
+Do not use this for simple lookups, short fact checks, or an obvious one-file edit.
 
 ## Track Routing
 
-- System prompt에 `Plan mode is active`가 있으면 Track B를 사용한다.
+- If the system prompt contains `Plan mode is active`, use Track B.
   - Task Orchestration
-  - 결과를 plan file에 쓴다
-- 그렇지 않으면 Track A를 사용한다.
+  - Write the result to the plan file
+- Otherwise, use Track A.
   - Agent Teams
-  - `.deep-think/05-answer/answer.md`와 report를 남긴다
+  - Leave `.deep-think/05-answer/answer.md` and a report
 
 Track A only prerequisite:
 
@@ -43,59 +42,59 @@ export CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1
 
 ## Tier Routing
 
-문제를 4개 축으로 0-2점씩 평가한다.
+Score the problem from 0-2 on each of the four dimensions below.
 
 - Solution Space Breadth
 - Stakeholder Tension
 - Uncertainty Level
 - Impact Scope
 
-| Tier | Score | Agents | 기본 의미 |
+| Tier | Score | Agents | Default meaning |
 |------|-------|--------|-----------|
-| Tier 1 | 0-2 | 2 | 집중 비교 |
-| Tier 2 | 3-5 | 3 | 표준 심화 |
-| Tier 3 | 6-8 | 4-5 | 복합/고위험 |
+| Tier 1 | 0-2 | 2 | Focused comparison |
+| Tier 2 | 3-5 | 3 | Standard deep dive |
+| Tier 3 | 6-8 | 4-5 | Composite / high-risk |
 
-persona 상세는 `references/persona-catalog.md`를 본다.
+See `references/persona-catalog.md` for persona details.
 
 ## Core Workflow
 
-1. Phase 0: 문제를 framing하고 tier와 persona를 정한다.
-2. Phase 1: 각 persona가 evidence-tagged path를 병렬로 작성한다.
-3. Phase 2: convergence 여부를 보고 challenge round를 줄일지 결정한다.
+1. Phase 0: frame the problem and choose the tier and personas.
+2. Phase 1: each persona writes an evidence-tagged path in parallel.
+3. Phase 2: inspect convergence and decide whether to shorten the challenge round.
 4. Phase 3:
-   - 모든 tier: targeted critique
-   - Tier 3: pre-mortem + author reflection 추가
-5. Phase 4: `Extract -> Reconcile -> Compose` 3-pass synthesis를 수행한다.
-6. Phase 5: structured confidence와 dissent를 포함해 최종 답변을 만든다.
+   - all tiers: targeted critique
+   - Tier 3: add pre-mortem and author reflection
+5. Phase 4: run the `Extract -> Reconcile -> Compose` three-pass synthesis.
+6. Phase 5: produce the final answer with structured confidence and dissent.
 
 ## Path Contract
 
-각 path는 최소한 아래를 포함한다.
+Each path must contain at least the following.
 
 1. Core Thesis
 2. Evidence Chain
-   - claim마다 `[CODE]`, `[BENCH]`, `[PATTERN]`, `[REASON]`, `[ASSUME]` 중 하나를 붙인다
+   - tag every claim with one of `[CODE]`, `[BENCH]`, `[PATTERN]`, `[REASON]`, or `[ASSUME]`
 3. Implementation Sequence
 4. Risk Register
 5. What This Path Uniquely Offers
 
-`[ASSUME]`는 최종 답변에서 미검증 가정으로 따로 드러나야 한다.
+`[ASSUME]` items must be surfaced explicitly in the final answer as unverified assumptions.
 
 ## Guardrails
 
-- critique는 구체적인 시나리오가 있어야 한다. vague critique는 synthesis에서 버린다.
-- convergence가 강하면 challenge round를 생략해 시간을 줄인다.
-- Tier가 애매하면 보수적으로 한 단계 올린다.
-- final answer는 경로 원문을 이어붙이지 말고 synthesis 결과를 새로 작성한다.
-- 마지막에는 blind spot check를 수행한다.
+- Critique must include concrete scenarios. Drop vague critique during synthesis.
+- If convergence is strong, skip the challenge round to save time.
+- If the tier is ambiguous, bias one level higher.
+- Do not concatenate raw path text into the final answer. Rewrite it from the synthesis result.
+- End with a blind-spot check.
 
 ## References
 
-- persona 정의: `references/persona-catalog.md`
+- persona definitions: `references/persona-catalog.md`
 - tier/track playbook: `references/tier-playbook.md`
-- phase별 템플릿: `references/phase-templates.md`
-- 문제 유형별 reasoning pattern: `references/reasoning-patterns.md`
-- 실행 스크립트:
+- phase templates: `references/phase-templates.md`
+- reasoning patterns by problem type: `references/reasoning-patterns.md`
+- execution scripts:
   - `scripts/deep_think.py`
   - `scripts/evaluate_paths.py`

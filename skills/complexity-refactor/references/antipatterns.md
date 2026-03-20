@@ -1,20 +1,20 @@
-# 안티패턴 (피해야 할 것들)
+# Anti-Patterns to Avoid
 
-AI가 코드를 리팩토링할 때 흔히 저지르는 실수들.
+Common mistakes AI makes when refactoring code.
 
-## 1. 의미 없는 추상화
+## 1. Meaningless abstraction
 
-코드를 그냥 잘라서 함수로 만들기만 하고, 그 함수가 뭘 하는지 이름에서 알 수 없는 경우.
+This happens when the code is merely cut into a new function, but the new function name does not explain what it does.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
-// 원래 코드
+// Original code
 if (user.age >= 18 && user.country === 'KR') {
   price = price * 1.1
 }
 
-// AI가 만든 "리팩토링"
+// AI-generated "refactor"
 function processUserPriceLogic(user: User, price: number) {
   if (user.age >= 18 && user.country === 'KR') {
     price = price * 1.1
@@ -23,24 +23,24 @@ function processUserPriceLogic(user: User, price: number) {
 }
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
 function applyKoreanAdultTax(price: number): number {
   return price * 1.1
 }
 
-// 사용
+// Usage
 if (isKoreanAdult(user)) {
   price = applyKoreanAdultTax(price)
 }
 ```
 
-## 2. 과도한 파라미터화
+## 2. Excessive parameterization
 
-범용성을 위해 파라미터를 너무 많이 만들어서 오히려 이해하기 어려워지는 경우.
+Trying to make the code too generic by adding too many parameters, which makes it harder to understand.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
 function processData(
@@ -55,50 +55,50 @@ function processData(
 }
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
-// 구체적인 용도에 맞는 함수들
+// Functions tuned to a specific purpose
 function validateUserInput(input: UserInput): ValidatedInput { ... }
 function formatPhoneNumber(phone: string): string { ... }
 function saveUser(user: User): SaveResult { ... }
 ```
 
-## 3. 기계적 분리
+## 3. Mechanical splitting
 
-줄 수만 보고 기계적으로 나누는 경우. 논리적 단위가 아닌 물리적 단위로 나눔.
+Splitting code mechanically by line count instead of by logical units.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
-// 30줄마다 무조건 분리
+// Split every 30 lines no matter what
 function processPart1(data) {
-  // 1-30줄
+  // lines 1-30
 }
 
 function processPart2(data) {
-  // 31-60줄
+  // lines 31-60
 }
 
 function processPart3(data) {
-  // 61-90줄
+  // lines 61-90
 }
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
-// 논리적 단위로 분리 (줄 수는 다를 수 있음)
-function validateInput(data) { ... }      // 15줄
-function transformData(data) { ... }      // 45줄 (복잡해도 하나의 개념이면 OK)
-function saveResult(data) { ... }         // 20줄
+// Split by logical unit (line counts may differ)
+function validateInput(data) { ... }      // 15 lines
+function transformData(data) { ... }      // 45 lines (still OK if it is one concept)
+function saveResult(data) { ... }         // 20 lines
 ```
 
-## 4. 이름 과잉 수식
+## 4. Over-decorated names
 
-이름에 너무 많은 정보를 담으려다 오히려 읽기 어려워지는 경우.
+Trying to stuff too much information into the name until it becomes harder to read.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
 function validateAndProcessUserInputDataWithErrorHandling()
@@ -106,7 +106,7 @@ function handleUserRegistrationFormSubmissionWithValidation()
 function executeAsyncDatabaseQueryWithRetryAndTimeout()
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
 function validateUserInput()
@@ -114,11 +114,11 @@ function submitRegistration()
 function queryWithRetry()
 ```
 
-## 5. 과도한 추상화 계층
+## 5. Too many abstraction layers
 
-한 번의 호출을 위해 여러 단계의 함수를 거치는 경우.
+Adding multiple wrapper functions for a single call.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
 function handleRequest(req) {
@@ -134,11 +134,11 @@ function executeRequest(req) {
 }
 
 function runRequest(req) {
-  // 실제 로직은 여기에만 있음
+  // The real logic only exists here
 }
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
 function handleRequest(req) {
@@ -148,11 +148,11 @@ function handleRequest(req) {
 }
 ```
 
-## 6. 맥락 없는 헬퍼 함수
+## 6. Context-free helper functions
 
-어디서나 쓸 수 있는 "유틸리티"를 만들었지만 실제로는 한 곳에서만 쓰는 경우.
+Creating a "utility" that could be used anywhere even though it is actually used in only one place.
 
-### ❌ 나쁜 예
+### ❌ Bad example
 
 ```typescript
 // utils/helpers.ts
@@ -160,7 +160,7 @@ function processArrayWithCondition(arr, condition, transformer) {
   return arr.filter(condition).map(transformer)
 }
 
-// 사용처
+// Usage
 const adults = processArrayWithCondition(
   users,
   u => u.age >= 18,
@@ -168,22 +168,21 @@ const adults = processArrayWithCondition(
 )
 ```
 
-### ✅ 좋은 예
+### ✅ Good example
 
 ```typescript
-// 바로 그 자리에서 명확하게
+// Clear and local at the call site
 const adultNames = users
   .filter(user => user.age >= 18)
   .map(user => user.name)
 ```
 
-## 자가 점검 체크리스트
+## Self-Review Checklist
 
-리팩토링 후 다음을 확인:
+After refactoring, check the following:
 
-1. [ ] 함수 이름만 보고 뭘 하는지 알 수 있는가?
-2. [ ] "~하는 함수"로 한국어로 설명할 수 있는가?
-3. [ ] 파라미터가 3개 이하인가?
-4. [ ] 한 함수가 한 가지 일만 하는가?
-5. [ ] 함수를 호출하는 코드가 더 읽기 쉬워졌는가?
-6. [ ] 위에서 아래로 읽으면 전체 흐름이 이해되는가?
+1. [ ] Can you tell what the function does from its name alone?
+2. [ ] Are there 3 parameters or fewer?
+3. [ ] Does each function do one thing?
+4. [ ] Is the calling code easier to read now?
+5. [ ] Can you understand the overall flow by reading top to bottom?

@@ -1,19 +1,19 @@
-# 브라우저 테스트 패턴
+# Browser Testing Patterns
 
-프로젝트의 Vitest Browser Mode + Portable Stories 패턴에 특화된 실전 가이드.
+Practical guidance tailored to the repository's Vitest Browser Mode + Portable Stories setup.
 
-## 1. 환경 개요
+## 1. Environment Overview
 
-| 항목 | 설정 |
+| Item | Setting |
 |------|------|
-| 엔진 | Vitest Browser Mode (Playwright 기반, headless) |
-| 파일 패턴 | `*.browser.test.tsx` |
-| 실행 명령 | `pnpm test:browser` |
-| 뷰포트 | 1280×720 |
+| Engine | Vitest Browser Mode (Playwright-based, headless) |
+| File pattern | `*.browser.test.tsx` |
+| Run command | `pnpm test:browser` |
+| Viewport | 1280×720 |
 
-## 2. Portable Stories 패턴
+## 2. Portable Stories Pattern
 
-`composeStories`로 Storybook 스토리를 테스트 컴포넌트로 변환한다. **스토리의 args가 곧 테스트 데이터**이므로, 테스트 파일에서 데이터를 직접 생성하지 않는다.
+Use `composeStories` to turn Storybook stories into test components. **Story args are the test data**, so do not create separate data directly inside the test file.
 
 ```typescript
 import { composeStories } from '@storybook/react-vite';
@@ -22,61 +22,61 @@ import * as stories from './<Feature>.stories';
 const { Default, Controlled, Uncontrolled } = composeStories(stories);
 ```
 
-- 스토리가 없으면 **스토리를 먼저 작성**한다.
-- `args`로 제공되지 않는 옵션은 테스트에서 override할 수 있다: `<Default options={{ sortable: { use: true } }} />`
+- If a story does not exist, **create the story first**
+- Options not supplied by `args` may be overridden in the test: `<Default options={{ sortable: { use: true } }} />`
 
-## 3. Page Object Model 패턴
+## 3. Page Object Model Pattern
 
-DOM 쿼리를 헬퍼 클래스에 캡슐화한다.
+Encapsulate DOM queries in helper classes.
 
-**규칙:**
-- 테스트 코드에서 `querySelector` 직접 사용 금지
-- 필요한 메서드가 없으면 **헬퍼에 추가 후 사용**
-- 셀렉터 변경 시 헬퍼만 수정하면 모든 테스트에 반영
+**Rules:**
+- Do not use `querySelector` directly inside test code
+- If a needed method does not exist, **add it to the helper first and then use it**
+- When selectors change, updating the helper should update all tests
 
 ```typescript
-// ❌ 테스트 코드에서 직접 쿼리
+// ❌ Direct query inside the test
 const header = container.querySelector('[role="columnheader"]');
 
-// ✅ 헬퍼를 통해 접근
+// ✅ Access through the helper
 const tester = new SomeTester(container);
-const header = tester.getHeaderByText('이름');
+const header = tester.getHeaderByText('Name');
 ```
 
-## 4. 렌더링과 안정화
+## 4. Rendering and Stabilization
 
 ```typescript
 const { container } = render(<Default />);
-await wait(RENDER_WAIT_TIME);  // DOM 안정화 (가상화 테이블 등)
+await wait(RENDER_WAIT_TIME); // DOM stabilization (for example, virtualized tables)
 const tester = new SomeTester(container);
 ```
 
-- `wait`은 가상화, 비동기 렌더링 등에서 **DOM 안정화가 필요할 때** 사용한다.
-- 불필요한 wait 남용은 지양 — 필요한 경우에만 사용한다.
-- `RENDER_WAIT_TIME`은 describe 상단에 상수로 선언한다.
+- Use `wait` when the DOM needs to stabilize because of virtualization or async rendering
+- Avoid unnecessary `wait` usage; use it only when required
+- Declare `RENDER_WAIT_TIME` as a constant near the top of the `describe` block
 
-## 5. 사용자 인터랙션 패턴
+## 5. User Interaction Patterns
 
-### 클릭 / 키보드
+### Click / Keyboard
 
 ```typescript
 import { fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-// 클릭
+// Click
 fireEvent.click(element);
 
-// 타이핑
+// Typing
 await userEvent.type(input, 'search text');
 
-// 키보드
+// Keyboard
 await userEvent.keyboard('{Enter}');
 ```
 
-### 드래그 (포인터 이벤트)
+### Drag (Pointer Events)
 
 ```typescript
-// pointerDown → pointerMove → pointerUp 시퀀스
+// pointerDown -> pointerMove -> pointerUp sequence
 fireEvent.pointerDown(element, {
   pointerId: 1, clientX: 100, clientY: 100,
   button: 0, pointerType: 'mouse',
@@ -89,79 +89,79 @@ fireEvent.pointerUp(document, {
 });
 ```
 
-- 드래그 시 `pointerMove`와 `pointerUp`의 타겟은 `document`이다 (dnd-kit 규칙).
-- `pointerId`, `button`, `pointerType`은 반드시 지정한다.
+- For drag flows, target `pointerMove` and `pointerUp` at `document` (per dnd-kit behavior)
+- Always provide `pointerId`, `button`, and `pointerType`
 
-## 6. 제어 / 비제어 모드 테스트
+## 6. Controlled vs Uncontrolled Mode Tests
 
-두 모드는 **반드시 분리**하여 테스트한다.
+These two modes must be tested separately.
 
-| 모드 | 검증 포인트 |
+| Mode | Validation points |
 |------|-----------|
-| 제어 (Controlled) | 외부 상태와 동기화, onChange 콜백 호출 |
-| 비제어 (Uncontrolled) | 초기값(initial*) 적용, 내부 상태 변경 |
+| Controlled | Synchronization with external state, `onChange` callback invocation |
+| Uncontrolled | `initial*` defaults applied, internal state changes |
 
 ```typescript
-describe('제어 모드', () => {
-  it('외부 상태 변경이 테이블에 반영된다', async () => { /* ... */ });
-  it('onChange 콜백이 호출된다', async () => { /* ... */ });
+describe('controlled mode', () => {
+  it('reflects external state changes in the table', async () => { /* ... */ });
+  it('calls the onChange callback', async () => { /* ... */ });
 });
 
-describe('비제어 모드', () => {
-  it('초기값이 적용된다', async () => { /* ... */ });
-  it('사용자 인터랙션으로 상태가 변경된다', async () => { /* ... */ });
+describe('uncontrolled mode', () => {
+  it('applies the initial value', async () => { /* ... */ });
+  it('updates state through user interaction', async () => { /* ... */ });
 });
 ```
 
-## 7. 스타일 / 계산된 속성 검증
+## 7. Style / Computed Property Verification
 
 ```typescript
-// computed style 검증
+// Verify computed styles
 const styles = window.getComputedStyle(element);
 expect(styles.left).not.toBe('auto');
 expect(styles.position).toBe('sticky');
 
-// data attribute 검증
+// Verify data attributes
 expect(element).toHaveAttribute('data-pinned', 'true');
 
-// aria attribute 검증
+// Verify aria attributes
 expect(header).toHaveAttribute('aria-sort', 'ascending');
 ```
 
-## 8. 테스트 구조 템플릿
+## 8. Test Structure Template
 
 ```typescript
 import { composeStories } from '@storybook/react-vite';
 import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-// 헬퍼 임포트 (프로젝트에 맞게 조정)
+// Helper imports (adjust to the project)
 import * as stories from './<Feature>.stories';
 
 const { Default, Controlled, Uncontrolled } = composeStories(stories);
 
-describe('<기능명> 기능', () => {
+describe('<Feature Name>', () => {
   const RENDER_WAIT_TIME = 100;
 
-  describe('기본 동작', () => {
-    it('<핵심 동작 설명>', async () => {
+  describe('default behavior', () => {
+    it('<core behavior description>', async () => {
       const { container } = render(<Default />);
       await wait(RENDER_WAIT_TIME);
-      // Arrange → Act → Assert
+      // Arrange -> Act -> Assert
     });
   });
 
-  describe('제어 모드', () => {
-    it('외부 상태와 동기화된다', async () => { /* ... */ });
+  describe('controlled mode', () => {
+    it('stays in sync with external state', async () => { /* ... */ });
   });
 
-  describe('비제어 모드', () => {
-    it('초기값이 적용된다', async () => { /* ... */ });
+  describe('uncontrolled mode', () => {
+    it('applies the initial value', async () => { /* ... */ });
   });
 
-  describe('기능 호환성', () => {
-    it('[제어] 기능A + 기능B', async () => { /* ... */ });
-    it('[비제어] 기능A + 기능B', async () => { /* ... */ });
+  describe('feature compatibility', () => {
+    it('[controlled] feature A + feature B', async () => { /* ... */ });
+    it('[uncontrolled] feature A + feature B', async () => { /* ... */ });
   });
 });
 ```

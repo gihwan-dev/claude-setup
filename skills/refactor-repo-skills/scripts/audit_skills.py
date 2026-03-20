@@ -12,7 +12,7 @@ from typing import Any
 
 DIRECTIVE_PATTERN = re.compile(
     r"\b(must|always|never|forbid|forbidden|guardrail|fallback|checklist|rule|rules)\b|"
-    r"반드시|항상|금지|하지 말아야 할 것|체크리스트|규칙|가드레일",
+    "\\uBC18\\uB4DC\\uC2DC|\\uD56D\\uC0C1|\\uAE08\\uC9C0|\\uD558\\uC9C0 \\uB9D0\\uC544\\uC57C \\uD560 \\uAC83|\\uCCB4\\uD06C\\uB9AC\\uC2A4\\uD2B8|\\uADDC\\uCE59|\\uAC00\\uB4DC\\uB808\\uC77C",
     re.IGNORECASE,
 )
 FALLBACK_PATTERN = re.compile(r"\bfallback\b", re.IGNORECASE)
@@ -130,48 +130,56 @@ def _score_skill(skill_dir: Path, skills_root: Path) -> SkillAudit:
     line_penalty = max(0, len(lines) - 120) / 6
     score += line_penalty
     if len(lines) > 120:
-        reasons.append(f"SKILL.md가 {len(lines)}줄이라 본문 압축 우선순위가 높다.")
+        reasons.append(f"SKILL.md has {len(lines)} lines, so body compression should be a high priority.")
     if len(lines) > 180:
         score += 6.0
-        reasons.append("본문이 긴 편이라 workflow와 reference 분리가 필요할 가능성이 높다.")
+        reasons.append("The body is long enough that workflow and reference splitting is likely needed.")
 
     description_penalty = max(0, description_length - 260) / 45
     score += description_penalty
     if description_length > 260:
-        reasons.append(f"frontmatter description이 {description_length}자로 길어 trigger 중심 축약 여지가 있다.")
+        reasons.append(
+            f"The frontmatter description is {description_length} characters long and has room to be compressed around triggers."
+        )
 
     fallback_penalty = fallback_hits * 3.0
     score += fallback_penalty
     if fallback_hits:
-        reasons.append(f"`fallback` 표현이 {fallback_hits}회 있어 불필요한 호환 설명 누적 여부를 점검해야 한다.")
+        reasons.append(
+            f"The term `fallback` appears {fallback_hits} times, so accumulated compatibility explanations should be reviewed."
+        )
 
     duplicate_penalty = duplicate_rule_lines * 4.0
     score += duplicate_penalty
     if duplicate_rule_lines:
-        reasons.append(f"중복 bullet 규칙이 {duplicate_rule_lines}개 있어 checklist 중복 가능성이 있다.")
+        reasons.append(
+            f"There are {duplicate_rule_lines} duplicate bullet rules, which suggests checklist duplication."
+        )
 
     if rule_density > 0.22:
         density_penalty = (rule_density - 0.22) * 70
         score += density_penalty
-        reasons.append(f"directive bullet 밀도({rule_density:.0%})가 높아 본문이 규칙 나열형으로 비대해졌을 수 있다.")
+        reasons.append(
+            f"Directive bullet density is high ({rule_density:.0%}), which may mean the body has grown into a rule list."
+        )
 
     if not has_references and body_line_count > 80:
         score += 8.0 + ((body_line_count - 80) / 8)
-        reasons.append("`references/` 없이 본문이 길어 세부 규칙 분리 후보로 보인다.")
+        reasons.append("The body is long without a `references/` directory, so it is a strong split candidate.")
 
     if not has_agents_openai:
         score += 2.0
-        reasons.append("`agents/openai.yaml`이 없어 explicit invocation metadata 필요 여부를 검토해야 한다.")
+        reasons.append("`agents/openai.yaml` is missing, so explicit invocation metadata should be evaluated.")
 
     if not metadata.get("name"):
         score += 20.0
-        reasons.append("frontmatter `name`이 없거나 파싱되지 않았다.")
+        reasons.append("Frontmatter `name` is missing or could not be parsed.")
     if not description:
         score += 20.0
-        reasons.append("frontmatter `description`이 없거나 파싱되지 않았다.")
+        reasons.append("Frontmatter `description` is missing or could not be parsed.")
 
     if not reasons:
-        reasons.append("구조상 큰 압축 신호는 없지만 정기 감사 대상으로는 포함된다.")
+        reasons.append("No major compression signal was found, but the skill still belongs in periodic audits.")
 
     metrics = {
         "line_count": len(lines),

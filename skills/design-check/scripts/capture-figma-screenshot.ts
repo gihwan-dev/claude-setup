@@ -118,12 +118,12 @@ async function fetchFigmaImageUrl(
 
   if (response.status === 403) {
     throw new Error(
-      'Figma API 403 Forbidden: 파일 접근 권한을 확인하세요. 토큰에 해당 파일의 읽기 권한이 필요합니다.',
+      'Figma API 403 Forbidden: verify file access permissions. The token must have read access to this file.',
     );
   }
 
   if (response.status === 404) {
-    throw new Error('Figma API 404 Not Found: fileKey 또는 nodeId가 올바른지 확인하세요.');
+    throw new Error('Figma API 404 Not Found: verify that the fileKey and nodeId are correct.');
   }
 
   if (!response.ok) {
@@ -139,7 +139,7 @@ async function fetchFigmaImageUrl(
   const imageUrl = data.images[nodeId];
   if (!imageUrl) {
     throw new Error(
-      `이미지 URL이 null입니다. 노드 "${nodeId}"가 렌더링 가능한 노드인지 확인하세요. (예: Frame, Component, Instance 등)`,
+      `Image URL is null. Verify that node "${nodeId}" is a renderable node, such as a Frame, Component, or Instance.`,
     );
   }
 
@@ -192,10 +192,10 @@ async function main() {
     const token = process.env.FIGMA_TOKEN;
     if (!token) {
       throw new Error(
-        'FIGMA_TOKEN 환경변수가 설정되지 않았습니다.\n' +
-          'Figma Personal Access Token을 생성하세요:\n' +
-          '  1. https://www.figma.com/developers/api#access-tokens 에서 토큰 생성\n' +
-          '  2. .env 파일에 FIGMA_TOKEN=your_token 추가',
+        'FIGMA_TOKEN is not set.\n' +
+          'Create a Figma Personal Access Token:\n' +
+          '  1. Generate a token at https://www.figma.com/developers/api#access-tokens\n' +
+          '  2. Add FIGMA_TOKEN=your_token to your .env file',
       );
     }
 
@@ -219,7 +219,7 @@ async function main() {
     console.log(`imageSize: ${pngData.width}x${pngData.height}`);
 
     if (pngData.width >= 4096 || pngData.height >= 4096) {
-      console.warn('⚠ Figma 4096px 하드 리미트에 도달했을 수 있습니다.');
+      console.warn('Figma may have hit the 4096px hard limit.');
     }
 
     const metaPath = options.output.replace(/\.png$/i, '.meta.json');

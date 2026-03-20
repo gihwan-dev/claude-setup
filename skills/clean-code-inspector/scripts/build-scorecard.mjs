@@ -398,7 +398,7 @@ function buildQualitativeOverlay(qualData, eligibleHotspotFiles) {
       const raw = rawCriteria.find((item) => item && item.id === criterion.id);
 
       if (!raw || typeof raw !== 'object') {
-        bucket.naReasons.push('항목 누락');
+        bucket.naReasons.push('Missing criterion');
         continue;
       }
 
@@ -407,12 +407,12 @@ function buildQualitativeOverlay(qualData, eligibleHotspotFiles) {
         .filter(Boolean);
 
       if (evidences.length < 2) {
-        bucket.naReasons.push('근거 2개 미만');
+        bucket.naReasons.push('Fewer than 2 evidence items');
         continue;
       }
 
       if (!isFiniteNumber(raw.score)) {
-        bucket.naReasons.push('점수 누락');
+        bucket.naReasons.push('Missing score');
         continue;
       }
 
@@ -430,7 +430,7 @@ function buildQualitativeOverlay(qualData, eligibleHotspotFiles) {
       if (criterion.id === 'boundary_discipline' && score === 0) {
         collectedFlags.push({
           type: 'boundary_discipline_violation',
-          message: 'Boundary Discipline 점수 0점',
+          message: 'Boundary Discipline scored 0',
           file: filePath,
           line: evidences[0]?.line ?? null,
           severity: 'critical',
@@ -440,7 +440,7 @@ function buildQualitativeOverlay(qualData, eligibleHotspotFiles) {
       if (criterion.id === 'failure_semantics' && score === 0) {
         collectedFlags.push({
           type: 'missing_failure_semantics',
-          message: 'Failure Semantics 점수 0점',
+          message: 'Failure Semantics scored 0',
           file: filePath,
           line: evidences[0]?.line ?? null,
           severity: 'critical',
@@ -467,7 +467,7 @@ function buildQualitativeOverlay(qualData, eligibleHotspotFiles) {
         score: null,
         status: 'N/A',
         evidenceCount,
-        reason: bucket.naReasons[0] ?? '평가 데이터 없음',
+        reason: bucket.naReasons[0] ?? 'No evaluation data',
       };
     }
 
@@ -496,34 +496,34 @@ function buildCrossSignals(quantitativeScore, qualitativeScore, criteria, critic
   const signals = [];
 
   if (qualitativeScore == null) {
-    signals.push('정성 오버레이 점수는 N/A입니다. 근거 부족 또는 입력 누락을 확인하세요.');
+    signals.push('The qualitative overlay score is N/A. Check for missing evidence or missing input.');
     return signals;
   }
 
   if (quantitativeScore >= 80 && qualitativeScore < 60) {
-    signals.push('정량 점수는 높지만 정성 점수가 낮습니다. 코드 의도/경계 설명력이 부족할 가능성이 있습니다.');
+    signals.push('The quantitative score is high, but the qualitative score is low. Code intent or boundary clarity may be weak.');
   }
 
   if (quantitativeScore < 60 && qualitativeScore >= 75) {
-    signals.push('정성 품질은 양호하지만 정량 지표가 낮습니다. 복잡도/변경 리스크를 우선 줄이세요.');
+    signals.push('Qualitative quality is solid, but quantitative metrics are weak. Reduce complexity and change risk first.');
   }
 
   const boundary = criteria.find((criterion) => criterion.id === 'boundary_discipline');
   if (boundary && isFiniteNumber(boundary.score) && boundary.score <= 1) {
-    signals.push('Boundary Discipline이 낮습니다. 레이어 침범/관심사 혼합을 의심해야 합니다.');
+    signals.push('Boundary Discipline is low. Suspect layer leakage or mixed concerns.');
   }
 
   const failure = criteria.find((criterion) => criterion.id === 'failure_semantics');
   if (failure && isFiniteNumber(failure.score) && failure.score <= 1) {
-    signals.push('Failure Semantics가 낮습니다. 실패 처리 정책(에러/타임아웃/empty state) 명시가 필요합니다.');
+    signals.push('Failure Semantics is low. The failure-handling policy (error / timeout / empty state) needs to be made explicit.');
   }
 
   if (criticalFlags.length > 0) {
-    signals.push(`Critical Flag ${criticalFlags.length}건이 감지되었습니다. 등급과 별개로 우선 확인이 필요합니다.`);
+    signals.push(`${criticalFlags.length} Critical Flag(s) were detected. Review them first regardless of grade.`);
   }
 
   if (signals.length === 0) {
-    signals.push('정량/정성 지표 간 큰 충돌 신호는 감지되지 않았습니다.');
+    signals.push('No major conflict signal was detected between the quantitative and qualitative metrics.');
   }
 
   return signals;
@@ -534,20 +534,20 @@ function renderMarkdown(result) {
 
   lines.push('# Clean Code Inspect Result');
   lines.push('');
-  lines.push('## 요약');
+  lines.push('## Summary');
   lines.push('');
-  lines.push(`- 프로필: ${result.profile}`);
-  lines.push(`- 정량 점수: ${result.quantitative.score} (${result.quantitative.grade})`);
+  lines.push(`- Profile: ${result.profile}`);
+  lines.push(`- Quantitative Score: ${result.quantitative.score} (${result.quantitative.grade})`);
   lines.push(
-    `- 정성 점수: ${result.qualitativeOverlay.score == null ? 'N/A' : `${result.qualitativeOverlay.score} (${gradeFromScore(result.qualitativeOverlay.score)})`}`,
+    `- Qualitative Score: ${result.qualitativeOverlay.score == null ? 'N/A' : `${result.qualitativeOverlay.score} (${gradeFromScore(result.qualitativeOverlay.score)})`}`,
   );
-  lines.push(`- 최종 점수: ${result.final.score} (${result.final.grade})`);
-  lines.push(`- Hotspot 대상: ${result.qualitativeOverlay.hotspotSelection.eligibleFileCount}/${result.qualitativeOverlay.hotspotSelection.totalFileCount}`);
+  lines.push(`- Final Score: ${result.final.score} (${result.final.grade})`);
+  lines.push(`- Hotspot Files: ${result.qualitativeOverlay.hotspotSelection.eligibleFileCount}/${result.qualitativeOverlay.hotspotSelection.totalFileCount}`);
   lines.push('');
 
-  lines.push('## 정성 오버레이 결과');
+  lines.push('## Qualitative Overlay Results');
   lines.push('');
-  lines.push('| 항목 | 점수(0~4) | 상태 | 근거 수 | 비고 |');
+  lines.push('| Criterion | Score (0-4) | Status | Evidence Count | Notes |');
   lines.push('|---|---:|---|---:|---|');
   for (const criterion of result.qualitativeOverlay.criteria) {
     lines.push(
@@ -557,7 +557,7 @@ function renderMarkdown(result) {
   lines.push('');
 
   if (result.qualitativeOverlay.hotspotSelection.files.length > 0) {
-    lines.push('### Hotspot 대상 파일');
+    lines.push('### Hotspot Files');
     lines.push('');
     for (const file of result.qualitativeOverlay.hotspotSelection.files) {
       lines.push(`- ${file.path} (hotspotScore: ${file.score})`);
@@ -565,7 +565,7 @@ function renderMarkdown(result) {
     lines.push('');
   }
 
-  lines.push('## 정량-정성 교차 시그널');
+  lines.push('## Quantitative-Qualitative Cross Signals');
   lines.push('');
   for (const signal of result.crossSignals) {
     lines.push(`- ${signal}`);
@@ -575,7 +575,7 @@ function renderMarkdown(result) {
   lines.push('## Critical Flags');
   lines.push('');
   if (result.criticalFlags.length === 0) {
-    lines.push('- 없음');
+    lines.push('- None');
   } else {
     for (const flag of result.criticalFlags) {
       const location = [flag.file, isFiniteNumber(flag.line) ? `:${flag.line}` : ''].join('');
@@ -629,7 +629,7 @@ function main() {
   }
 
   if (!qualData) {
-    unavailableMetrics.push('qualitative-overlay-input: --qual 파일이 제공되지 않음');
+    unavailableMetrics.push('qualitative-overlay-input: --qual file was not provided');
   }
 
   let finalScore = quantitative.score;
@@ -638,7 +638,7 @@ function main() {
   if (isFiniteNumber(qualitativeOverlay.score)) {
     finalScore = round(quantitative.score * QUANT_WEIGHT + qualitativeOverlay.score * QUAL_WEIGHT, 2);
   } else {
-    finalNotes.push('정성 점수가 N/A이므로 최종 점수는 정량 점수만 사용했습니다.');
+    finalNotes.push('The qualitative score was N/A, so the final score uses only the quantitative score.');
   }
 
   const quantitativeGrade = gradeFromScore(quantitative.score);
@@ -647,7 +647,7 @@ function main() {
   if (quantitative.score >= FAIL_FLOOR && finalScore < FAIL_FLOOR) {
     finalScore = FAIL_FLOOR;
     finalGrade = gradeFromScore(finalScore);
-    finalNotes.push('정성 단독 fail 금지 규칙에 따라 최종 점수를 보정했습니다.');
+    finalNotes.push('The final score was adjusted to honor the no qualitative-only fail rule.');
   }
 
   const criticalFlags = dedupeFlags(qualitativeOverlay.criticalFlags);

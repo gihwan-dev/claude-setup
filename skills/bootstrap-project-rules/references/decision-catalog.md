@@ -1,45 +1,46 @@
 # Decision Catalog
 
-`bootstrap-project-rules`가 implementation rules를 고정할 때 사용하는 분류표다.
-탐색으로 확정 가능한 사실을 먼저 채우고, 정말 필요한 항목만 질문한다.
+This is the classification table used by `bootstrap-project-rules` when locking implementation rules.
+Fill in facts that can be confirmed by exploration first, then ask only for the items that are truly necessary.
 
 ## Locked now
 
-지금 결정하지 않으면 구현 surface, 디렉터리 구조, validation path가 흔들리는 항목이다.
+These are the items that would destabilize the implementation surface, directory structure,
+or validation path if left undecided now.
 
 - runtime / language (`node`, `python`, `typescript`)
 - framework / app shell (`next`, `react`, `fastapi`, `django`, `cli`)
 - package manager / workspace model
 - lint / format / typecheck / test stack
-- 기본 state/data fetching 전략
-- 기본 styling / design-system 방향
+- default state/data-fetching strategy
+- default styling / design-system direction
 - module boundary / folder ownership
 - validation commands / definition of done
 
 ## Deferred
 
-feature slice가 구체화되기 전까지는 최적 판단이 어려운 선택 라이브러리다.
-문서에는 `Decision`, `Why deferred`, `Trigger`, `Needed input`을 함께 적는다.
+These are optional libraries that are hard to judge well before a concrete feature slice exists.
+In the document, record `Decision`, `Why deferred`, `Trigger`, and `Needed input` together.
 
 - rich table / chart / editor / animation libraries
 - analytics / monitoring / experiment SDK
-- form helper / cache helper / image helper 등 optional utility
+- optional utilities such as form helpers, cache helpers, and image helpers
 - specific auth adapter / payment SDK / vendor SDK
 
 ## Banned/Avoid
 
-현재 architecture, validation contract, maintenance 비용과 충돌하는 선택지다.
+These options conflict with the current architecture, validation contract, or maintenance cost profile.
 
-- 기존 package manager와 충돌하는 tooling
-- 동일 책임을 중복하는 state/data layer
-- design system과 충돌하는 styling stack 이중화
-- validation command를 약화시키는 bypass 패턴
+- tooling that conflicts with the existing package manager
+- a duplicate state/data layer that overlaps an existing responsibility
+- a second styling stack that conflicts with the design system
+- bypass patterns that weaken the validation command
 
 ## Question Filter
 
-아래 둘 중 하나를 만족할 때만 질문한다.
+Ask questions only when one of the following is true.
 
-- `Locked now`인데 탐색 결과만으로 확정 불가
-- `Deferred`로 미루면 현재 blocker를 해소할 수 없음
+- It belongs in `Locked now`, but exploration alone cannot confirm it.
+- Deferring it would prevent the current blocker from being resolved.
 
-질문은 1~3개로 제한하고, 답변에 따라 문서가 실제로 달라지는 항목만 묻는다.
+Limit questions to 1-3 items, and ask only about choices that would actually change the resulting documents.

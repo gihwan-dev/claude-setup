@@ -2,49 +2,66 @@ interface:
   display_name: "Implement Task"
   short_description: "Run approved task-bundle slices with slice implementation, main focused validation, commit, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
   default_prompt: >
-    $implement-task 승인된 task path의 `task.yaml + EXECUTION_PLAN.md + STATUS.md`를 우선 읽고,
-    `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`,
-    `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`,
-    `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`도 함께 읽고,
-    `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`도 함께 읽어.
-    `SPEC_VALIDATION.md`의 blocking issue가 남아 있거나 `$bootstrap-project-rules`, project
-    implementation rules 미정, `IMPLEMENTATION_CONTRACT.md` 요구가 unresolved면 구현을 시작하지 마.
-    `task.yaml.success_criteria`, `task.yaml.major_boundaries`, `task.yaml.delivery_strategy`를 구현 계약으로
-    유지하고, `EXECUTION_PLAN.md`는 `Execution slices`, `Verification`, `Stop / Replan conditions` 순서를
-    전제로 읽어. `delivery_strategy=ui-first`면 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 건너뛰거나
-    병합하지 말고, `SLICE-1`/`SLICE-2`에서 real API/backend/data contract/integration diff를 추가하지 마.
-    `SLICE-1`은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고,
-    `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based
-    approval criteria를 읽어.
-    각 slice에서 structure preflight(대상 파일 역할, 예상 post-change LOC, split 필요 여부)를 먼저
-    고정하고, split-first trigger가 켜지면 target file append를 금지해. 같은 slice 안에서 새 모듈
-    추출이 가능하지 않으면 `blocked + exact split proposal`로 멈춰. hybrid mode default는
-    `small slices + run-to-boundary`다. broad `setup`/`skeleton`/`wrapper`/`docs` handoff or
-    slice-budget overflow must split/replan before execution. slice budget은 small slices 기준으로 `repo-tracked files
-    3개 이하`, 순 diff `150 LOC 내외`다. 여러 active task 폴더가 공존하는 것은 정상 경로다. path
-    미지정이면 먼저 active 후보를 만들고, 후보가 정확히 1개일 때만 자동 선택해. 후보가 2개
-    이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 마. 새 task가 없고 legacy `PLAN.md`만
-    있을 때만 fallback을 허용해.
-    `task.yaml.execution_topology`가 `csv-fanout`이면 `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`,
-    `orchestration` block을 함께 읽고, 현재 slice 대응 `work-items/*.csv`를 확인해.
-    Codex 환경(`spawn_agents_on_csv` 가용)이면 CSV 행별 row worker를 병렬 실행하고,
-    Codex 없으면 `keep-local` fallback으로 순차 실행해. row worker는 `target_path`에만
-    파일을 생성/수정하고 shared file 수정을 금지해. row worker 완료 후 output CSV를 수집하고
-    실패 행은 1회 재시도, 50% 이상 실패면 중단해. integrator 역할로 `MERGE_POLICY.md`에 따라
-    shared file(barrel exports, route registration 등)을 통합해.
-    현재 slice의 변경 대상이 2+ 파일이고 파일 경계가 명확하며 shared file 직접 수정이 불필요하면
-    `writer` 에이전트 위임을 고려해. writer handoff에는 `target_path`, `change_spec`, `context_files`,
-    `validation_command`, `slice_budget`을 포함해. writer 결과가 `상태: blocked`이면 직접 구현으로
-    전환하고, `상태: final`이면 shared file 통합 후 focused validation으로 넘어가.
-    병렬 writer가 필요하면 `isolation: worktree`로 독립 실행하고 파일 간 의존이 없어야 해.
-    브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를
-    사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함해. 메인 스레드가 종료 전 실질 영향 문서를 다시 확인한다고 가정하고, 필요한
-    README/docs/task bundle/openapi/schema/runbook diff는 구현 단계에서 validation 전에 같이 반영해.
-    `skills`를 건드렸다면 `python3 scripts/sync_skills_index.py`와
-    `python3 scripts/sync_skills_index.py --check`, `agent-registry`를 건드렸다면
-    `python3 scripts/sync_agents.py`와 `python3 scripts/sync_agents.py --check`를 실행하고 결과를 STATUS/verification에 남겨. 문서
-    diff까지 포함해 slice budget을 넘기면 현재 slice를 억지로 넓히지 말고 replan해. `slice implementation
-    -> main focused validation -> commit` 순서를 지키고, 초기 STATUS는
-    `Current slice=Not started.` / `Next slice=SLICE-1` 기준을 유지해
+    $implement-task first reads the approved task path's
+    `task.yaml + EXECUTION_PLAN.md + STATUS.md`. If `delivery_strategy=ui-first`,
+    also read `task.yaml.source_of_truth.ux = UX_SPEC.md`,
+    `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and
+    `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`.
+    If `task.yaml.source_of_truth.implementation` exists, read
+    `IMPLEMENTATION_CONTRACT.md` too. Do not start implementation when
+    `SPEC_VALIDATION.md` still has blocking issues, when
+    `$bootstrap-project-rules` or project implementation rules are unresolved, or
+    when `IMPLEMENTATION_CONTRACT.md` is required but unresolved. Keep
+    `task.yaml.success_criteria`, `task.yaml.major_boundaries`, and
+    `task.yaml.delivery_strategy` as the implementation contract, and read
+    `EXECUTION_PLAN.md` with the section order `Execution slices`,
+    `Verification`, `Stop / Replan conditions`. If
+    `delivery_strategy=ui-first`, do not skip or merge the `SLICE-1 -> SLICE-2
+    -> SLICE-3+` order, and do not add real API, backend, data contract, or
+    integration diff inside `SLICE-1` or `SLICE-2`. `SLICE-1` reads
+    checklist/layout/token/screen-flow plus interaction/a11y/microcopy.
+    `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture,
+    degradation, and task-based approval criteria. In each slice, lock
+    structure preflight first: target file role, expected post-change LOC, and
+    whether a split is needed. If the split-first trigger is on, do not append
+    to the target file. If a new module cannot be extracted inside the same
+    slice, stop with `blocked + exact split proposal`. The hybrid-mode default
+    is `small slices + run-to-boundary`. Broad `setup` / `skeleton` / `wrapper`
+    / `docs` handoff or slice-budget overflow must split or replan before
+    execution. The small-slice budget is `repo-tracked files 3 or fewer` and a
+    net diff of around `150 LOC`. Multiple active task folders are normal. If
+    no path is specified, build the active candidate set first, auto-select only
+    when there is exactly 1 candidate, and otherwise confirm with the user
+    instead of auto-running. Allow fallback only when no new task exists and
+    only legacy `PLAN.md` remains. If `task.yaml.execution_topology` is
+    `csv-fanout`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the
+    `orchestration` block, then inspect the current slice's `work-items/*.csv`.
+    In Codex environments with `spawn_agents_on_csv`, run row workers in
+    parallel; otherwise fall back to sequential `keep-local`. Row workers may
+    edit only `target_path` and may not modify shared files. Collect output CSV
+    after workers finish, retry failed rows once, and stop if 50 percent or
+    more fail. Let the integrator merge shared files such as barrel exports and
+    route registration using `MERGE_POLICY.md`. If the current slice touches 2
+    or more files, the file boundaries are clear, and shared-file edits are not
+    needed, consider delegating to `writer`. Writer handoff must include
+    `target_path`, `change_spec`, `context_files`, `validation_command`, and
+    `slice_budget`. If the writer returns `status: blocked`, switch to direct
+    implementation or split or replan. If the writer returns `status: final`,
+    integrate shared files and proceed to focused validation. If parallel
+    writers are needed, use `isolation: worktree` and keep file dependencies
+    separate. Use `browser-explorer` only when browser reproduction or visual
+    evidence is required, and include `target URL or Electron entry`,
+    `scenario checklist`, and `evidence checklist` in the handoff. Assume the
+    main thread will recheck materially affected docs before exit, and include
+    any needed README, docs, task-bundle, OpenAPI, schema, or runbook diff
+    before validation. If `skills` changed, run `python3 scripts/sync_skills_index.py`
+    and `python3 scripts/sync_skills_index.py --check`. If `agent-registry`
+    changed, run `python3 scripts/sync_agents.py` and
+    `python3 scripts/sync_agents.py --check`, and record the results in
+    STATUS/verification. If the slice would exceed budget once doc diff is
+    included, replan instead of force-expanding the current slice. Preserve the
+    `slice implementation -> main focused validation -> commit` order, and keep
+    the initial STATUS baseline of `Current slice=Not started.` /
+    `Next slice=SLICE-1`.
 policy:
   allow_implicit_invocation: false

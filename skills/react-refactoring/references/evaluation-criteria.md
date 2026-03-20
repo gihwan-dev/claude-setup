@@ -1,108 +1,108 @@
-# 수정하기 좋은 코드 평가 기준
+# Evaluation Criteria for Code That Is Easy to Change
 
-모든 리팩토링 판단의 근거가 되는 9가지 기준.
+Nine criteria that ground every refactoring judgment.
 
-## 1. 변경 영향 범위 최소화 (Isolation)
+## 1. Minimize Change Blast Radius (Isolation)
 
-**질문**: 이 코드를 수정했을 때, 예상치 못한 다른 곳에서 버그가 터질 가능성은?
+**Question**: If this code changes, how likely is it that bugs will surface somewhere unexpected?
 
-**좋은 신호**:
-- 함수/모듈이 명확한 입출력만 가짐
-- 전역 상태 의존 최소화
-- Side effect가 명시적으로 관리됨
+**Good signals**:
+- Functions / modules have clear inputs and outputs
+- Global-state dependency is minimal
+- Side effects are managed explicitly
 
-**나쁜 신호**:
-- 여러 곳에서 참조되는 mutable 객체
-- 암묵적 의존성 (예: 특정 순서로 호출되어야 함)
-- 하나의 변경이 연쇄적 수정을 유발
+**Bad signals**:
+- Mutable objects referenced from many places
+- Implicit dependencies (for example, must be called in a specific order)
+- One change triggers a chain of follow-up changes
 
-**React 맥락**:
-- Props로 전달된 객체를 직접 수정하지 않음
-- Context 남용으로 인한 불필요한 리렌더링 없음
-- 커스텀 훅이 외부 상태를 예측 불가능하게 변경하지 않음
-
----
-
-## 2. 의도의 명확성 (Readability)
-
-**질문**: 변수명, 함수명, 구조만 보고 '무엇을', '왜' 처리하는지 바로 이해되는가?
-
-**좋은 신호**:
-- 함수명이 동작을 정확히 설명
-- 매직 넘버/문자열 없이 상수로 명명
-- 복잡한 조건문에 설명적 변수명 사용
-
-**나쁜 신호**:
-- `data`, `info`, `handler` 같은 모호한 이름
-- 주석 없이는 이해 불가능한 로직
-- 한 함수가 너무 많은 일을 함
-
-**React 맥락**:
-- 컴포넌트명이 역할을 명확히 표현
-- Props 이름이 자기 설명적
-- 커스텀 훅 이름이 `use` + 반환하는 것의 의미
+**React context**:
+- Objects passed through props are not mutated directly
+- No unnecessary re-renders from Context overuse
+- Custom hooks do not change external state unpredictably
 
 ---
 
-## 3. 테스트 용이성 (Testability)
+## 2. Intent Clarity (Readability)
 
-**질문**: 복잡한 환경 설정 없이 단위 테스트가 가능한가?
+**Question**: Can you understand immediately what it does and why from the names and structure alone?
 
-**좋은 신호**:
-- 순수 함수 비율이 높음
-- 의존성 주입 가능
-- 외부 의존성이 추상화됨
+**Good signals**:
+- Function names describe behavior precisely
+- Magic numbers / strings are named as constants
+- Complex conditions use explanatory variable names
 
-**나쁜 신호**:
-- 테스트하려면 전체 앱 컨텍스트 필요
-- 시간, 랜덤, 네트워크에 직접 의존
-- 내부 구현을 알아야만 테스트 가능
+**Bad signals**:
+- Ambiguous names like `data`, `info`, `handler`
+- Logic that is impossible to understand without comments
+- A single function doing too many jobs
 
-**React 맥락**:
-- 비즈니스 로직이 컴포넌트에서 분리됨
-- 훅을 테스트하려면 Provider 지옥을 거치지 않아도 됨
-- 렌더링 로직과 데이터 로직 분리
-
----
-
-## 4. 관심사의 분리 (Separation of Concerns)
-
-**질문**: UI와 비즈니스 로직이 섞여 있지 않은가?
-
-**좋은 신호**:
-- 스타일 변경이 로직 변경을 요구하지 않음
-- 데이터 처리 로직을 독립적으로 재사용 가능
-- Headless 패턴 적용 가능
-
-**나쁜 신호**:
-- 컴포넌트 안에 복잡한 비즈니스 로직
-- 스타일 코드와 상태 관리가 뒤섞임
-- API 호출과 렌더링이 같은 함수에
-
-**React 맥락**:
-- Custom hook = 로직, Component = 렌더링
-- Container/Presentational 또는 Headless 패턴
-- 스타일은 별도 레이어 (CSS Modules, styled-components, Tailwind)
+**React context**:
+- Component names clearly express their role
+- Prop names are self-descriptive
+- Custom hook names communicate `use` + the meaning of what they return
 
 ---
 
-## 5. 높은 응집도와 코로케이션 (Cohesion & Colocation)
+## 3. Testability
 
-**질문**: 하나의 기능을 수정하기 위해 여러 폴더를 오가야 하는가?
+**Question**: Can it be unit-tested without heavy environment setup?
 
-**좋은 신호**:
-- 관련 코드(로직, 타입, 스타일, 테스트)가 물리적으로 가까움
-- 기능 단위로 폴더 구조화
-- 한 기능의 모든 것을 한 곳에서 파악 가능
+**Good signals**:
+- High ratio of pure functions
+- Dependencies can be injected
+- External dependencies are abstracted
 
-**나쁜 신호**:
-- types/, hooks/, components/, styles/ 분리로 파일 찾기 어려움
-- 연관된 코드가 프로젝트 곳곳에 흩어짐
-- 기능 추가 시 5개 이상 폴더를 오감
+**Bad signals**:
+- Testing requires the entire app context
+- Direct dependency on time, randomness, or the network
+- You must know the internal implementation to test it
 
-**React 맥락**:
-```
-// 좋음: Feature-based
+**React context**:
+- Business logic is separated from the component
+- Hooks can be tested without a Provider maze
+- Rendering logic and data logic are separated
+
+---
+
+## 4. Separation of Concerns
+
+**Question**: Are UI and business logic mixed together?
+
+**Good signals**:
+- Style changes do not require logic changes
+- Data-processing logic can be reused independently
+- A headless pattern could be applied cleanly
+
+**Bad signals**:
+- Complex business logic inside the component
+- Styling code and state management are intertwined
+- API calls and rendering live in the same function
+
+**React context**:
+- Custom hook = logic, Component = rendering
+- Container / Presentational or Headless pattern
+- Styling stays in a separate layer (CSS Modules, styled-components, Tailwind)
+
+---
+
+## 5. High Cohesion and Colocation
+
+**Question**: Do you need to jump across many folders to change one feature?
+
+**Good signals**:
+- Related code (logic, types, styles, tests) lives physically close together
+- Folder structure is organized by feature
+- You can understand everything about one feature in one place
+
+**Bad signals**:
+- Splitting into `types/`, `hooks/`, `components/`, `styles/` makes files hard to find
+- Related code is scattered across the repo
+- Adding a feature requires touching 5+ folders
+
+**React context**:
+```text
+// Good: feature-based
 features/
   user-profile/
     UserProfile.tsx
@@ -110,7 +110,7 @@ features/
     userProfile.types.ts
     UserProfile.test.tsx
 
-// 나쁨: Layer-based
+// Bad: layer-based
 components/UserProfile.tsx
 hooks/useUserProfile.ts
 types/userProfile.ts
@@ -119,98 +119,98 @@ tests/UserProfile.test.tsx
 
 ---
 
-## 6. 교체 가능성 (Replaceability)
+## 6. Replaceability
 
-**질문**: 이 코드를 레고 블록처럼 떼어내고 교체할 수 있는가?
+**Question**: Can this code be detached and replaced like a Lego block?
 
-**좋은 신호**:
-- 명확한 인터페이스/계약
-- 구현 세부사항이 캡슐화됨
-- 모듈 간 느슨한 결합
+**Good signals**:
+- Clear interface / contract
+- Implementation details are encapsulated
+- Loose coupling between modules
 
-**나쁜 신호**:
-- 수정하려면 '수술'이 필요
-- 한 부분을 바꾸면 연쇄적 수정 필요
-- 모듈 경계가 불명확
+**Bad signals**:
+- Changing it requires "surgery"
+- Changing one part forces cascading changes
+- Module boundaries are unclear
 
-**React 맥락**:
-- 컴포넌트가 특정 데이터 구조에 강하게 결합되지 않음
-- API 레이어 교체가 컴포넌트 변경 없이 가능
-- 상태 관리 라이브러리 교체가 국소적
-
----
-
-## 7. 점진적 변경 가능성 (Incrementality)
-
-**질문**: 이 변경을 작은 단위로 쪼개서 점진적으로 할 수 있는가?
-
-**좋은 신호**:
-- 작은 PR 단위로 분리 가능
-- 중간 상태도 동작하는 코드
-- 롤백이 쉬움
-
-**나쁜 신호**:
-- "빅뱅" 리팩토링만 가능
-- 중간에 멈추면 깨진 상태
-- 변경이 all-or-nothing
-
-**React 맥락**:
-- 새 컴포넌트를 만들고 점진적으로 교체
-- Feature flag로 새 구현 테스트
-- 한 번에 하나의 훅만 분리
+**React context**:
+- The component is not tightly coupled to one specific data shape
+- The API layer can be swapped without rewriting the component
+- Swapping a state-management library would be localized
 
 ---
 
-## 8. 일관성 (Consistency)
+## 7. Incrementality
 
-**질문**: 기존 코드베이스의 패턴/컨벤션과 조화를 이루는가?
+**Question**: Can this change be split into small, incremental steps?
 
-**좋은 신호**:
-- 비슷한 문제에 비슷한 해결책
-- 새 개발자가 패턴을 보고 예측 가능
-- 코드 스타일이 통일됨
+**Good signals**:
+- It can be separated into small PRs
+- Intermediate states still work
+- Rollback is easy
 
-**나쁜 신호**:
-- "이 파일만 특별한" 패턴
-- 같은 일을 하는 여러 가지 방식
-- 새 패턴 도입으로 인지 부하 증가
+**Bad signals**:
+- Only a "big bang" refactor is possible
+- Stopping halfway leaves the code broken
+- The change is all-or-nothing
 
-**React 맥락**:
-- 팀에서 이미 쓰는 상태 관리 패턴 따르기
-- 기존 폴더 구조 규칙 존중
-- 새 라이브러리 도입 전 기존 방식 검토
+**React context**:
+- Build the new component and replace gradually
+- Use a feature flag to test the new implementation
+- Extract one hook at a time
 
 ---
 
-## 9. 타입 활용도 (Type Leverage) - TypeScript 특화
+## 8. Consistency
 
-**질문**: 타입이 문서 역할을 하고, 런타임 에러를 방지하는가?
+**Question**: Does it fit the existing patterns and conventions of the codebase?
 
-**좋은 신호**:
-- 함수 시그니처만 봐도 사용법 파악
-- 잘못된 사용이 컴파일 타임에 에러
-- 타입이 도메인을 정확히 표현
+**Good signals**:
+- Similar problems receive similar solutions
+- New developers can predict behavior from established patterns
+- Code style is consistent
 
-**나쁜 신호**:
-- `any` 남발
-- 과도한 타입 단언 (`as`)
-- 런타임에서야 타입 에러 발견
-- 타입과 실제 동작 불일치
+**Bad signals**:
+- A one-off pattern that exists only in this file
+- Multiple ways to do the same thing
+- A new pattern increases cognitive load
 
-**React 맥락**:
-- Props 타입이 컴포넌트 사용법을 문서화
-- 제네릭으로 재사용 가능한 훅 타입
-- discriminated union으로 상태 표현
+**React context**:
+- Follow the state-management patterns the team already uses
+- Respect the existing folder-structure rules
+- Review current approaches before adding a new library
+
+---
+
+## 9. Type Leverage (TypeScript-Specific)
+
+**Question**: Do types serve as documentation and prevent runtime errors?
+
+**Good signals**:
+- You can understand usage from the function signature alone
+- Incorrect usage fails at compile time
+- Types model the domain accurately
+
+**Bad signals**:
+- `any` everywhere
+- Excessive type assertions (`as`)
+- Type errors are discovered only at runtime
+- Types do not match actual behavior
+
+**React context**:
+- Prop types document how the component is used
+- Reusable hook types are expressed through generics
+- State is modeled through discriminated unions
 
 ```typescript
-// 좋음: 타입이 상태를 정확히 표현
+// Good: the type models the state accurately
 type LoadingState =
   | { status: 'idle' }
   | { status: 'loading' }
   | { status: 'success'; data: User }
   | { status: 'error'; error: Error }
 
-// 나쁨: 런타임에서야 알 수 있음
+// Bad: you only know the real state shape at runtime
 type State = {
   loading: boolean;
   data: User | null;
@@ -220,14 +220,14 @@ type State = {
 
 ---
 
-## 기준 적용 시 주의사항
+## Notes on Applying the Criteria
 
-1. **모든 기준을 동시에 만족할 필요 없음**: 트레이드오프 존재. 상황에 따라 우선순위 판단.
+1. **Not every criterion must be maximized at once**: Tradeoffs exist. Prioritize based on context.
 
-2. **과도한 적용 경계**: "좋은 원칙"이라도 과하면 해악. 예를 들어:
-  - 과도한 응집도 추구 → 거대한 god 모듈
-  - 과도한 교체 가능성 → 불필요한 추상화 레이어
+2. **Guard against over-application**: Even good principles become harmful when pushed too far. For example:
+  - Over-optimizing for cohesion -> giant god modules
+  - Over-optimizing for replaceability -> unnecessary abstraction layers
 
-3. **맥락이 왕**: 프로토타입과 프로덕션 코드는 기준이 다름. 팀 규모와 프로젝트 성격 고려.
+3. **Context rules**: Prototype code and production code should be judged differently. Consider team size and project nature.
 
-4. **현재 상태 대비 개선 판단**: 이상적 상태가 아닌, 현재보다 나아지는지가 중요.
+4. **Judge improvement relative to the current state**: The key question is not whether it is ideal, but whether it is better than what exists now.

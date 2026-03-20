@@ -1,6 +1,6 @@
 id = "type-specialist"
 role = "reviewer"
-description = "Read-only reviewer for shared/public types, interfaces, generics, and contract-safety risks."
+description = "Read-only reviewer focused on type contracts, interfaces, generics, and migration safety."
 source = "codex-builtin"
 
 [projection]

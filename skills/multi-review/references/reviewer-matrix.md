@@ -8,7 +8,7 @@
 
 ## Baseline Reviewers
 
-이 3개 reviewer는 항상 병렬 실행한다.
+Run these 3 reviewers in parallel every time.
 
 - `structure-reviewer`
 - `code-quality-reviewer`
@@ -25,10 +25,10 @@
 
 ## Synthesis Contract
 
-- 서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.
-- 메인 에이전트는 reviewer fan-out 뒤 병렬로 개인 작업을 하지 않고, 필요한 후속 탐색은 결과를 받은 뒤 최소 범위로만 수행한다.
-- 결과는 findings first, summary second다.
-- findings는 severity 순으로 정렬한다.
-- 가능한 경우 file/line 근거를 붙인다.
-- open questions와 residual risk는 findings 뒤에 짧게 덧붙인다.
-- 이 skill은 수정하지 않고 review만 수행한다.
+- Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
+- After reviewer fan-out, the main agent does not do parallel side work. Any follow-up exploration happens only after results return and stays minimal.
+- Results are findings first and summary second.
+- Order findings by severity.
+- Attach file or line evidence when possible.
+- Add open questions and residual risk briefly after the findings.
+- This skill performs review only and does not make edits.

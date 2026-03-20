@@ -2,13 +2,15 @@ interface:
   display_name: "Reference Pack"
   short_description: "Task-local UI reference collection advisory that saves shortlist and manifest artifacts under `DESIGN_REFERENCES/` for `design-task` ui-first planning"
   default_prompt: >
-    `$reference-pack` ui-first planning용 task-local `DESIGN_REFERENCES/`를 채워. 저장 경로는
-    `tasks/<task-path>/DESIGN_REFERENCES/`로 고정하고, `shortlist.md`, `manifest.json`, `raw/`,
-    `curated/`를 만든다. shortlist는 5~10개 후보를 남기고, saved reference는 최소 3개
-    (`adopt` 2, `avoid` 1 기본값)를 남겨. `manifest.json` entry schema는 `file`,
-    `source_url`, `captured_at`, `kind`, `tags`, `adopt_reason`, `avoid_reason`, `notes`를
-    유지해. browser/web research는 후보와 캡처 근거 수집에만 사용하고, `UX_SPEC.md`의
-    `Reference Pack (adopt/avoid)`가 saved file 경로와 adopt/avoid 이유를 직접 참조할 수 있게
-    정리해.
+    `$reference-pack` should fill the task-local `DESIGN_REFERENCES/` directory
+    for ui-first planning. Fix the save path to
+    `tasks/<task-path>/DESIGN_REFERENCES/`, and create `shortlist.md`,
+    `manifest.json`, `raw/`, and `curated/`. Keep 5 to 10 shortlist candidates
+    and at least 3 saved references by default (`adopt` 2, `avoid` 1). Preserve
+    the `manifest.json` entry schema: `file`, `source_url`, `captured_at`,
+    `kind`, `tags`, `adopt_reason`, `avoid_reason`, `notes`. Use browser or web
+    research only to gather candidates and capture evidence, and organize the
+    result so `UX_SPEC.md` can cite the saved file paths plus adopt or avoid
+    reasons directly in `Reference Pack (adopt/avoid)`.
 policy:
   allow_implicit_invocation: false

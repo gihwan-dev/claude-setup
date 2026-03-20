@@ -1,8 +1,8 @@
 # Mermaid Patterns for Architecture Docs
 
-아래 패턴 중 문맥에 맞는 2개 이상을 선택해 사용한다.
+Choose and use at least two of the patterns below based on the current context.
 
-## 1) Flowchart: 레이어/경계
+## 1) Flowchart: Layers / Boundaries
 
 ```mermaid
 flowchart TB
@@ -37,7 +37,7 @@ flowchart TB
   Queue --> External
 ```
 
-## 2) Sequence: 요청/이벤트 흐름
+## 2) Sequence: Request / Event Flow
 
 ```mermaid
 sequenceDiagram
@@ -57,7 +57,7 @@ sequenceDiagram
   API-->>UI: Return response
 ```
 
-## 3) C4-style Component: 책임 분리
+## 3) C4-style Component: Responsibility Split
 
 ```mermaid
 flowchart LR
@@ -78,7 +78,7 @@ flowchart LR
   C3 --> Ext2
 ```
 
-## 4) Dependency Graph: 패키지/모듈 의존성
+## 4) Dependency Graph: Package / Module Dependencies
 
 ```mermaid
 flowchart LR
@@ -88,9 +88,9 @@ flowchart LR
   Feature --> Api["packages/api-client"]
 ```
 
-## 선택 가이드
+## Selection Guide
 
-- 사용자 요청/데이터 흐름이 중요하면 `Sequence`를 포함한다.
-- 계층 구조와 경계 설명이 중요하면 `Flowchart`를 포함한다.
-- 패키지 구조 변동이 크면 `Dependency Graph`를 포함한다.
-- 시스템 책임 분리 설명이 필요하면 `C4-style Component`를 포함한다.
+- Include `Sequence` when user-facing request/data flow matters.
+- Include `Flowchart` when hierarchy and boundaries are the main story.
+- Include `Dependency Graph` when package structure changed significantly.
+- Include `C4-style Component` when you need to explain system responsibility splits.

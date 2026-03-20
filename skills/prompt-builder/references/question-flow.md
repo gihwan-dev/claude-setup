@@ -1,29 +1,29 @@
 # Question Flow
 
-두 라운드로 질문한다. 라운드당 최대 3문항만 사용한다.
+Ask in two rounds. Use at most three questions per round.
 
 ## Round A: Goal Alignment
 
-1. 최종 산출물은 정확히 무엇인가? (예: 코드 수정, 문서, 리포트, 테스트)
-2. 완료를 판정하는 기준은 무엇인가? (예: 테스트 통과, 특정 UX 만족, 성능 수치)
-3. 범위 제한은 무엇인가? (포함/제외 대상, 변경 가능 경로)
+1. What exactly is the final deliverable? For example: a code change, document, report, or test.
+2. How should completion be judged? For example: passing tests, a specific UX outcome, or a performance metric.
+3. What is the scope boundary? For example: included and excluded targets, or editable paths.
 
-## Round B: Risk & Exceptions
+## Round B: Risk And Exceptions
 
-1. 가장 문제가 날 가능성이 큰 조건은 무엇인가?
-2. 실패 시 허용되는 대안은 무엇인가? (폴백, 부분 완료 허용 여부)
-3. 기존 동작과의 호환성 요구사항은 무엇인가?
+1. Which condition is most likely to cause problems?
+2. What fallback is acceptable if the task fails? For example: a partial result or alternate path.
+3. What compatibility requirements must hold with the current behavior?
 
-## Optional Deepening (필요 시만)
+## Optional Deepening (only when needed)
 
-- 데이터 품질 이슈가 있나? (누락, 중복, 포맷 불일치)
-- 정책/컴플라이언스 제약이 있나? (보안, 개인정보, 라이선스)
-- 시간/비용 한계가 있나? (N분 이내, API 호출 제한)
+- Are there data quality issues such as missing values, duplicates, or format mismatches?
+- Are there policy or compliance constraints such as security, privacy, or licensing?
+- Are there time or cost limits such as a deadline in minutes or API call limits?
 
 ## Stop Rule
 
-아래 조건을 만족하면 질문을 중단하고 프롬프트 생성으로 넘어간다.
+Stop asking questions and move to prompt generation when these conditions are satisfied:
 
-- 목표, 완료 기준, 범위 제한이 명확하다.
-- 핵심 리스크 1개 이상과 대응 규칙이 정해졌다.
-- 컨텍스트 접근 범위가 지정되었다.
+- the goal, completion criteria, and scope boundary are clear
+- at least one key risk and its response rule are defined
+- the context access boundary is specified

@@ -2,84 +2,84 @@
 name: commit
 description: >
   Generate conventional commit messages with logical diff splitting.
-  컨벤셔널 커밋 메시지 생성. "커밋해줘", "커밋", "변경사항 저장" 등의 요청 시 사용
+  Use when the user asks to commit changes, save work, or create a conventional commit.
 ---
 
 # Commit
 
-이 스킬은 컨벤셔널 커밋 메시지를 사용하여 체계적인 커밋을 생성하도록 도와줍니다. 커밋시 husky 훅이 실행되므로, lint, typecheck 등의 검증을 필요하지 않습니다.
+Use this skill to create structured commits with conventional commit messages. Husky hooks run at commit time, so extra pre-commit verification steps are not required here.
 
-1. `--no-verify`로 지정되면 --no-verify로 실행해 훅 실행을 건너 뜁니다.
-2. `git status`로 스테이징된 파일을 확인합니다
-3. 스테이징된 파일이 0개라면, 자동으로 모든 수정/신규 파일을 `git add`로 추가합니다
-4. `git diff`를 수행하여 커밋될 변경사항을 파악합니다
-5. diff를 분석하여 여러 개의 논리적으로 구분된 변경사항이 있는지 판단합니다
-6. 여러 개의 구분된 변경사항이 감지되면, 커밋을 여러 개로 분할할 것을 제안합니다
-7. 각 커밋(또는 분할하지 않는 경우 단일 커밋)에 대해 컨벤셔널 커밋 형식으로 메시지를 생성합니다
+1. If the user specifies `--no-verify`, pass it through and skip hook execution.
+2. Check staged files with `git status`.
+3. If nothing is staged, automatically stage all modified and new files with `git add`.
+4. Run `git diff` to understand what will be committed.
+5. Analyze the diff and decide whether it contains multiple logically distinct changes.
+6. If multiple distinct changes are present, suggest splitting them into separate commits.
+7. For each commit, or for the single combined commit when no split is needed, generate a conventional commit message.
 
-## 커밋 모범 사례
+## Commit Best Practices
 
-- **커밋 전 검증**: 코드가 린팅되고, 타입 체크를 통과하는지 확인
-- **원자적 커밋**: 각 커밋은 단일 목적을 가진 관련된 변경사항만 포함
-- **큰 변경사항 분할**: 여러 관심사를 다루는 변경사항은 별도 커밋으로 분할
-- **컨벤셔널 커밋 형식**: `<type>(<scope>): [#이슈번호] <설명>` 형식 사용, type은 다음 중 하나:
-  - `feat`: 새로운 기능
-  - `fix`: 버그 수정
-  - `docs`: 문서 변경
-  - `style`: 코드 스타일 변경 (포맷팅 등)
-  - `refactor`: 버그 수정이나 기능 추가가 아닌 코드 변경
-  - `perf`: 성능 개선
-  - `test`: 테스트 추가 또는 수정
-  - `chore`: 빌드 프로세스, 도구 등의 변경
-  - `ci`: CI/CD 관련 변경
-  - `revert`: 변경사항 되돌리기
-- **커밋 메시지 제목은 한국어로 작성**: 설명은 한국어로 명확하게 작성
-- **간결한 첫 줄**: 첫 줄은 72자 이내로 유지
-- **이모지 사용 금지**: 커밋 메시지에 이모지를 넣지 않는다. `type(scope):` 형식만 사용
+- **Pre-commit validation**: confirm the code is linted and passes type checks.
+- **Atomic commits**: each commit should contain only related changes with a single purpose.
+- **Split large changes**: separate changes that cover multiple concerns into different commits.
+- **Conventional commit format**: use `<type>(<scope>): [#issue] <description>`, where `type` is one of:
+  - `feat`: new feature
+  - `fix`: bug fix
+  - `docs`: documentation change
+  - `style`: code style change such as formatting
+  - `refactor`: code change that is neither a bug fix nor a new feature
+  - `perf`: performance improvement
+  - `test`: test addition or update
+  - `chore`: build process, tooling, or maintenance work
+  - `ci`: CI/CD related change
+  - `revert`: revert a previous change
+- **Write commit titles in Korean**: keep the description clear and specific.
+- **Keep the first line concise**: target 72 characters or fewer.
+- **Do not use emoji**: stick to the `type(scope):` format only.
 
-## 커밋 분할 가이드라인
+## Commit Splitting Guidelines
 
-diff를 분석할 때, 다음 기준에 따라 커밋 분할을 고려합니다:
+When analyzing the diff, consider splitting commits using these criteria:
 
-1. **다른 관심사**: 코드베이스의 서로 관련없는 부분의 변경
-2. **다른 변경 타입**: 기능, 수정, 리팩토링 등이 섞인 경우
-3. **파일 패턴**: 다른 유형의 파일 변경 (예: 소스 코드 vs 문서)
-4. **논리적 그룹화**: 별도로 이해하거나 리뷰하기 쉬운 변경사항
-5. **크기**: 분할하면 더 명확해질 수 있는 매우 큰 변경사항
+1. **Different concerns**: unrelated areas of the codebase changed together.
+2. **Different change types**: features, fixes, refactors, and docs are mixed together.
+3. **File patterns**: different categories of files changed, such as source code and docs.
+4. **Logical grouping**: changes are easier to review or understand as separate units.
+5. **Size**: the change set is large enough that splitting would make intent clearer.
 
-## 예시
+## Examples
 
-좋은 커밋 메시지 (한국어):
+Example commit messages shown in English for structure reference. In actual use, keep the final commit message in Korean:
 
-- `feat(react): [#52] 사용자 인증 시스템 추가`
-- `fix(react): [#63] 렌더링 프로세스의 메모리 누수 해결`
-- `docs(docs): 새로운 엔드포인트로 API 문서 업데이트`
-- `refactor(react): [#45] 파서의 에러 처리 로직 단순화`
-- `test(react): [#52] RowClick Feature 단위 테스트 추가`
-- `chore(root): 개발자 도구 설정 프로세스 개선`
-- `perf(react): [#45] 그룹 헤더 연관 기능 성능 개선`
+- `feat(react): [#52] Add user authentication system`
+- `fix(react): [#63] Resolve memory leak in rendering pipeline`
+- `docs(docs): Update API documentation for the new endpoint`
+- `refactor(react): [#45] Simplify parser error handling`
+- `test(react): [#52] Add unit tests for RowClick feature`
+- `chore(root): Improve developer tooling setup flow`
+- `perf(react): [#45] Improve grouped header performance`
 
-커밋 분할 예시:
+Commit split example:
 
-- 첫 번째 커밋: `feat(react): [#52] 새로운 solc 버전 타입 정의 추가`
-- 두 번째 커밋: `docs(docs): 새로운 solc 버전에 대한 문서 업데이트`
-- 세 번째 커밋: `chore(deps): package.json 의존성 업데이트`
-- 네 번째 커밋: `test(react): [#52] 새로운 기능에 대한 단위 테스트 추가`
+- First commit: `feat(react): [#52] Add type definitions for the new solc version`
+- Second commit: `docs(docs): Update documentation for the new solc version`
+- Third commit: `chore(deps): Update package.json dependencies`
+- Fourth commit: `test(react): [#52] Add unit tests for the new feature`
 
-## 커맨드 옵션
+## Command Option
 
-- `--no-verify`: 커밋 전 검증 (lint, typecheck) 건너뛰기
+- `--no-verify`: skip commit-time validation hooks such as lint and typecheck.
 
-## 중요 사항
+## Important Notes
 
-- 기본적으로 코드 품질을 보장하기 위해 커밋 전 검증(`pnpm lint`, `pnpm typecheck`)이 실행됩니다
-- 이러한 검증이 실패하면, 커밋을 계속 진행할지 아니면 먼저 문제를 수정할지 묻습니다
-- 특정 파일이 이미 스테이징되어 있다면, 해당 파일만 커밋됩니다
-- 스테이징된 파일이 없다면, 모든 수정 및 신규 파일을 자동으로 스테이징합니다
-- 커밋 메시지는 감지된 변경사항을 기반으로 작성됩니다
-- 커밋하기 전에 diff를 검토하여 여러 커밋으로 나누는 것이 더 적절한지 식별합니다
-- 여러 커밋을 제안하는 경우, 변경사항을 별도로 스테이징하고 커밋하도록 도와줍니다
-- 항상 커밋 diff를 검토하여 메시지가 변경사항과 일치하는지 확인합니다
-- **커밋 메시지는 반드시 한국어로 작성합니다**
-- **이모지를 절대 사용하지 않습니다**
-- **body 각 줄은 100자를 넘지 않도록 합니다**
+- By default, commit-time validation such as `pnpm lint` and `pnpm typecheck` runs to protect code quality.
+- If validation fails, ask whether to proceed with the commit or fix the issues first.
+- If specific files are already staged, commit only those files.
+- If no files are staged, automatically stage all modified and new files.
+- Generate the commit message from the detected changes.
+- Review the diff before committing to decide whether multiple commits would be better.
+- If multiple commits are recommended, help the user stage and commit them separately.
+- Always review the commit diff so the message matches the actual change.
+- **Commit messages must be written in Korean.**
+- **Never use emoji.**
+- **Keep each body line at 100 characters or fewer.**

@@ -10,7 +10,7 @@ description: >
 
 # Frontend Root Cause Analysis
 
-프론트엔드 버그를 증상 중심이 아니라 근본 원인 중심으로 분석하고 해결안을 제시한다.
+Analyze frontend bugs from the angle of root causes rather than symptoms, then propose solutions.
 
 ## Language Rule
 
@@ -64,6 +64,6 @@ Use the exact section order below:
 
 ## Example Invocations
 
-- `$frontend-root-cause-analysis 모달이 가끔 닫히지 않는 버그가 있는데 race condition인지 근본 원인까지 Five Whys로 분석해줘.`
-- `$frontend-root-cause-analysis hydration mismatch 경고가 간헐적으로 발생해. 증상 패치 말고 근거 기반으로 원인 후보를 순위화해줘.`
-- `$frontend-root-cause-analysis 입력 포커스가 랜덤하게 튀는 현상을 Socratic 질문으로 좁혀가며 원인과 회귀 테스트까지 제시해줘.`
+- `$frontend-root-cause-analysis There is a bug where the modal sometimes does not close. Analyze it with Five Whys and go all the way to the root cause, including whether it is a race condition.`
+- `$frontend-root-cause-analysis I see intermittent hydration mismatch warnings. Rank the root-cause candidates from evidence instead of suggesting a symptom-only patch.`
+- `$frontend-root-cause-analysis Input focus jumps around randomly. Narrow it down with Socratic questions and propose both the cause and regression tests.`

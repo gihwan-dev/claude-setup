@@ -1,6 +1,6 @@
 id = "code-quality-reviewer"
 role = "reviewer"
-description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
+description = "Read-only reviewer focused on risky logic, missing validation, and local code quality."
 source = "codex-builtin"
 
 [projection]

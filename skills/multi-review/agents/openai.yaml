@@ -2,12 +2,15 @@ interface:
   display_name: "Multi Review"
   short_description: "Multi-agent review entry for the current diff or a selected target"
   default_prompt: >
-    $multi-review 먼저 `references/reviewer-matrix.md`를 읽고 멀티 에이전트 리뷰를 실행해.
-    baseline reviewer와 조건부 reviewer 추가는 reference와 `scripts/workflow_contract.py`
-    helper 기준을 따라. 서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기,
-    검색, 추가 탐색을 금지하고, 메인 에이전트는 reviewer fan-out 뒤 병렬로 개인 작업을 하지
-    마. 필요한 후속 탐색은 결과를 받은 뒤 최소 범위로만 수행해. 기본 대상은 current worktree diff vs `HEAD`고,
-    사용자가 path/commit/range를 주면 그 대상을 우선해. 리뷰는 read-only로 유지하고,
-    결과는 findings first, summary second 형식으로 severity 순 정렬해.
+    $multi-review first read `references/reviewer-matrix.md` and execute a
+    multi-agent review. Keep baseline reviewer selection and conditional reviewer
+    expansion aligned with that reference and `scripts/workflow_contract.py`.
+    Before reviewer results return, do not read more files, run more searches,
+    or continue exploration beyond `wait` and result collection. After reviewer
+    fan-out, the main agent does not do parallel side work; any follow-up
+    exploration happens only after results return and stays minimal. The default
+    target is the current worktree diff vs `HEAD`, but a user-specified path,
+    commit, or range takes precedence. Keep the review read-only, and synthesize
+    results as findings first and summary second, ordered by severity.
 policy:
   allow_implicit_invocation: false

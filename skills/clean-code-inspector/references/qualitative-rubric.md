@@ -1,70 +1,70 @@
 # Qualitative Overlay Rubric (v2)
 
-정성 평가는 정량 결과를 대체하지 않는다. 점수화는 오직 아래 루브릭으로만 수행한다.
+Qualitative evaluation does not replace quantitative results. Scoring must use only the rubric below.
 
-## 공통 규칙
+## Common Rules
 
-- 대상: 정량 Hotspot 상위 20% 파일
-- 항목별 점수 범위: `0~4`
-- 근거 조건: 항목마다 파일+라인 근거 2개 이상
-- 근거 부족 시: `N/A`
-- 근거 없는 칭찬/비난 문장 금지
+- Target: files in the top 20% of quantitative hotspots
+- Score range per criterion: `0~4`
+- Evidence requirement: at least two file+line evidence points per criterion
+- If evidence is insufficient: `N/A`
+- Do not write praise or criticism without evidence
 
 ## 1) Intent Clarity
 
-코드만 읽어도 비즈니스 의도/행동 규칙이 드러나는가?
+Does the business intent or behavior rule become clear from the code alone?
 
-- 4: 함수/변수 이름과 분기 구조만으로 핵심 규칙이 즉시 드러난다.
-- 3: 대부분 명확하나 일부 분기는 맥락 추론이 필요하다.
-- 2: 주요 규칙이 코드에 흩어져 있어 이해에 왕복 탐색이 필요하다.
-- 1: 의도 추론이 어렵고 이름/분기가 상충된다.
-- 0: 의도를 코드에서 실질적으로 파악할 수 없다.
+- 4: Function/variable names and branch structure reveal the core rule immediately.
+- 3: Mostly clear, but some branches still require contextual inference.
+- 2: Key rules are scattered across the code and require back-and-forth reading.
+- 1: Intent is hard to infer, and names/branches conflict with each other.
+- 0: The intent cannot be meaningfully understood from the code.
 
 ## 2) Local Reasoning
 
-한 파일/함수 안에서 상태와 데이터 흐름을 추적 가능한가?
+Can state and data flow be traced within a single file or function?
 
-- 4: 데이터 흐름이 선형적이며 로컬 맥락만으로 추적 가능하다.
-- 3: 일부 외부 의존이 있으나 핵심 흐름은 로컬에서 이해 가능하다.
-- 2: 로컬/외부를 반복 왕복해야 한다.
-- 1: 흐름 추적이 다중 추상화 경계를 빈번히 넘는다.
-- 0: 흐름 파악이 사실상 불가능하다.
+- 4: Data flow is linear and understandable from local context alone.
+- 3: Some external dependencies exist, but the main flow is still understandable locally.
+- 2: The reader must repeatedly jump between local and external context.
+- 1: Tracing the flow frequently crosses multiple abstraction boundaries.
+- 0: The flow is practically impossible to follow.
 
 ## 3) Failure Semantics
 
-에러/빈 상태/타임아웃/fallback 처리 의도가 명확한가?
+Are the intentions around errors, empty states, timeouts, and fallbacks clear?
 
-- 4: 실패 모드가 명확히 정의되고 처리 분기가 완전하다.
-- 3: 주요 실패 모드는 다루지만 일부 엣지 케이스가 비어 있다.
-- 2: 실패 처리 일관성이 약하고 누락이 보인다.
-- 1: 실패 처리 분기가 드물고 암묵적이다.
-- 0: 실패 처리 의도가 거의 없거나 부재한다.
+- 4: Failure modes are clearly defined and handled comprehensively.
+- 3: Major failure modes are covered, but some edge cases remain open.
+- 2: Failure handling is inconsistent and visibly incomplete.
+- 1: Failure branches are rare and mostly implicit.
+- 0: Failure handling intent is nearly absent.
 
-> 점수 0이며 근거가 충분하면 `missing_failure_semantics` 플래그를 추가한다.
+> If the score is 0 and evidence is sufficient, add the `missing_failure_semantics` flag.
 
 ## 4) Boundary Discipline
 
-관심사 분리와 경계 규칙이 지켜지는가?
+Are separation-of-concerns and boundary rules preserved?
 
-- 4: 경계가 명확하고 계층 침범이 없다.
-- 3: 경계는 대체로 유지되나 제한적 침범이 있다.
-- 2: 경계 혼합이 반복적으로 나타난다.
-- 1: 다수 경계 위반으로 변경 파급이 크다.
-- 0: 경계 규율이 사실상 무너져 있다.
+- 4: Boundaries are clear and layers do not leak into each other.
+- 3: Boundaries mostly hold, with limited leakage.
+- 2: Boundary mixing appears repeatedly.
+- 1: Multiple boundary violations create broad change impact.
+- 0: Boundary discipline has effectively collapsed.
 
-> 점수 0이며 근거가 충분하면 `boundary_discipline_violation` 플래그를 추가한다.
+> If the score is 0 and evidence is sufficient, add the `boundary_discipline_violation` flag.
 
 ## 5) Test Oracle Quality
 
-테스트가 단순 실행이 아니라 행동 규칙을 검증하는가?
+Do tests verify behavior rules rather than merely executing code?
 
-- 4: 핵심 비즈니스 규칙을 명시적으로 단언한다.
-- 3: 핵심 규칙 대부분을 검증하나 일부는 실행 확인에 가깝다.
-- 2: 단언 품질이 들쭉날쭉하며 중요한 규칙 누락이 있다.
-- 1: 실행 확인 중심 테스트가 다수다.
-- 0: 규칙 검증이 거의 없다.
+- 4: The tests explicitly assert the core business rules.
+- 3: Most core rules are verified, but some assertions are still close to execution checks.
+- 2: Assertion quality is uneven, and important rules are missing.
+- 1: Many tests focus mainly on execution confirmation.
+- 0: There is almost no meaningful rule verification.
 
-## 출력 포맷 권장(JSON)
+## Recommended Output Format (JSON)
 
 ```json
 {
@@ -76,10 +76,10 @@
           "id": "intent_clarity",
           "score": 3,
           "evidence": [
-            { "file": "src/example.ts", "line": 12, "detail": "도메인 규칙 분기" },
-            { "file": "src/example.ts", "line": 28, "detail": "의도 드러나는 함수명" }
+            { "file": "src/example.ts", "line": 12, "detail": "domain-rule branch" },
+            { "file": "src/example.ts", "line": 28, "detail": "intent-revealing function name" }
           ],
-          "comment": "핵심 흐름은 명확하나 일부 용어가 모호함"
+          "comment": "The core flow is clear, but some terms remain vague."
         }
       ],
       "criticalFlags": []

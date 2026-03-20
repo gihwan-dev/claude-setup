@@ -1,6 +1,6 @@
 id = "structure-reviewer"
 role = "reviewer"
-description = "Read-only reviewer for module boundaries, file bloat, responsibility separation, decomposition planning, and quantitative complexity analysis."
+description = "Read-only reviewer focused on module boundaries, decomposition, and structural complexity."
 source = "repo-agent"
 
 [projection]
@@ -17,39 +17,3 @@ config_file = "structure-reviewer.toml"
 model = "gpt-5.4"
 reasoning_effort = "xhigh"
 sandbox_mode = "read-only"
-
-[thresholds]
-soft_limit_behavior = "split-first"
-hard_limit_behavior = "block"
-responsibility_mix_behavior = "block"
-legacy_oversized_file_behavior = "allow-only-without-additive-growth"
-exceptions = [
-  "*.generated.*",
-  "route manifest",
-  "icon registry",
-  "schema declaration files",
-  "migration snapshot",
-  "vendored third-party",
-]
-split_roles = [
-  "component",
-  "view",
-  "hook",
-  "provider",
-  "view-model",
-  "composable",
-  "middleware",
-  "service",
-  "use-case",
-  "repository",
-  "controller",
-  "util",
-  "adapter",
-]
-
-[thresholds.role_limits]
-component_view = { target = 220, hard = 300 }
-react_hook_provider_view_model = { target = 150, hard = 220 }
-hook_composable_middleware = { target = 150, hard = 220 }
-service_use_case_controller_repository_util_module = { target = 200, hard = 260 }
-function = { target = 40, hard = 60 }

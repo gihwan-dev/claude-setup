@@ -1,6 +1,6 @@
 id = "architecture-reviewer"
 role = "reviewer"
-description = "Read-only reviewer for boundaries, layering, public-surface changes, and large refactors."
+description = "Read-only architecture reviewer focused on boundaries, layering, and public surface stability."
 source = "codex-builtin"
 
 [projection]

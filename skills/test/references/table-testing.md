@@ -1,66 +1,66 @@
-# Table 컴포넌트 테스트
+# Table Component Testing
 
-Table 컴포넌트(`packages/react/src/table`)에 특화된 테스트 패턴과 규칙.
+Testing patterns and rules specialized for the Table component (`packages/react/src/table`).
 
-## 1. TableTester 사용법
+## 1. How to Use `TableTester`
 
-**파일 위치**: `packages/react/src/table/spec/helpers/TableTester.ts`
+**File location**: `packages/react/src/table/spec/helpers/TableTester.ts`
 
-Page Object Model 패턴의 헬퍼 클래스. 테이블 관련 DOM 쿼리를 캡슐화한다.
+This helper class follows the Page Object Model pattern and encapsulates table-related DOM queries.
 
-### 주요 API
+### Key API
 
-| 카테고리 | API | 설명 |
+| Category | API | Description |
 |---------|-----|------|
-| 기본 요소 | `table` | `[role="table"]` 요소 |
-| | `headers` | `[role="columnheader"]` 요소들 |
-| | `cells` | `[role="cell"]`, `[role="gridcell"]` 요소들 |
-| | `scrollViewport` | 스크롤 영역 요소 |
-| | `searchInput` | 검색 입력창 |
-| | `toolbar` | 테이블 툴바 |
-| | `optionsButton` | 옵션 메뉴 버튼 |
-| 행 조회 | `getRows(includeHeader?)` | 행 요소들 (헤더 포함/제외) |
-| | `getRowCells(row)` | 특정 행의 셀들 |
-| | `renderedRowCount` | 렌더링된 데이터 행 수 (헤더 제외) |
-| | `domNodeCount` | 전체 DOM 노드 수 |
-| 헤더/정렬 | `getHeaderByText(text)` | 텍스트로 헤더 찾기 |
-| | `getSortButton(headerText)` | 정렬 버튼 찾기 |
-| | `getAriaSortValue(headerText)` | `aria-sort` 값 조회 |
-| | `getColumnValues(index)` | 특정 컬럼의 모든 셀 값 추출 |
-| 선택 | `checkboxes` | 체크박스 요소들 |
-| | `radioButtons` | 라디오 버튼 요소들 |
-| | `isChecked(element)` | 체크 상태 확인 |
-| | `isIndeterminate(element)` | 부분 선택 상태 확인 |
-| 확장 | `expanders` | 확장 버튼들 |
-| 고정 | `getPinnedRows()` | 고정된 행들 |
-| | `getUnpinnedRows()` | 비고정 행들 |
-| 행 순서 | `getMoveUpButton()` | 위로 이동 버튼 |
-| | `getMoveDownButton()` | 아래로 이동 버튼 |
-| | `hasCursorGrab(element)` | 드래그 커서 여부 |
-| 페이지네이션 | `pagination.nav` | 네비게이션 요소 |
-| | `pagination.prevButton` | 이전 페이지 버튼 |
-| | `pagination.nextButton` | 다음 페이지 버튼 |
-| | `pagination.getPageButton(n)` | n페이지 버튼 |
-| 유틸 | `getButtonByText(text)` | 텍스트로 버튼 찾기 |
-| | `isAriaDisabled(element)` | aria-disabled 확인 |
-| | `isScrollable(element)` | 스크롤 가능 여부 |
+| Base elements | `table` | `[role="table"]` element |
+| | `headers` | `[role="columnheader"]` elements |
+| | `cells` | `[role="cell"]`, `[role="gridcell"]` elements |
+| | `scrollViewport` | Scroll viewport element |
+| | `searchInput` | Search input |
+| | `toolbar` | Table toolbar |
+| | `optionsButton` | Options menu button |
+| Row queries | `getRows(includeHeader?)` | Row elements (with or without header) |
+| | `getRowCells(row)` | Cells in a specific row |
+| | `renderedRowCount` | Number of rendered data rows (excluding header) |
+| | `domNodeCount` | Total DOM node count |
+| Header / sorting | `getHeaderByText(text)` | Find a header by text |
+| | `getSortButton(headerText)` | Find a sort button |
+| | `getAriaSortValue(headerText)` | Read the `aria-sort` value |
+| | `getColumnValues(index)` | Extract all cell values from a column |
+| Selection | `checkboxes` | Checkbox elements |
+| | `radioButtons` | Radio button elements |
+| | `isChecked(element)` | Check selected state |
+| | `isIndeterminate(element)` | Check indeterminate state |
+| Expansion | `expanders` | Expand buttons |
+| Pinning | `getPinnedRows()` | Pinned rows |
+| | `getUnpinnedRows()` | Unpinned rows |
+| Row ordering | `getMoveUpButton()` | Move-up button |
+| | `getMoveDownButton()` | Move-down button |
+| | `hasCursorGrab(element)` | Whether drag cursor styling is present |
+| Pagination | `pagination.nav` | Navigation element |
+| | `pagination.prevButton` | Previous-page button |
+| | `pagination.nextButton` | Next-page button |
+| | `pagination.getPageButton(n)` | Page button `n` |
+| Utilities | `getButtonByText(text)` | Find button by text |
+| | `isAriaDisabled(element)` | Check `aria-disabled` |
+| | `isScrollable(element)` | Check scrollability |
 
-### 확장 규칙
+### Extension Rule
 
-필요한 메서드가 `TableTester`에 없다면, **테스트 코드에 직접 구현하지 말고 `TableTester`에 메서드를 추가한 뒤 사용한다.**
+If `TableTester` does not expose a method you need, **do not implement it directly in the test. Add the method to `TableTester` first and then use it.**
 
-## 2. 브라우저 테스트 — 파일 규칙
+## 2. Browser Tests — File Rules
 
-### 파일 위치
+### File location
 
-```
+```text
 packages/react/src/table/spec/<Feature>/
-├── <Feature>.stories.tsx          # 스토리 (테스트 데이터 소스)
-├── <Feature>.browser.test.tsx     # 브라우저 테스트
-└── <Feature>.mdx                  # 스펙 문서 (선택)
+├── <Feature>.stories.tsx          # Story (source of test data)
+├── <Feature>.browser.test.tsx     # Browser test
+└── <Feature>.mdx                  # Spec document (optional)
 ```
 
-### 임포트 패턴
+### Import pattern
 
 ```typescript
 import { composeStories } from '@storybook/react-vite';
@@ -72,10 +72,10 @@ import * as stories from './<Feature>.stories';
 const { Default, Controlled, Uncontrolled } = composeStories(stories);
 ```
 
-### 기본 렌더링 패턴
+### Basic rendering pattern
 
 ```typescript
-it('테이블이 정상 렌더링된다', async () => {
+it('renders the table correctly', async () => {
   const { container } = render(<Default />);
   await wait(RENDER_WAIT_TIME);
   const tester = new TableTester(container);
@@ -85,55 +85,55 @@ it('테이블이 정상 렌더링된다', async () => {
 });
 ```
 
-## 3. 브라우저 테스트 — 기능 호환성 매트릭스
+## 3. Browser Tests — Feature Compatibility Matrix
 
-### 원칙
+### Principles
 
-1. **1:1 조합만 테스트**: 현재 기능 + 다른 기능 **하나**만 조합
+1. **Test only 1:1 combinations**: the current feature plus **one** other feature
    - O: RowOrdering + Sorting
-   - X: RowOrdering + Sorting + Pagination (동시 조합 금지)
+   - X: RowOrdering + Sorting + Pagination (do not test triple combinations at once)
 
-2. **우선순위**:
+2. **Priority order**:
 
-   | 우선순위 | 기준 | 예시 |
+   | Priority | Standard | Example |
    |---------|------|------|
-   | **필수** | △ (제한적 호환) 표시된 조합 | RowSelection + RowExpansion |
-   | **권장** | 자주 함께 사용되는 조합 | Sorting + Pagination |
-   | **선택** | 나머지 O (완전 호환) 조합 | 필요 시 추가 |
+   | **Required** | Combinations marked △ (limited compatibility) | RowSelection + RowExpansion |
+   | **Recommended** | Common combinations used together often | Sorting + Pagination |
+   | **Optional** | Remaining O (fully compatible) combinations | Add if needed |
 
-3. **제어/비제어 모드 각각 테스트**
+3. **Test controlled and uncontrolled modes separately**
 
-4. **예상 테스트 수**: 5-7개 조합 × 2(제어/비제어) × 2(기본+호환성) = 20-28개 / 주요 기능
+4. **Expected test volume**: 5-7 combinations × 2 (controlled / uncontrolled) × 2 (basic + compatibility) = 20-28 tests per major feature
 
-### 호환성 테스트 구조
+### Compatibility test structure
 
 ```typescript
-describe('기능 호환성', () => {
-  // △ 제한적 호환 — 필수
-  it('[제어] RowOrdering + Sorting이 함께 동작한다', async () => {
+describe('feature compatibility', () => {
+  // △ limited compatibility — required
+  it('[controlled] RowOrdering + Sorting work together', async () => {
     const { container } = render(
       <Controlled options={{ sortable: { use: true } }} />
     );
     await wait(RENDER_WAIT_TIME);
     const tester = new TableTester(container);
-    // 두 기능이 충돌 없이 동작하는지 검증
+    // Verify that both features work without conflict
   });
 
-  it('[비제어] RowOrdering + Sorting이 함께 동작한다', async () => {
-    // 비제어 모드에서 동일 검증
+  it('[uncontrolled] RowOrdering + Sorting work together', async () => {
+    // Same verification in uncontrolled mode
   });
 });
 ```
 
-## 4. 유닛 테스트 — Custom Feature 테스트
+## 4. Unit Tests — Custom Feature Tests
 
-### 파일 위치
+### File location
 
-```
+```text
 packages/react/src/table/features/__test__/<Feature>.spec.ts
 ```
 
-### Mock Table / Row 생성 패턴
+### Mock Table / Row creation pattern
 
 ```typescript
 function createMockRow(id: string, original: TestData) {
@@ -142,7 +142,7 @@ function createMockRow(id: string, original: TestData) {
     original,
     index: Number.parseInt(id) - 1,
     getParentRow: () => null,
-    // ... 필요한 메서드
+    // ... required methods
   };
 }
 
@@ -151,7 +151,7 @@ function createMockTable(overrides = {}) {
   const rows = data.map((d) => createMockRow(String(d.id), d));
 
   const state = {
-    // Feature의 상태 필드
+    // State fields for the feature
   };
 
   const onChangeCallback = vi.fn();
@@ -168,54 +168,54 @@ function createMockTable(overrides = {}) {
     },
   };
 
-  // Feature의 createTable로 테이블에 메서드 주입
+  // Inject methods into the table through the feature's createTable
   featureCreateTable(table);
 
   return { table, onChangeCallback };
 }
 ```
 
-### contravariance 우회
+### Contravariance workaround
 
-TanStack Table의 타입 시스템에서 Mock 객체를 `createTable`에 전달할 때:
+When passing a mock object into `createTable` under TanStack Table's type system:
 
 ```typescript
 const featureCreateTable = Feature.createTable! as (table: any) => void;
 ```
 
-### 테스트 범위
+### Test scope
 
-| 대상 | 검증 포인트 |
+| Target | Validation point |
 |------|-----------|
-| `getDefaultOptions` | 기본 옵션 값이 올바른가 |
-| 상태 변경 함수 | `setState`, `onChange` 콜백이 올바르게 호출되는가 |
-| 행 메서드 | `createRow`로 주입된 메서드가 올바르게 동작하는가 |
-| 경계 조건 | 첫 행, 마지막 행, 빈 데이터, 트리 구조 등 |
+| `getDefaultOptions` | Are the default option values correct? |
+| State-change functions | Are `setState` and `onChange` callbacks called correctly? |
+| Row methods | Do methods injected through `createRow` work correctly? |
+| Edge conditions | First row, last row, empty data, tree structures, etc. |
 
-## 5. 유닛 테스트 — 유틸리티 함수 테스트
+## 5. Unit Tests — Utility Function Tests
 
-### 파일 위치
+### File location
 
-```
+```text
 packages/react/src/table/utils/__test__/<util>.spec.ts
 ```
 
-### 특성
+### Characteristics
 
-- **순수 함수 중심** — 입력/출력만 검증
-- 엣지 케이스 중점: 빈 데이터, 경계값, 오버플로, 트리 구조 등
-- Mock은 최소한으로 — 함수의 매개변수 타입에 맞는 데이터만 생성
+- **Pure-function first** — validate inputs and outputs only
+- Focus on edge cases: empty data, boundary values, overflow, tree structures, etc.
+- Keep mocks minimal — create only the data needed to satisfy the function's parameter types
 
 ```typescript
 describe('computeAllMerges', () => {
-  it('빈 데이터일 때 빈 결과를 반환한다', () => {
+  it('returns an empty result for empty data', () => {
     const table = createMockTable({ rows: [] });
     const result = computeAllMerges(table);
     expect(result.rowSpanMap.size).toBe(0);
     expect(result.colSpanMap.size).toBe(0);
   });
 
-  it('rowSpan이 행 수를 초과하면 잘린다', () => {
+  it('clamps rowSpan when it exceeds the number of rows', () => {
     const table = createMockTable({
       rows: [
         { id: '1', original: { colA: 'val', rowSpan: { colA: 5 } } },
@@ -223,28 +223,28 @@ describe('computeAllMerges', () => {
       ],
     });
     const result = computeAllMerges(table);
-    // rowSpan 5지만 행이 2개이므로 2로 잘림
+    // rowSpan is 5, but only 2 rows exist, so it is clamped to 2
     expect(result.rowSpanMap.get('0:colA')).toBe(2);
   });
 });
 ```
 
-## 6. 테스트 헬퍼 유틸리티
+## 6. Shared Test Helper Utilities
 
-`packages/react/src/table/spec/helpers/` 에서 제공하는 공용 유틸리티:
+Shared utilities provided in `packages/react/src/table/spec/helpers/`:
 
-| 유틸리티 | 위치 | 용도 |
+| Utility | Location | Purpose |
 |---------|------|------|
-| `TableTester` | `testHelpers.ts` | DOM 쿼리 헬퍼 (Page Object Model) |
-| `wait(ms)` | `testHelpers.ts` | DOM 안정화 대기 |
-| `generateDeterministicEmployeeData(count)` | `utils.ts` | 결정적 테스트 데이터 생성 |
-| `generateEmployeeData(count)` | `utils.ts` | 랜덤 직원 데이터 생성 |
-| `generateHierarchicalData(levels, nodes)` | `utils.ts` | 트리 구조 데이터 생성 |
-| `BASIC_COLUMNS` | `utils.ts` | 기본 컬럼 프리셋 (ID, 이름, 부서, 직급) |
-| `EMPLOYEE_COLUMNS` | `utils.ts` | 직원 컬럼 프리셋 (기본 + 이메일, 연봉, 상태) |
-| `FULL_COLUMNS` | `utils.ts` | 전체 컬럼 프리셋 (직원 + 전화번호, 입사일) |
-| `useRowSelectionHandler` | `utils.ts` | 행 선택 상태 관리 훅 |
-| `useSortingHandler` | `utils.ts` | 정렬 상태 관리 훅 |
-| `usePaginationHandler` | `utils.ts` | 페이지네이션 상태 관리 훅 |
-| `useExpandedHandler` | `utils.ts` | 확장 상태 관리 훅 |
-| `COMPATIBILITY_MATRIX` | `compatibilityData.ts` | 기능 간 호환성 매트릭스 |
+| `TableTester` | `testHelpers.ts` | DOM query helper (Page Object Model) |
+| `wait(ms)` | `testHelpers.ts` | Wait for DOM stabilization |
+| `generateDeterministicEmployeeData(count)` | `utils.ts` | Generate deterministic test data |
+| `generateEmployeeData(count)` | `utils.ts` | Generate random employee data |
+| `generateHierarchicalData(levels, nodes)` | `utils.ts` | Generate tree-structured data |
+| `BASIC_COLUMNS` | `utils.ts` | Basic column preset (ID, name, department, title) |
+| `EMPLOYEE_COLUMNS` | `utils.ts` | Employee column preset (basic + email, salary, status) |
+| `FULL_COLUMNS` | `utils.ts` | Full column preset (employee + phone number, hire date) |
+| `useRowSelectionHandler` | `utils.ts` | Row selection state handler hook |
+| `useSortingHandler` | `utils.ts` | Sorting state handler hook |
+| `usePaginationHandler` | `utils.ts` | Pagination state handler hook |
+| `useExpandedHandler` | `utils.ts` | Expanded-state handler hook |
+| `COMPATIBILITY_MATRIX` | `compatibilityData.ts` | Feature compatibility matrix |

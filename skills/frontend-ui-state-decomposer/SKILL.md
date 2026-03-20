@@ -11,7 +11,7 @@ description: >
 
 # Frontend UI State Decomposer
 
-모호한 프론트엔드 요구사항을 구현 전 단계에서 상태 중심으로 분해한다. 상태/이벤트/경계를 먼저 명확히 해서 누락과 재작업을 줄인다.
+Break vague frontend requirements into a state-centered model before implementation. Make state, events, and boundaries explicit first so omissions and rework decrease.
 
 ## Language Rule
 
@@ -57,6 +57,6 @@ Use the exact section order below:
 
 ## Example Invocations
 
-- `$frontend-ui-state-decomposer 페이지 요구사항이 아직 모호한데 UI 상태 모델, 이벤트 전이, 테스트 체크리스트를 먼저 만들어줘.`
-- `$frontend-ui-state-decomposer 모달 기반 온보딩 플로우를 구현 전에 상태별 UI와 전이 조건으로 분해해줘.`
-- `$frontend-ui-state-decomposer 대시보드 테이블(필터/정렬/새로고침/오프라인)의 edge case를 상태 중심으로 정리해줘.`
+- `$frontend-ui-state-decomposer The page requirements are still vague. Build the UI state model, event transitions, and test checklist before implementation.`
+- `$frontend-ui-state-decomposer Before implementing this modal-based onboarding flow, break it down into state-specific UI and transition conditions.`
+- `$frontend-ui-state-decomposer Organize the edge cases for this dashboard table (filters / sorting / refresh / offline) around UI state.`

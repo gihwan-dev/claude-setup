@@ -104,6 +104,32 @@ def _optional_str_map(table: TomlDict, key: str, *, path: Path) -> dict[str, str
     return parsed
 
 
+def _require_limit_map(table: TomlDict, key: str, *, path: Path) -> dict[str, dict[str, int]]:
+    value = table.get(key)
+    if not isinstance(value, dict):
+        raise ValueError(f"missing table [{key}] in {path}")
+
+    parsed: dict[str, dict[str, int]] = {}
+    for item_key, item_value in value.items():
+        if not isinstance(item_key, str) or not isinstance(item_value, dict):
+            raise ValueError(f"invalid limit map '{key}' in {path}")
+
+        target = item_value.get("target")
+        hard = item_value.get("hard")
+        if (
+            isinstance(target, bool)
+            or not isinstance(target, int)
+            or isinstance(hard, bool)
+            or not isinstance(hard, int)
+            or target <= 0
+            or hard <= 0
+            or target > hard
+        ):
+            raise ValueError(f"invalid limit pair '{key}.{item_key}' in {path}")
+        parsed[item_key] = {"target": target, "hard": hard}
+    return parsed
+
+
 
 
 def _load_workflow_policy() -> TomlDict:
@@ -116,6 +142,9 @@ PUBLIC_SURFACE_POLICY = _require_table(WORKFLOW_POLICY, "public_surface", path=W
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
 SLICE_BUDGET_POLICY = _require_table(WORKFLOW_POLICY, "slice_budget", path=WORKFLOW_POLICY_PATH)
+STRUCTURE_REVIEW_POLICY = _require_table(
+    WORKFLOW_POLICY, "structure_review", path=WORKFLOW_POLICY_PATH
+)
 TASK_DOCUMENTS_POLICY = _require_table(WORKFLOW_POLICY, "task_documents", path=WORKFLOW_POLICY_PATH)
 
 LONG_RUNNING_PUBLIC_SURFACE = _require_str_list(
@@ -153,12 +182,45 @@ SLICE_BUDGET_MAX_NET_LOC = _require_int(
 SLICE_BUDGET_ENFORCEMENT = _require_str(
     SLICE_BUDGET_POLICY, "enforcement", path=WORKFLOW_POLICY_PATH
 )
+STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR = _require_str(
+    STRUCTURE_REVIEW_POLICY, "soft_limit_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR = _require_str(
+    STRUCTURE_REVIEW_POLICY, "hard_limit_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR = _require_str(
+    STRUCTURE_REVIEW_POLICY, "responsibility_mix_behavior", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_REVIEW_LEGACY_OVERSIZED_FILE_BEHAVIOR = _require_str(
+    STRUCTURE_REVIEW_POLICY,
+    "legacy_oversized_file_behavior",
+    path=WORKFLOW_POLICY_PATH,
+)
+STRUCTURE_REVIEW_EXCEPTIONS = _require_str_list(
+    STRUCTURE_REVIEW_POLICY, "exceptions", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_REVIEW_SPLIT_ROLES = _require_str_list(
+    STRUCTURE_REVIEW_POLICY, "split_roles", path=WORKFLOW_POLICY_PATH
+)
+STRUCTURE_REVIEW_ROLE_LIMITS = _require_limit_map(
+    STRUCTURE_REVIEW_POLICY, "role_limits", path=WORKFLOW_POLICY_PATH
+)
 
 if SLICE_BUDGET_MAX_REPO_FILES <= 0 or SLICE_BUDGET_MAX_NET_LOC <= 0:
     raise ValueError("slice_budget thresholds must be positive integers")
 if SLICE_BUDGET_ENFORCEMENT != "split-before-execution":
     raise ValueError(
         f"slice_budget.enforcement must be 'split-before-execution', got {SLICE_BUDGET_ENFORCEMENT!r}"
+    )
+if STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR != "split-first":
+    raise ValueError(
+        "structure_review.soft_limit_behavior must be 'split-first'"
+    )
+if STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR != "block":
+    raise ValueError("structure_review.hard_limit_behavior must be 'block'")
+if STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR != "block":
+    raise ValueError(
+        "structure_review.responsibility_mix_behavior must be 'block'"
     )
 
 BROAD_SLICE_WORK_LABELS = frozenset({"setup", "skeleton", "fsd-skeleton", "wrapper", "docs"})

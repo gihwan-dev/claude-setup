@@ -1,100 +1,98 @@
 ---
 name: writing-review-workflow
 description: >
-  Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger final version.
-  작성된 글 초안을 3개의 병렬 리뷰어 관점으로 검토하고, 그 결과를 메인 에이전트가 종합해
-  최종 수정본으로 다시 쓰는 글쓰기 리뷰 워크플로우다. 구조, 독자 관점 가독성, 정보 정확성·과장을
-  분리해서 검토해야 할 때 사용한다. "글 리뷰해줘", "초안 검토 후 고쳐줘", "문장 구조랑 흐름 검토해줘",
-  "3개 관점으로 리뷰해줘", "수정 전에 먼저 검토해줘" 같은 요청에서 사용한다.
+  Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger
+  final version. Use when the user wants structure, reader experience, and accuracy or overstatement
+  reviewed separately before the main agent produces the final rewrite.
 ---
 
 # Writing Review Workflow
 
-초안을 직접 한 번 훑고 고치는 수준에서 멈추지 않는다.
-항상 3개의 read-only 서브 에이전트를 병렬 호출해 관점별 리뷰를 받고, 메인 에이전트가 그 결과를 해석한 뒤 최종 수정본을 다시 작성한다.
+Do not stop at a single direct pass over the draft.
+Always run three read-only sub-agents in parallel, collect their perspective-specific reviews, then have the main agent interpret those results and rewrite the final version.
 
 ## Core Dependency
 
-- 먼저 `${SKILLS_ROOT}/writing-best-practices/SKILL.md`를 읽고 같은 문체 기준과 품질 기준을 공유한다.
-- 위 파일을 읽을 수 없으면 이 워크플로우의 기준이 사라지므로, 누락 사실을 짧게 알리고 중단한다.
+- Read `${SKILLS_ROOT}/writing-best-practices/SKILL.md` first so all reviewers share the same writing and quality baseline.
+- If that file cannot be read, this workflow loses its standard. Report the missing dependency briefly and stop.
 
 ## Hard Rules
 
-- 이 스킬은 초안이 있을 때 사용한다. 초안이 없고 주제만 있으면 `writing-best-practices`를 우선 사용한다.
-- 반드시 3개의 read-only 서브 에이전트를 병렬 호출한다.
-- 실제 수정과 최종 문장 작성은 메인 에이전트만 수행한다.
-- 멀티 에이전트 병렬 호출이 불가능한 런타임에서는 단일 에이전트로 축소하지 않는다. 요구 조건을 충족할 수 없다고 짧게 알리고 중단한다.
-- 사용자가 다른 언어를 명시하지 않으면 한국어를 기본값으로 삼는다.
-- 사용자가 명시적으로 요청하지 않으면 기본 출력은 최종 수정본만 제시한다.
+- Use this skill only when a draft already exists. If the user provides only a topic, use `writing-best-practices` first.
+- Always run exactly three parallel read-only sub-agents.
+- Only the main agent may perform the actual rewrite and compose the final sentences.
+- If the runtime cannot support parallel multi-agent review, do not collapse this into a single-agent flow. Report that the requirement cannot be met and stop.
+- If the user does not specify another language, default to Korean.
+- Unless the user explicitly asks otherwise, return only the final revised draft.
 
 ## Workflow
 
-### 1) 초안과 요청 조건을 정리한다
+### 1) Organize the draft and request constraints
 
-- 초안 전문을 읽고 글의 목적, 예상 독자, 매체, 길이, 톤 제약을 정리한다.
-- 핵심 정보가 빠져 결과가 크게 달라질 때만 짧게 한 번 묻는다.
-- 사용자가 별도 형식이나 분량을 지정했으면 이후 모든 판단에서 그 제약을 우선한다.
+- Read the full draft and identify the writing goal, likely audience, medium, length, and tone constraints.
+- Ask one brief follow-up question only if a missing detail would materially change the result.
+- If the user specified a format or length, treat that constraint as higher priority than later stylistic preferences.
 
-### 2) 3개 리뷰어를 병렬 호출한다
+### 2) Launch three reviewers in parallel
 
-- read-only 서브 에이전트 3개를 동시에 호출한다.
-- 역할 카드는 `${SKILL_DIR}/references/reviewer-prompts.md`를 사용한다.
-- 각 서브 에이전트에는 동일한 초안, 동일한 사용자 제약, 동일한 출력 포맷을 준다.
-- 각 서브 에이전트는 초안의 실제 언어와 사용자 지정 언어를 기준으로 리뷰한다.
-- 각 서브 에이전트는 자기 관점 밖의 광범위한 재작성 제안보다 자기 관점의 필수 수정 사항을 우선한다.
+- Launch three read-only sub-agents at the same time.
+- Use `${SKILL_DIR}/references/reviewer-prompts.md` for the role cards.
+- Give each reviewer the same draft, the same user constraints, and the same output template.
+- Each reviewer should review in the draft's actual language, unless the user explicitly requested another language.
+- Each reviewer should prioritize must-fix issues from its own perspective over broad rewrite ideas outside its role.
 
-권장 역할 배정:
+Recommended role split:
 
-- 구조 리뷰어: 문장 구조, 문단 요지, 전개 순서, 문단 간 연결
-- 독자 리뷰어: 읽기 속도, 자연스러운 한국어, 번역투, 클리셰, 톤의 자연스러움
-- 정확성 리뷰어: 과장, 빈말, 근거 없는 주장, 정보 밀도, 말만 번지르르한 문장
+- structure reviewer: sentence structure, paragraph focus, sequencing, and transitions
+- reader reviewer: reading speed, naturalness, translation tone, cliches, and tonal smoothness
+- accuracy reviewer: exaggeration, empty claims, unsupported statements, information density, and polished-but-thin writing
 
-실행 원칙:
+Execution rules:
 
-- 가능하면 `explorer` 계열의 read-only 에이전트를 사용하고, 역할은 프롬프트 오버레이로 부여한다.
-- 각 서브 에이전트는 아래 4개 섹션만 반환하게 한다.
-  - `핵심결론`
-  - `근거`
-  - `필수 수정`
-  - `보류`
+- Prefer an `explorer`-style read-only agent when possible, then layer the role through the prompt.
+- Require each sub-agent to return only these four sections:
+  - `Core Conclusion`
+  - `Evidence`
+  - `Required Revisions`
+  - `Hold`
 
-### 3) 리뷰 결과를 종합한다
+### 3) Synthesize the review results
 
-서브 에이전트 결과를 수집한 뒤 메인 에이전트가 아래 규칙으로 판단한다.
+After collecting the sub-agent outputs, have the main agent decide with these rules:
 
-- 3/3 합의: 바로 반영한다.
-- 2/1 다수결: 소수 의견의 근거를 검토하되, 명시적 사용자 제약과 충돌하지 않으면 다수안을 반영한다.
-- 1/1/1 분산: 의미 변경 가능성이 크거나 톤 선택이 갈리면 그때만 사용자에게 짧게 묻는다. 그렇지 않으면 명확성 우선으로 보수적으로 수정한다.
-- 근거 없는 내용은 추가하지 않는다. 필요하면 표현을 약화하거나 문장을 삭제한다.
-- 사실관계가 불명확한 문장은 더 강하게 쓰지 않는다.
+- 3/3 agreement: apply it directly.
+- 2/1 majority: review the minority rationale, but follow the majority unless it conflicts with an explicit user constraint.
+- 1/1/1 split: ask the user a short question only when the choice meaningfully changes the meaning or tone. Otherwise revise conservatively in favor of clarity.
+- Do not add unsupported content. If needed, soften the wording or delete the sentence.
+- Do not make uncertain factual claims stronger.
 
-### 4) 메인 에이전트가 최종 수정본을 다시 쓴다
+### 4) Rewrite the final version in the main agent
 
-- 종합 결과를 바탕으로 초안을 처음부터 다시 읽으며 최종 수정본을 작성한다.
-- 재작성 과정에서는 `${SKILLS_ROOT}/writing-best-practices/SKILL.md`의 규칙과 품질 기준을 그대로 적용한다.
-- 구조를 손보더라도 원문의 핵심 주장과 사용자 제약은 보존한다.
-- 리뷰어 코멘트를 나열하는 대신, 수정된 결과 자체에 판단을 반영한다.
+- Re-read the draft from the beginning and produce the final version using the synthesized review results.
+- Apply the same writing and quality standard from `${SKILLS_ROOT}/writing-best-practices/SKILL.md`.
+- Even when restructuring, preserve the draft's core claims and the user's explicit constraints.
+- Do not list reviewer comments in the answer. Reflect the judgment in the revised result itself.
 
-### 5) 출력 형식을 지킨다
+### 5) Keep the output format
 
-- 기본 출력은 수정된 최종본만 제시한다.
-- 사용자가 요청했을 때만 핵심 진단, 수정 포인트, 관점별 코멘트를 덧붙인다.
-- 수정 이유를 덧붙일 때도 장황한 리뷰 로그 대신 합의된 핵심만 압축한다.
+- By default, return only the revised final draft.
+- Add a concise diagnostic summary, revision points, or reviewer-perspective notes only when the user asks for them.
+- If you explain the changes, compress them into the agreed essentials instead of dumping verbose review logs.
 
 ## Decision Guide
 
-아래 상황에서는 메인 에이전트가 보수적으로 처리한다.
+Handle these cases conservatively:
 
-- 문장이 어색하지만 사실 판단이 섞여 있으면: 의미를 넓히지 말고 더 단순하고 안전한 표현으로 바꾼다.
-- 톤은 좋지만 정보 밀도가 낮으면: 미사여구를 줄이고 핵심 문장을 앞당긴다.
-- 정보는 맞지만 읽기 흐름이 느리면: 문장 분리, 문단 재배치, 불필요한 연결어 제거를 우선한다.
-- 독자 친화성과 정확성이 충돌하면: 사실을 유지한 채 더 쉬운 문장으로 다시 쓴다.
+- If a sentence is awkward but mixed with factual judgment, do not broaden the meaning. Rewrite it into a simpler, safer sentence.
+- If the tone is good but the information density is weak, trim ornament and move the core sentence earlier.
+- If the facts are sound but the reading flow is slow, prioritize sentence splitting, paragraph reordering, and removal of unnecessary transitions.
+- If reader friendliness and accuracy pull in different directions, keep the facts intact and rewrite into easier sentences.
 
 ## Output Contract
 
-- 기본 출력은 최종 수정본만이다.
-- 사용자가 진단을 요청하면 관점별 상세 로그 전체를 붙이지 말고 통합된 수정 포인트만 정리한다.
-- 인사말, 군더더기 서론, 자기 해설 없이 바로 결과를 제시한다.
+- The default output is only the final revised draft.
+- If the user asks for diagnosis, summarize only the integrated revision points instead of dumping each reviewer's full log.
+- Present the result immediately without greetings, padded intros, or self-explanation.
 
 ## Reference
 

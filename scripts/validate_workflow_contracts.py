@@ -36,6 +36,13 @@ from workflow_contract import (
     SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    STRUCTURE_REVIEW_EXCEPTIONS,
+    STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR,
+    STRUCTURE_REVIEW_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+    STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR,
+    STRUCTURE_REVIEW_ROLE_LIMITS,
+    STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR,
+    STRUCTURE_REVIEW_SPLIT_ROLES,
     TASK_BUNDLE_CORE_DOCS,
     TASK_BUNDLE_CSV_FANOUT_DOCS,
     TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
@@ -157,31 +164,173 @@ def _expect_heading_sequence(path: Path, headings: tuple[str, ...], errors: list
         if line.startswith("## ")
     ]
     if tuple(actual) != headings:
-        errors.append(f"{path}: UI Planning Packet heading order drifted")
+        errors.append(f"{path}: heading order drifted")
 
 
-def _validate_structure_reviewer_instruction_drift(repo_root: Path, errors: list[str]) -> None:
-    registry_root = repo_root / "agent-registry"
-    reviewer_path = registry_root / "structure-reviewer" / "instructions.md"
+COMMON_AGENT_PROFILE_HEADINGS = (
+    "Identity",
+    "Domain Lens",
+    "Preferred Qualities",
+    "Sensitive Smells",
+    "Collaboration Posture",
+)
+PROFILE_FORBIDDEN_SNIPPETS = (
+    "Input contract",
+    "Output format",
+    "Workflow",
+    "`status:",
+    "`progress status:",
+    "Final line:",
+)
+
+
+def _validate_agent_profile_architecture_doc(repo_root: Path, errors: list[str]) -> None:
+    path = repo_root / "docs" / "agent-profile-architecture.md"
+    if not path.exists():
+        errors.append(f"missing agent profile architecture doc: {path}")
+        return
 
     _expect_substrings(
-        reviewer_path,
+        path,
         (
-            "component/view file: target <= 220 LOC, hard limit 300",
-            "hook/composable/middleware file: target <= 150 LOC, hard limit 220",
-            "React hook/provider/view-model file: target <= 150 LOC, hard limit 220",
-            "service/use-case/controller/repository/util/module file: target <= 200 LOC, hard limit 260",
-            "any function/method: target <= 40 LOC, hard limit 60",
-            "이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.",
+            "## Four Layers",
+            "### Profile",
+            "### Orchestration",
+            "### Task Contract",
+            "### Schema/Eval",
+            "`identity`",
+            "`goal`",
+            "`expertise`",
+            "`domain_lens`",
+            "`preferred_quality`",
+            "`anti_pattern_sensitivity`",
+            "`collaboration_posture`",
+            "`input_schema`",
+            "`output_format`",
+            "`status_enum`",
+            "`retry_policy`",
+            "`thresholds`",
+            "`tool sequencing`",
+            "`validation command`",
+            "## Common Template",
+            "## Identity",
+            "## Domain Lens",
+            "## Preferred Qualities",
+            "## Sensitive Smells",
+            "## Collaboration Posture",
         ),
         errors,
     )
+
+
+def _validate_agent_profile_templates(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    for agent_id in REQUIRED_HELPER_AGENT_IDS:
+        instructions_path = registry_root / agent_id / "instructions.md"
+        if not instructions_path.exists():
+            errors.append(f"missing agent instructions: {instructions_path}")
+            continue
+        _expect_heading_sequence(instructions_path, COMMON_AGENT_PROFILE_HEADINGS, errors)
+        _forbid_substrings(instructions_path, PROFILE_FORBIDDEN_SNIPPETS, errors)
+
+
+def _validate_structure_review_contract(repo_root: Path, errors: list[str]) -> None:
+    policy_path = repo_root / "policy" / "workflow.toml"
+    registry_root = repo_root / "agent-registry"
+    reviewer_path = registry_root / "structure-reviewer" / "instructions.md"
+    reference_path = registry_root / "structure-reviewer" / "references" / "decomposition-playbook.md"
+    policy = _load_toml(policy_path)
+    structure_review = policy.get("structure_review")
+
+    if not isinstance(structure_review, dict):
+        errors.append(f"missing [structure_review]: {policy_path}")
+        return
+
+    expected_pairs = (
+        ("soft_limit_behavior", STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR),
+        ("hard_limit_behavior", STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR),
+        ("responsibility_mix_behavior", STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR),
+        (
+            "legacy_oversized_file_behavior",
+            STRUCTURE_REVIEW_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+        ),
+    )
+    for key, expected in expected_pairs:
+        actual = structure_review.get(key)
+        if actual != expected:
+            errors.append(
+                f"{policy_path}: structure_review.{key} mismatch: expected={expected!r} actual={actual!r}"
+            )
+
+    if tuple(structure_review.get("exceptions", ())) != STRUCTURE_REVIEW_EXCEPTIONS:
+        errors.append(f"{policy_path}: structure_review.exceptions drifted")
+    if tuple(structure_review.get("split_roles", ())) != STRUCTURE_REVIEW_SPLIT_ROLES:
+        errors.append(f"{policy_path}: structure_review.split_roles drifted")
+
+    role_limits = structure_review.get("role_limits")
+    if role_limits != STRUCTURE_REVIEW_ROLE_LIMITS:
+        errors.append(f"{policy_path}: structure_review.role_limits drifted")
+
+    _forbid_substrings(
+        reviewer_path,
+        (
+            "target <=",
+            "`FAIL`",
+            "Split-First Triggers",
+            "exact split proposal",
+        ),
+        errors,
+    )
+
+    if not reference_path.exists():
+        errors.append(f"missing structure review reference: {reference_path}")
+    else:
+        _expect_substrings(
+            reference_path,
+            (
+                "`policy/workflow.toml [structure_review]`",
+                "File bloat",
+                "Responsibility mixing",
+                "`component`",
+                "`adapter`",
+            ),
+            errors,
+        )
+
+
+def _validate_agent_reference_playbooks(repo_root: Path, errors: list[str]) -> None:
+    registry_root = repo_root / "agent-registry"
+    expected_files = (
+        (
+            registry_root / "browser-explorer" / "references" / "observation-points.md",
+            ("Reproducibility", "Visual regressions", "interaction flow", "prerequisites"),
+        ),
+        (
+            registry_root / "react-state-reviewer" / "references" / "state-anti-patterns.md",
+            ("useEffect", "setState", "boolean flags", "discriminated union", "exhaustive"),
+        ),
+        (
+            registry_root / "test-engineer" / "references" / "test-review-playbook.md",
+            ("Confidence > Coverage", "Behavior > Implementation", "`keep`", "`rewrite`"),
+        ),
+        (
+            registry_root / "writer" / "references" / "writing-style.md",
+            ("Declarative expression", "composable", "side effects", "immutable"),
+        ),
+    )
+
+    for path, snippets in expected_files:
+        if not path.exists():
+            errors.append(f"missing agent reference playbook: {path}")
+            continue
+        _expect_substrings(path, snippets, errors)
 
 
 def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     browser_agent_config = registry_root / "browser-explorer" / "agent.toml"
     browser_agent_instructions = registry_root / "browser-explorer" / "instructions.md"
+    browser_reference = registry_root / "browser-explorer" / "references" / "observation-points.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
 
     if not browser_agent_config.exists():
@@ -212,22 +361,23 @@ def _validate_browser_explorer_contract(repo_root: Path, errors: list[str]) -> N
         if codex.get("sandbox_mode") != "danger-full-access":
             errors.append("browser-explorer sandbox_mode must remain danger-full-access")
 
-    _expect_substrings(
+    _forbid_substrings(
         browser_agent_instructions,
         (
             "`playwright-interactive`",
-            "`target URL 또는 Electron entry`",
-            "`상태: final|preliminary`",
-            "자동 실행 금지",
+            "`target URL or Electron entry`",
+            "Do not auto-run",
         ),
         errors,
     )
+    if browser_reference.exists():
+        _expect_substrings(browser_reference, ("Reproducibility", "Visual regressions"), errors)
 
     _expect_substrings(
         implement_task_skill_path,
         (
             "`browser-explorer`",
-            "`target URL 또는 Electron entry`",
+            "`target URL or Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
         ),
@@ -238,6 +388,7 @@ def _validate_writer_agent_contract(repo_root: Path, errors: list[str]) -> None:
     registry_root = repo_root / "agent-registry"
     writer_agent_config = registry_root / "writer" / "agent.toml"
     writer_agent_instructions = registry_root / "writer" / "instructions.md"
+    writer_reference = registry_root / "writer" / "references" / "writing-style.md"
     implement_task_skill_path = repo_root / "skills" / "implement-task" / "SKILL.md"
 
     if not writer_agent_config.exists():
@@ -268,18 +419,19 @@ def _validate_writer_agent_contract(repo_root: Path, errors: list[str]) -> None:
         if codex.get("sandbox_mode") != "danger-full-access":
             errors.append("writer sandbox_mode must remain danger-full-access")
 
-    _expect_substrings(
+    _forbid_substrings(
         writer_agent_instructions,
         (
             "`target_path`",
             "`change_spec`",
-            "`상태: final|blocked|partial`",
             "shared file",
             "git commit",
             "`slice_budget`",
         ),
         errors,
     )
+    if writer_reference.exists():
+        _expect_substrings(writer_reference, ("Declarative expression", "composable", "side effects"), errors)
 
     _expect_substrings(
         implement_task_skill_path,
@@ -302,6 +454,7 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         (
             "small slices + run-to-boundary",
             "split/replan before execution",
+            "rechecks materially affected docs",
         ),
         errors,
     )
@@ -310,7 +463,7 @@ def _validate_writer_runtime_docs(repo_root: Path, errors: list[str]) -> None:
         reference_path,
         (
             "small slices + run-to-boundary",
-            "실질 영향 문서를 다시 확인",
+            "rechecks materially affected docs",
         ),
         errors,
     )
@@ -422,8 +575,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "DESIGN_REFERENCES/",
             "shortlist.md",
             "manifest.json",
-            "5~10개",
-            "최소 3개",
+            "5 to 10",
+            "at least 3",
             "adopt",
             "avoid",
         ),
@@ -452,8 +605,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "web-researcher",
             "browser-explorer",
             "architecture-reviewer",
-            "메인 스레드는 read-only 조사 결과를 통합만 한다.",
-            "helper unavailable이면 직접 조사로 대체하지 말고 blocked로 보고한다.",
+            "The main thread only synthesizes their results.",
+            "report blocked instead of replacing them with direct main-thread research.",
         ),
         errors,
     )
@@ -465,8 +618,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "UX_BEHAVIOR_ACCESSIBILITY.md",
             "design_references",
             "`browser-explorer`",
-            "메인 스레드 직접 웹 조사는 금지해.",
-            "blocked로 보고해.",
+            "do not replace helper research with direct main-thread",
+            "report blocked instead of substituting direct research",
             "allow_implicit_invocation: false",
         ),
         errors,
@@ -483,8 +636,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         design_skill,
         (
             "## Multi-Agent Usage (Optional)",
-            "필요할 때만 read-only 병렬 에이전트를 사용한다.",
-            "메인 스레드에서 직접 웹 조사 수행",
+            "Use read-only parallel agents only when needed.",
+            "direct main-thread web exploration",
             "### Fallback Rules (Runtime Unavailable)",
         ),
         errors,
@@ -492,8 +645,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
     _forbid_substrings(
         design_prompt,
         (
-            "`web-researcher` 또는 메인 스레드 직접 웹 조사",
-            "또는 메인 스레드 직접 웹 조사로 official vendor docs",
+            "`web-researcher` or direct main-thread web exploration",
+            "or direct main-thread web exploration for official vendor docs",
         ),
         errors,
     )
@@ -550,7 +703,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "keyboard/focus",
             "state matrix/fixture",
             "`browser-explorer`",
-            "`target URL 또는 Electron entry`",
+            "`target URL or Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
         ),
@@ -564,7 +717,7 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "DESIGN_REFERENCES/manifest.json",
             "keyboard/focus",
             "`browser-explorer`",
-            "`target URL 또는 Electron entry`",
+            "`target URL or Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
         ),
@@ -734,8 +887,8 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
             multi_work_skill,
             (
                 "/multi-work",
-                "멀티 에이전트 탐색",
-                "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+                "multi-agent exploration",
+                "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
                 "`design-task`",
                 "`implement-task`",
                 "direct execution",
@@ -750,7 +903,8 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "allow_implicit_invocation: false",
                 "references/routing-contract.md",
                 "scripts/workflow_contract.py",
-                "`wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지",
+                "Before helper results return",
+                "result collection",
                 "`design-task`",
                 "`implement-task`",
                 "direct execution lane",
@@ -771,7 +925,7 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "`design-task`",
                 "`implement-task`",
                 "direct execution",
-                "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+                "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
                 "split-replan",
                 "small slices + run-to-boundary",
             ),
@@ -785,9 +939,9 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "/multi-review",
                 "read-only",
                 "reviewer-matrix.md",
-                "current worktree diff 대 `HEAD`",
-                "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
-                "findings first, summary second",
+                "current worktree diff vs `HEAD`",
+                "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
+                "findings first and summary second",
             ),
             errors,
         )
@@ -799,7 +953,7 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "references/reviewer-matrix.md",
                 "scripts/workflow_contract.py",
                 "current worktree diff vs `HEAD`",
-                "`wait`/결과 수집 외 다른 파일 읽기",
+                "Before reviewer results return, do not read more files, run more searches",
                 "summary second",
             ),
             errors,
@@ -819,8 +973,8 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "`type-specialist`",
                 "`react-state-reviewer`",
                 "`browser-explorer`",
-                "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
-                "findings first, summary second",
+                "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
+                "findings first and summary second",
             ),
             errors,
         )
@@ -830,6 +984,7 @@ def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) 
     registry_root = repo_root / "agent-registry"
     agent_config = registry_root / "react-state-reviewer" / "agent.toml"
     agent_instructions = registry_root / "react-state-reviewer" / "instructions.md"
+    reference_path = registry_root / "react-state-reviewer" / "references" / "state-anti-patterns.md"
 
     if not agent_config.exists():
         errors.append(f"missing react-state-reviewer config: {agent_config}")
@@ -863,19 +1018,28 @@ def _validate_react_state_reviewer_contract(repo_root: Path, errors: list[str]) 
         errors.append(f"missing react-state-reviewer instructions: {agent_instructions}")
         return
 
-    _expect_substrings(
+    _forbid_substrings(
         agent_instructions,
         (
-            "useEffect",
-            "setState",
-            "discriminated union",
-            "exhaustive",
-            "파생",
             "CRITICAL",
-            "boolean 플래그",
+            "anti-pattern detection",
         ),
         errors,
     )
+    if not reference_path.exists():
+        errors.append(f"missing react-state-reviewer reference: {reference_path}")
+    else:
+        _expect_substrings(
+            reference_path,
+            (
+                "useEffect",
+                "setState",
+                "discriminated union",
+                "exhaustive",
+                "boolean flags",
+            ),
+            errors,
+        )
 
 def _validate_csv_fanout_contract(repo_root: Path, errors: list[str]) -> None:
     design_skill = repo_root / "skills" / "design-task" / "SKILL.md"
@@ -900,7 +1064,7 @@ def _validate_csv_fanout_contract(repo_root: Path, errors: list[str]) -> None:
         (
             "execution_topology",
             "csv-fanout",
-            "keep-local fallback",
+            "`keep-local` fallback",
             "spawn_agents_on_csv",
             "GLOBAL_CONTEXT.md",
             "MERGE_POLICY.md",
@@ -1243,7 +1407,10 @@ def main() -> int:
     errors: list[str] = []
     _validate_agent_projection(repo_root, errors)
     _validate_registry_codex_contract(repo_root, errors)
-    _validate_structure_reviewer_instruction_drift(repo_root, errors)
+    _validate_agent_profile_architecture_doc(repo_root, errors)
+    _validate_agent_profile_templates(repo_root, errors)
+    _validate_structure_review_contract(repo_root, errors)
+    _validate_agent_reference_playbooks(repo_root, errors)
     _validate_browser_explorer_contract(repo_root, errors)
     _validate_writer_agent_contract(repo_root, errors)
     _validate_react_state_reviewer_contract(repo_root, errors)

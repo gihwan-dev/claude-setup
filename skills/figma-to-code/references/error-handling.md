@@ -1,37 +1,37 @@
 # Error Handling And Output
 
-`figma-to-code` 실행 중 자주 만나는 예외와 결과 요약 형식을 정리한다.
+Common failure cases and the result summary format for `figma-to-code`.
 
 ## Overwrite Policy
 
-- 대상 파일이 비어 있지 않으면 overwrite 여부를 먼저 확인한다.
-- overwrite가 거부되면 새 파일 경로를 제안하거나 중단한다.
+- If the target file is not empty, confirm overwrite before writing.
+- If overwrite is denied, suggest a new file path or stop.
 
 ## Error Cases
 
-| 상황 | 대응 |
+| Situation | Response |
 |---|---|
-| URL에 `node-id`가 없음 | 올바른 Figma URL 형식을 요청하고 `node-id`가 필요하다고 안내 |
-| MCP 호출 실패 | Figma Desktop 앱을 실행하고 대상 파일을 열어 달라고 안내 |
-| 변수/토큰 매칭 실패 | 가장 가까운 토큰을 사용하고 TODO를 남김 |
-| 대상 파일이 비어 있지 않음 | overwrite 확인 전까지 쓰지 않음 |
+| URL has no `node-id` | Ask for a valid Figma URL and explain that `node-id` is required |
+| MCP call fails | Ask the user to open the Figma Desktop app and the target file |
+| Variable or token matching fails | Use the closest token and leave a TODO |
+| Target file is not empty | Do not write until overwrite is confirmed |
 
 ## Result Summary Format
 
 ```text
-Figma -> Code 완료: {ComponentName}
+Figma -> Code complete: {ComponentName}
 
-사용된 디자인 토큰:
-- 색상: {token list}
-- 타이포: {type list}
-- 기타: {radius/shadow/etc}
+Design tokens used:
+- Colors: {token list}
+- Typography: {type list}
+- Other: {radius/shadow/etc}
 
-사용된 컴포넌트:
+Components used:
 - @exem-fe/react: {...}
 - @exem-fe/icon: {...}
 - @/shared/ui: {...}
 
-생성된 파일: {component path}
+Generated file: {component path}
 ```
 
 ## Example Input
@@ -43,10 +43,10 @@ Figma -> Code 완료: {ComponentName}
 ## Example Execution Summary
 
 ```text
-1. 입력 파싱: nodeId=`1:2`, component=`ColumnHeader`
-2. Figma 데이터 수집: screenshot/context/variables
-3. 로컬 패턴 탐색: `src/shared/ui/` 및 형제 파일 확인
-4. 토큰 매핑: Figma 값 -> Tailwind token class
-5. 코드 생성: `ColumnHeader.tsx`
-6. 검증: token usage, import alias, named export 확인
+1. Parse inputs: nodeId=`1:2`, component=`ColumnHeader`
+2. Collect Figma data: screenshot/context/variables
+3. Inspect local patterns: check `src/shared/ui/` and sibling files
+4. Map tokens: Figma values -> Tailwind token classes
+5. Generate code: `ColumnHeader.tsx`
+6. Validate: token usage, import alias, and named exports
 ```

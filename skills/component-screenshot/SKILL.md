@@ -2,34 +2,35 @@
 name: component-screenshot
 description: >
   Capture component screenshots from Storybook stories.
-  Story 파일에서 컴포넌트 스크린샷 캡처. "/screenshot", "스크린샷 캡처" 등의 요청 시 사용
+  Use when you need to capture component screenshots from Story files, such as
+  "/screenshot" or "capture a screenshot".
 ---
 
 
 # Component Screenshot
 
-이 스킬은 Storybook Story 파일을 기반으로 컴포넌트 스크린샷을 캡처합니다.
+This skill captures component screenshots from Storybook Story files.
 
-## 워크플로우
+## Workflow
 
-### 1. Story 파일 읽기
+### 1. Read the Story File
 
-사용자로부터 Story 파일 경로를 받아 파일을 읽고 다음을 추출합니다:
+Read the Story file path provided by the user and extract:
 
-- `title` 필드 (meta 객체에서)
-- export된 Story 이름들 (예: `Default`, `WithIcon` 등)
+- The `title` field from the meta object
+- Exported Story names, such as `Default` and `WithIcon`
 
-### 2. Story ID 변환
+### 2. Convert to a Story ID
 
-Storybook 내부에서 사용하는 story ID를 생성합니다.
+Generate the Story ID used internally by Storybook.
 
-**변환 규칙:**
+**Conversion rules:**
 
-1. `title` 값을 소문자로 변환
-2. `/`를 `-`로 치환
-3. `--`로 구분하여 export 이름을 kebab-case로 추가
+1. Convert the `title` value to lowercase.
+2. Replace `/` with `-`.
+3. Append the export name in kebab-case, separated by `--`.
 
-**변환 예시:**
+**Conversion examples:**
 
 | title | export | Story ID |
 |-------|--------|----------|
@@ -37,33 +38,33 @@ Storybook 내부에서 사용하는 story ID를 생성합니다.
 | `Screenshots/Features/FilterBar/FilterList` | `Default` | `screenshots-features-filterbar-filterlist--default` |
 | `Screenshots/Shared/Button` | `WithIcon` | `screenshots-shared-button--with-icon` |
 
-**상세 변환 과정:**
+**Detailed conversion:**
 
 ```
 title: "Screenshots/Shared/Card" + export: "Default"
-→ 소문자: "screenshots/shared/card"
-→ / → -: "screenshots-shared-card"
-→ + "--" + kebab(export): "screenshots-shared-card--default"
+-> lowercase: "screenshots/shared/card"
+-> `/` to `-`: "screenshots-shared-card"
+-> + "--" + kebab(export): "screenshots-shared-card--default"
 ```
 
-PascalCase export를 kebab-case로 변환:
+Convert PascalCase exports to kebab-case:
 - `Default` → `default`
 - `WithIcon` → `with-icon`
 - `MSWExample` → `msw-example`
 
-### 3. 뷰포트 크기 결정
+### 3. Determine the Viewport Size
 
-다음 우선순위로 뷰포트 크기를 결정합니다:
+Choose the viewport size in this priority order:
 
-1. **사용자 지정**: 사용자가 명시적으로 크기를 지정한 경우
-2. **Story wrapper div 힌트**: render 함수 내 wrapper div의 `style={{ width: '...', height: '...' }}` 값
-3. **기본값**: width=1280, height=800
+1. **User override**: when the user explicitly provides a size
+2. **Story wrapper hint**: the `style={{ width: '...', height: '...' }}` value on the wrapper div inside `render`
+3. **Default**: width=1280, height=800
 
-### 4. 캡처 실행
+### 4. Run the Capture
 
-`${SKILL_DIR}/scripts/capture-screenshot.ts` 스크립트를 실행하여 스크린샷을 캡처합니다.
+Run `${SKILL_DIR}/scripts/capture-screenshot.ts` to capture the screenshot.
 
-스크립트는 정적 빌드된 Storybook(`.dist/`)을 Express로 서빙하여 캡처합니다. 정적 파일에는 HMR 웹소켓이 없으므로 `networkidle`이 정상 동작합니다.
+The script serves a statically built Storybook (`.dist/`) through Express and captures from that server. Static files do not open an HMR websocket, so `networkidle` works reliably.
 
 ```bash
 pnpm exec tsx ${SKILL_DIR}/scripts/capture-screenshot.ts \
@@ -72,70 +73,70 @@ pnpm exec tsx ${SKILL_DIR}/scripts/capture-screenshot.ts \
   --width {width} --height {height}
 ```
 
-**스크립트 CLI 옵션:**
+**Script CLI options:**
 
-| 옵션 | 필수 | 기본값 | 설명 |
+| Option | Required | Default | Description |
 |------|------|--------|------|
 | `--story-id` | ✅ | - | Storybook story ID |
-| `--output` | ✅ | - | 출력 PNG 파일 경로 |
-| `--width` | ❌ | 1280 | 뷰포트 너비 |
-| `--height` | ❌ | 800 | 뷰포트 높이 |
-| `--port` | ❌ | 6008 | 정적 서버 포트 |
-| `--timeout` | ❌ | 30000 | 타임아웃 (ms) |
-| `--rebuild` | ❌ | false | 기존 빌드 무시하고 강제 리빌드 |
+| `--output` | ✅ | - | Output PNG file path |
+| `--width` | ❌ | 1280 | Viewport width |
+| `--height` | ❌ | 800 | Viewport height |
+| `--port` | ❌ | 6008 | Static server port |
+| `--timeout` | ❌ | 30000 | Timeout in ms |
+| `--rebuild` | ❌ | false | Ignore the existing build and rebuild |
 
-- 스크립트는 `.dist/iframe.html`이 없으면 자동으로 `pnpm build-storybook`을 실행합니다.
-- `--rebuild` 플래그를 사용하면 기존 빌드를 무시하고 항상 새로 빌드합니다.
-- 캡처 후 `#storybook-root > *` 의 첫 번째 자식 요소를 스크린샷합니다.
+- If `.dist/iframe.html` is missing, the script automatically runs `pnpm build-storybook`.
+- If `--rebuild` is passed, the script ignores the existing build and always rebuilds.
+- After navigation, it captures the first child under `#storybook-root > *`.
 
-### 5. 결과 검증
+### 5. Validate the Result
 
-캡처 후 다음을 확인합니다:
+After capture, confirm:
 
-- PNG 파일이 생성되었는지 확인
-- 파일 크기가 0보다 큰지 확인 (빈 스크린샷 감지)
-- 사용자에게 파일 경로를 안내
+- The PNG file was created
+- The file size is greater than 0 to catch empty screenshots
+- The final file path is reported back to the user
 
-## 에러 처리
+## Error Handling
 
-| 상황 | 대응 |
+| Situation | Response |
 |------|------|
-| Story 파일 없음 | 실행 중단, 파일 경로 확인 안내 |
-| title 파싱 실패 | Story 파일 형식 확인 안내 |
-| Storybook 빌드 실패 | `pnpm build-storybook` 수동 실행으로 에러 확인 제안 |
-| 빈 스크린샷 (0 bytes) | Story ID를 브라우저에서 직접 확인 제안: 정적 서버 실행 후 `http://localhost:6006/iframe.html?id={story-id}&viewMode=story` |
-| 캡처 스크립트 에러 | 에러 메시지 전달 및 수동 실행 커맨드 안내 |
+| Story file missing | Stop and ask the user to verify the file path |
+| Failed to parse `title` | Ask the user to verify the Story file format |
+| Storybook build failure | Suggest running `pnpm build-storybook` manually to inspect the error |
+| Empty screenshot (0 bytes) | Suggest checking the Story ID directly in the browser after serving the static build at `http://localhost:6006/iframe.html?id={story-id}&viewMode=story` |
+| Capture script error | Surface the error message and show the manual command |
 
-## 예시
+## Examples
 
-### 입력
+### Input
 
 ```
 /screenshot __screenshots__/Card.stories.tsx
 ```
 
-### 실행 과정
+### Execution
 
-1. `__screenshots__/Card.stories.tsx` 파일 읽기
-2. title: `Screenshots/Shared/Card`, export: `Default` 추출
-3. Story ID: `screenshots-shared-card--default` 생성
-4. 뷰포트: wrapper div에서 width=384 추출, height=800 기본값
-5. 실행:
+1. Read `__screenshots__/Card.stories.tsx`
+2. Extract `title: Screenshots/Shared/Card` and `export: Default`
+3. Generate Story ID `screenshots-shared-card--default`
+4. Resolve the viewport: width=384 from the wrapper div, height=800 default
+5. Run:
    ```bash
    pnpm exec tsx ${SKILL_DIR}/scripts/capture-screenshot.ts \
      --story-id "screenshots-shared-card--default" \
      --output "artifacts/screenshots/Card.png" \
      --width 384 --height 800
    ```
-6. `artifacts/screenshots/Card.png` 생성 확인
+6. Confirm that `artifacts/screenshots/Card.png` was created
 
-### 여러 Story export가 있는 경우
+### When Multiple Story Exports Exist
 
-Story 파일에 여러 export가 있으면 사용자에게 어떤 Story를 캡처할지 확인합니다.
+If the Story file has multiple exports, ask the user which Story to capture.
 
 ```
 /screenshot __screenshots__/Button.stories.tsx
 ```
 
-→ `Default`, `WithIcon`, `Disabled` 세 가지 export 발견
-→ 사용자에게 선택 요청 (또는 모두 캡처할지 확인)
+-> Found three exports: `Default`, `WithIcon`, `Disabled`
+-> Ask the user which one to capture, or whether to capture all of them

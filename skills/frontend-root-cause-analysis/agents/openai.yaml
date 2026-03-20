@@ -1,6 +1,6 @@
 interface:
   display_name: "Frontend Root Cause Analysis"
-  short_description: "프론트엔드 버그를 Five Whys와 근거 중심으로 근본 원인 분석"
-  default_prompt: "$frontend-root-cause-analysis 이 프론트엔드 버그를 단순 패치 말고 근본 원인 중심으로 분석해줘"
+  short_description: "Analyze frontend bugs with Five Whys and evidence-driven root-cause reasoning"
+  default_prompt: "$frontend-root-cause-analysis Analyze this frontend bug by root cause instead of proposing a symptom-only patch"
 policy:
   allow_implicit_invocation: false

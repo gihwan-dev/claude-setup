@@ -4,39 +4,39 @@
 
 | Situation | Required helpers |
 |-----------|------------------|
-| 기본 repo/code 탐색 | `explorer`, `structure-reviewer` |
-| 외부 기술 판단/official docs 필요 | 기본 조합 + `web-researcher` |
-| 브라우저 재현/시각 증거 필요 | 해당 조합 + `browser-explorer` |
+| Basic repo or code exploration | `explorer`, `structure-reviewer` |
+| External technical judgment or official docs needed | Baseline pair + `web-researcher` |
+| Browser reproduction or visual evidence needed | Matching pair + `browser-explorer` |
 
-최소 helper 수는 항상 2개다.
+The minimum helper count is always 2.
 
 ## Routing Matrix
 
 | Condition | Route |
 |-----------|-------|
 | plan mode | `design-task` |
-| 사용자가 계획/설계를 요청 | `design-task` |
-| 승인된 task bundle의 다음 slice 실행 | `implement-task` |
-| 새 작업이 크거나 모호함 | `design-task` |
-| continuity 판단이나 bundle 생성이 필요함 | `design-task` |
-| 작고 bounded한 작업 | direct execution |
+| User asks for planning or design | `design-task` |
+| Execute the next slice of an approved task bundle | `implement-task` |
+| New work is large or ambiguous | `design-task` |
+| Continuity judgment or bundle creation is needed | `design-task` |
+| Work is small and bounded | direct execution |
 
-`multi-work`는 top-level wrapper다.
-실제 task bundle 설계/실행 세부 규칙은 각각 `design-task`, `implement-task` 계약을 그대로 따른다.
+`multi-work` is the top-level wrapper.
+Actual task-bundle design and execution rules remain delegated to `design-task` and `implement-task`.
 
 ## Direct Execution Guardrail
 
-- direct execution이어도 멀티 에이전트 탐색은 생략하지 않는다.
-- 서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.
-- 메인 에이전트는 helper fan-out 뒤 병렬로 개인 작업을 하지 않고, 필요한 후속 탐색은 결과를 받은 뒤 최소 범위로만 수행한다.
-- `scripts/workflow_contract.py`의 slice budget 판단을 그대로 재사용한다.
-- broad handoff면 `split-replan`이다.
-- 허용 가능한 slice만 `small slices + run-to-boundary`로 진행한다.
-- writer는 기존 writer 조건 충족 시에만 사용한다.
-- 병렬 writer는 파일 경계가 분리되고 shared file 통합이 메인 스레드에 남을 때만 사용한다.
-- active task bundle 후보가 여러 개면 `implement-task`의 candidate confirmation 규칙을 따른다.
+- Even in direct execution, do not skip multi-agent exploration.
+- Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
+- After helper fan-out, the main agent does not do parallel side work. Any follow-up exploration happens only after results return and stays minimal.
+- Reuse slice-budget decisions from `scripts/workflow_contract.py`.
+- Broad handoff means `split-replan`.
+- Only allowed slices proceed under `small slices + run-to-boundary`.
+- Use writer only when the existing writer conditions are satisfied.
+- Use parallel writers only when file boundaries are independent and shared-file integration stays with the main thread.
+- If multiple active task-bundle candidates exist, follow the candidate confirmation rules from `implement-task`.
 
 ## Review Boundary
 
-- `multi-work`는 리뷰를 자동 실행하지 않는다.
-- 멀티 에이전트 리뷰는 `multi-review` explicit step으로 분리한다.
+- `multi-work` does not auto-run review.
+- Keep multi-agent review as an explicit `multi-review` step.

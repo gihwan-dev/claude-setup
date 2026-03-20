@@ -1,42 +1,42 @@
 # Cognitive Principles for Code Explanation
 
-## 핵심 원칙
+## Core Principles
 
-1. 작업기억 보호
-- 한 번에 처리할 요소를 제한한다.
-- 긴 체인을 한 블록으로 보지 말고 3~5개 단위로 쪼갠다.
+1. Protect working memory
+- Limit how many elements the reader must process at once.
+- Do not treat a long chain as one block; break it into groups of 3-5.
 
-2. 청킹 우선
-- 코드 줄 단위가 아니라 "의도 단위"로 묶는다.
-- `검증`, `결정`, `실행`, `정리`처럼 역할 이름을 붙인다.
+2. Prefer chunking
+- Group by units of intent, not by raw lines of code.
+- Give chunks role names such as `validation`, `decision`, `execution`, and `cleanup`.
 
-3. 스키마 활성화
-- 설명 시작 전에 "이 코드가 풀려는 문제"를 먼저 말한다.
-- 기존에 익숙한 패턴(예: 파이프라인, 상태 머신)과 연결한다.
+3. Activate schemas
+- Before the explanation starts, state the problem this code is trying to solve.
+- Connect it to familiar patterns such as a pipeline or a state machine.
 
-4. 외재화
-- 머릿속 추적을 줄이기 위해 표와 다이어그램으로 전개한다.
-- 분기, 상태, 데이터 이동을 텍스트로만 설명하지 않는다.
+4. Externalize the model
+- Use tables and diagrams to reduce mental tracking load.
+- Do not explain branching, state, and data movement with text alone.
 
-5. 점진적 공개
-- 전체 그림 -> 핵심 경로 -> 예외 경로 순서로 공개한다.
-- 처음부터 모든 예외를 쏟아내지 않는다.
+5. Reveal progressively
+- Present the whole picture first, then the main path, then the exception paths.
+- Do not dump every exception at the beginning.
 
-6. 인출 강화
-- 설명 끝에 "확인 질문" 또는 "디버깅 체크포인트"를 둔다.
-- 읽은 내용을 스스로 재구성하게 유도한다.
+6. Reinforce recall
+- End with a check question or debugging checkpoint.
+- Help the reader reconstruct the logic on their own.
 
-## 프로그래머의 뇌와 연결 포인트
+## Links To How Programmers Think
 
-- 코드 이해 난이도는 단순 줄 수보다 "동시에 추적해야 하는 상태 수"에 더 민감하다.
-- 변수 이름이 애매하면 의미 복원 비용이 커진다.
-- 낯선 구조를 익숙한 패턴으로 번역하면 이해 속도가 빨라진다.
-- 요약 -> 상세 순서는 초반 인지 부하를 크게 줄여준다.
+- Code comprehension difficulty is often more sensitive to "how many states must be tracked at once" than to raw line count.
+- Ambiguous variable names increase the cost of reconstructing meaning.
+- Translating an unfamiliar structure into a familiar pattern speeds up understanding.
+- A summary-first, detail-later order reduces early cognitive load significantly.
 
-## 실전 체크리스트
+## Practical Checklist
 
-- 지금 설명이 독자에게 새로 요구하는 개념이 5개를 넘지 않는가?
-- 분기 기준이 문장으로 선명하게 표현되어 있는가?
-- 원인과 결과가 떨어져 있는 로직을 도식으로 연결했는가?
-- 이름 해석이 필요한 식별자에 별칭을 제공했는가?
-- 설명 마지막에 스스로 확인 가능한 점검 항목이 있는가?
+- Does the explanation introduce no more than five new concepts at once?
+- Are the branching criteria clearly expressed in sentences?
+- Did you connect cause and effect with a diagram when they are far apart in the code?
+- Did you provide aliases for identifiers that require interpretation?
+- Does the ending include a self-check the reader can use?

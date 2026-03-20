@@ -1,11 +1,11 @@
 # Task Bundle Rules
 
-`design-task`가 새 long-running task를 만들거나 갱신할 때만 이 파일을 읽는다.
-목표는 `PLAN.md` 단일 문서 대신 사람용 문서와 machine entry를 분리한 task bundle을 고정하는 것이다.
+Read this file only when `design-task` creates or updates a new long-running task.
+The goal is to fix the task bundle structure by separating human-facing docs from the machine entry point instead of relying on a single `PLAN.md`.
 
 ## Core Docs
 
-모든 새 task bundle에는 아래 문서를 만든다.
+Create the following documents for every new task bundle.
 
 - `task.yaml`
 - `README.md`
@@ -13,13 +13,13 @@
 - `SPEC_VALIDATION.md`
 - `STATUS.md`
 
-`task.yaml`은 machine entry point다.
-`README.md`는 사람이 보는 landing 문서다.
-새 task에는 `PLAN.md`를 만들지 않는다.
+`task.yaml` is the machine entry point.
+`README.md` is the human-facing landing document.
+Do not create `PLAN.md` for new tasks.
 
 ## `task.yaml`
 
-필수 키:
+Required keys:
 
 - `task`
 - `goal`
@@ -34,18 +34,18 @@
 - `validation_gate`
 - `current_phase`
 
-optional 키:
+Optional keys:
 
-- `execution_topology` — `keep-local`(기본), `csv-fanout`, `hybrid` 중 하나.
-- `orchestration` — `csv-fanout` 또는 `hybrid`일 때 필수. `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, `merge_policy`를 포함하는 mapping.
+- `execution_topology` — one of `keep-local` (default), `csv-fanout`, or `hybrid`
+- `orchestration` — required for `csv-fanout` or `hybrid`; a mapping that includes `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, and `merge_policy`
 
-`required_docs`는 `task.yaml` 자신을 제외한 실제 bundle 문서/디렉터리 집합을 적는다.
-`source_of_truth`는 실제 파일 경로만 가리킨다.
-`success_criteria`와 `major_boundaries`는 continuity gate 비교에 직접 사용한다.
-`delivery_strategy`도 continuity gate 비교에 직접 사용한다.
-post-design bootstrap이 적용되면 `required_docs`에 `IMPLEMENTATION_CONTRACT.md`가 추가될 수 있고,
-`source_of_truth.implementation`이 optional pointer로 생길 수 있다.
-reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap supplement는 삭제하지 않고 보존한다.
+`required_docs` lists the real bundle documents and directories excluding `task.yaml` itself.
+`source_of_truth` points only to real file paths.
+`success_criteria` and `major_boundaries` are used directly in continuity-gate comparison.
+`delivery_strategy` is also used directly in continuity-gate comparison.
+After post-design bootstrap, `IMPLEMENTATION_CONTRACT.md` may be added to `required_docs`,
+and `source_of_truth.implementation` may appear as an optional pointer.
+When updating an existing bundle via `reuse-existing`, preserve any bootstrap supplement that already exists.
 
 ## Work Types
 
@@ -61,34 +61,35 @@ reuse-existing로 기존 bundle을 갱신할 때 이미 존재하는 bootstrap s
 - `standard`
 - `ui-first`
 
-파생 규칙:
+Derived rules:
 
-- `work_type`이 `feature`, `prototype`, `refactor`, `bugfix` 중 하나고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `ui-first`
-- 그 외는 `standard`
-- `ui-first`면 `reference-pack`을 먼저 실행해 `DESIGN_REFERENCES/`를 채우고, `figma-less-ui-design`이 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 작성한다.
-- 기존 design system, shipped UI, brand guide, Figma가 있으면 packet은 새 style invention이 아니라 `reuse + delta`를 기록한다.
-- `ui-first`면 UX 방향, behavior/a11y/live 계약, state/fixture 전략이 정리되기 전에는 integration slice를 만들지 않는다.
+- If `work_type` is `feature`, `prototype`, `refactor`, or `bugfix`, and `impact_flags` includes `ui_surface_changed` or `workflow_changed`, use `ui-first`
+- Otherwise use `standard`
+- Otherwise use `standard`
+- For `ui-first`, run `reference-pack` first to fill `DESIGN_REFERENCES/`, then let `figma-less-ui-design` write `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`.
+- If an existing design system, shipped UI, brand guide, or Figma exists, the packet records `reuse + delta` rather than inventing a new style.
+- For `ui-first`, do not create integration slices until UX direction, behavior or accessibility or live-update contracts, and state or fixture strategy are defined.
 
 ## Execution Topologies
 
-- `keep-local` — 기본값. 순차 slice 실행. 기존 동작과 동일.
-- `csv-fanout` — slice 내부의 반복 단위를 CSV 행으로 분해하고 병렬 실행. Codex `spawn_agents_on_csv` 기반.
-- `hybrid` — 탐색/분해는 병렬, 코드 통합은 중앙 집중.
+- `keep-local` — default. Sequential slice execution. Same as existing behavior.
+- `csv-fanout` — split repeated work units inside a slice into CSV rows and execute them in parallel. Based on Codex `spawn_agents_on_csv`.
+- `hybrid` — parallelize exploration and decomposition, but centralize code integration.
 
-csv-fanout 판정 5조건:
+The 5 conditions for `csv-fanout`:
 
-1. repeat unit이 명확하다 (e.g., API endpoint, component, page).
-2. 각 unit에 독립 acceptance criteria가 있다.
-3. unit 간 의존이 sparse하다 (shared file이 제한적).
-4. output schema가 고정이다 (row 결과 형식이 일관적).
-5. merge boundary가 명확하다 (integrator가 shared file만 수정).
+1. The repeat unit is clear (for example API endpoint, component, or page).
+2. Each unit has independent acceptance criteria.
+3. Inter-unit dependencies are sparse (shared files are limited).
+4. The output schema is fixed (row-result format is consistent).
+5. The merge boundary is clear (the integrator edits shared files only).
 
-`delivery_strategy`와 `execution_topology`는 직교 축이다. 모든 조합이 가능하다.
-Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 `keep-local` fallback으로 순차 실행된다.
+`delivery_strategy` and `execution_topology` are orthogonal axes. Every combination is allowed.
+In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` automatically fall back to sequential `keep-local` execution.
 
 ## UI Planning Packet (`UX_SPEC.md`)
 
-`delivery_strategy=ui-first`면 `UX_SPEC.md`는 아래 heading 순서를 그대로 유지한다.
+If `delivery_strategy=ui-first`, `UX_SPEC.md` keeps the exact heading order below.
 
 - `Goal/Audience/Platform`
 - `30-Second Understanding Checklist`
@@ -102,7 +103,7 @@ Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 
 
 ## UX Behavior & Accessibility (`UX_BEHAVIOR_ACCESSIBILITY.md`)
 
-`delivery_strategy=ui-first`면 `UX_BEHAVIOR_ACCESSIBILITY.md`는 아래 heading 순서를 그대로 유지한다.
+If `delivery_strategy=ui-first`, `UX_BEHAVIOR_ACCESSIBILITY.md` keeps the exact heading order below.
 
 - `Interaction Model`
 - `Keyboard + Focus Contract`
@@ -115,49 +116,49 @@ Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 
 
 ## Reference Pack (`DESIGN_REFERENCES/`)
 
-`delivery_strategy=ui-first`면 `DESIGN_REFERENCES/`는 아래를 포함한다.
+If `delivery_strategy=ui-first`, `DESIGN_REFERENCES/` includes the following.
 
 - `shortlist.md`
 - `manifest.json`
 - `raw/`
 - `curated/`
 
-추가 규칙:
+Additional rules:
 
-- `reference-pack` advisory skill은 `ui-first` planning에서 항상 자동 실행한다.
-- `web-researcher`, `structure-reviewer`, `architecture-reviewer`는 조건이 있을 때만 추가한다.
-- `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Interaction Model`, `Accessibility Contract`, `Microcopy + Information Expression Rules`는 `SLICE-1` 진입 근거다.
-- `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Task-based Approval Criteria`는 `SLICE-2` 진입 근거다.
-- `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`를 기록한다.
+- Auto-run the `reference-pack` advisory skill for every `ui-first` plan.
+- Add `web-researcher`, `structure-reviewer`, and `architecture-reviewer` only when conditions justify them.
+- `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Interaction Model`, `Accessibility Contract`, and `Microcopy + Information Expression Rules` justify entering `SLICE-1`.
+- `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, and `Task-based Approval Criteria` justify entering `SLICE-2`.
+- Record `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`.
 
 ## GLOBAL_CONTEXT.md
 
-`execution_topology`가 `csv-fanout` 또는 `hybrid`일 때 생성한다.
+Create this when `execution_topology` is `csv-fanout` or `hybrid`.
 
-- Token budget — 각 row worker가 받는 최대 context 토큰 수.
-- Layout/Import rules — 생성 파일의 디렉터리 규칙과 import 경로 규칙.
-- Shared-file touch rules — row worker가 수정 불가인 파일 목록과 읽기 전용 규칙.
+- Token budget — maximum context tokens each row worker receives.
+- Layout/Import rules — directory and import-path rules for generated files.
+- Shared-file touch rules — read-only rules plus the list of files row workers may not modify.
 
 ## WORK_ITEMS.csv
 
-`execution_topology`가 `csv-fanout`일 때 `work-items/` 디렉터리에 최소 1개 생성한다.
+When `execution_topology` is `csv-fanout`, create at least 1 file in `work-items/`.
 
-필수 컬럼:
+Required columns:
 
-- `row_id` — 행 고유 식별자 (e.g., ROW-001).
-- `target_path` — row worker가 생성/수정하는 파일 경로.
-- `acceptance_criteria` — 해당 행의 완료 조건.
+- `row_id` — unique row identifier (for example `ROW-001`)
+- `target_path` — file path created or edited by the row worker
+- `acceptance_criteria` — completion condition for that row
 
-추가 컬럼은 task 성격에 따라 자유롭게 추가할 수 있다.
+Additional columns may be added freely based on the task.
 
 ## MERGE_POLICY.md
 
-`execution_topology`가 `csv-fanout` 또는 `hybrid`일 때 생성한다.
+Create this when `execution_topology` is `csv-fanout` or `hybrid`.
 
-- Integrator-only shared files — integrator만 수정 가능한 파일 목록 (e.g., barrel exports, route registration).
-- Row worker 범위 제한 — 각 row worker는 `target_path`에만 파일 생성/수정.
-- Merge 전략 — integrator가 row output을 수집하고 shared file을 단일 패스로 갱신하는 방법.
-- 충돌 처리 — 두 row가 같은 shared file section에 영향을 줄 때의 해결 규칙.
+- Integrator-only shared files — files only the integrator may modify (for example barrel exports, route registration).
+- Row worker scope limit — each row worker may create or edit files only at `target_path`.
+- Merge strategy — how the integrator collects row output and updates shared files in a single pass.
+- Conflict handling — resolution rules when 2 rows affect the same shared-file section.
 
 ## Impact Flags
 
@@ -179,79 +180,79 @@ Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 
 - `slice_prefix: SLICE`
 - `risk_prefix: RISK`
 
-문서 간 연결은 복붙이 아니라 ID 참조로만 유지한다.
+Cross-document linkage must use ID references, not copy-pasted prose.
 
 ## Doc Selection Matrix
 
 ### `feature`
 
-기본 문서:
+Default docs:
 
 - `PRD.md`
 - `ACCEPTANCE.feature`
 
-추가 규칙:
+Additional rules:
 
-- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`
-- `architecture_significant`, `public_contract_changed`, `data_contract_changed`, `operability_changed` 중 하나가 있으면 `TECH_SPEC.md`
-- `architecture_significant`가 있으면 `ADRs/`
-- `public_contract_changed`가 있으면 기본 계약 문서는 `openapi.yaml`
-- `data_contract_changed`가 있으면 기본 계약 문서는 `schema.json`
+- If `ui_surface_changed` or `workflow_changed` is present, add `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/`
+- If any of `architecture_significant`, `public_contract_changed`, `data_contract_changed`, or `operability_changed` is present, add `TECH_SPEC.md`
+- If `architecture_significant` is present, add `ADRs/`
+- If `public_contract_changed` is present, the default contract doc is `openapi.yaml`
+- If `data_contract_changed` is present, the default contract doc is `schema.json`
 
 ### `bugfix`
 
-기본 문서:
+Default docs:
 
 - `BUG_REPORT.md`
 - `ROOT_CAUSE.md`
 - `ACCEPTANCE.feature`
 
-추가 규칙:
+Additional rules:
 
-- `high_user_risk`, `public_contract_changed`, `data_contract_changed` 중 하나가 있으면 `REGRESSION.md`
+- If any of `high_user_risk`, `public_contract_changed`, or `data_contract_changed` is present, add `REGRESSION.md`
 
 ### `refactor`
 
-기본 문서:
+Default docs:
 
 - `CURRENT_STATE.md`
 - `TARGET_STATE.md`
 
-추가 규칙:
+Additional rules:
 
-- architecture/public/data/operability 플래그가 있으면 `TECH_SPEC.md`
-- `ui_surface_changed`, `workflow_changed`, `public_contract_changed`, `high_user_risk` 중 하나가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`, `ACCEPTANCE.feature`
+- If architecture, public, data, or operability flags are present, add `TECH_SPEC.md`
+- If any of `ui_surface_changed`, `workflow_changed`, `public_contract_changed`, or `high_user_risk` is present, add `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`, and `ACCEPTANCE.feature`
 
 ### `migration`
 
-기본 문서:
+Default docs:
 
 - `TECH_SPEC.md`
 - `MIGRATION.md`
 - `VERIFICATION.md`
 - `ROLLBACK.md`
 
-추가 규칙:
+Additional rules:
 
-- `public_contract_changed`가 있으면 `openapi.yaml`
-- `data_contract_changed`가 있으면 `schema.json`
+- If `public_contract_changed` is present, add `openapi.yaml`
+- If `data_contract_changed` is present, add `schema.json`
 
 ### `prototype`
 
-기본 문서:
+Default docs:
 
 - `PRD.md`
 - `VERIFICATION.md`
 
-추가 규칙:
+Additional rules:
 
-- `ui_surface_changed` 또는 `workflow_changed`가 있으면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/`
-- architecture/public/data/operability 플래그가 있으면 `TECH_SPEC.md`
-- `public_contract_changed`, `data_contract_changed`, `high_user_risk` 중 하나가 있으면 `ACCEPTANCE.feature`
+- If `ui_surface_changed` or `workflow_changed` is present, add `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/`
+- If architecture, public, data, or operability flags are present, add `TECH_SPEC.md`
+- If any of `public_contract_changed`, `data_contract_changed`, or `high_user_risk` is present, add `ACCEPTANCE.feature`
 
 ### `ops`
 
-기본 문서:
+Default docs:
 
 - `CHANGE_PLAN.md`
 - `RUNBOOK.md`
@@ -260,7 +261,7 @@ Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 
 
 ## `SPEC_VALIDATION.md`
 
-항상 생성하고 아래 level-1 heading 순서를 유지한다.
+Always create this document and preserve the level-1 heading order below.
 
 - `Requirement coverage`
 - `UX/state gaps`
@@ -269,28 +270,28 @@ Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 
 - `Blocking issues`
 - `Proceed verdict`
 
-gate 규칙:
+Gate rules:
 
-- `ui_surface_changed`, `workflow_changed`, `architecture_significant`, `public_contract_changed`, `data_contract_changed`, `operability_changed`, `high_user_risk` 중 하나가 있으면 `blocking`
-- 위 플래그가 없어도 설계 문서가 3종 이상이면 `blocking`
-- 그 외는 `advisory`
+- If any of `ui_surface_changed`, `workflow_changed`, `architecture_significant`, `public_contract_changed`, `data_contract_changed`, `operability_changed`, or `high_user_risk` is present, the verdict is `blocking`
+- Even without those flags, if 3 or more design docs are required, the verdict is `blocking`
+- Otherwise the verdict is `advisory`
 
-추가 규칙:
+Additional rules:
 
-- greenfield/new-project 설계인데 repo baseline implementation rules(`docs/ai/ENGINEERING_RULES.md`)가 아직 없으면 `Blocking issues`에 `$bootstrap-project-rules` 실행 요구를 남긴다.
-- `ui-first`인데 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json` 중 하나라도 비어 있거나, 30-second checklist/glossary/interaction/a11y/live/degradation/task-based approval이 빠져 있으면 `Blocking issues`에 기록한다.
-- 기존 shipped UI/Figma/design system이 명확한 경우 reference capture 부족은 advisory로 낮출 수 있지만, 그 판단 근거를 남겨야 한다.
-- 이 blocking issue는 design 단계에서 자동 해소하지 않는다. post-design bootstrap이 완료된 뒤에만 cleared로 바꾼다.
+- If this is greenfield or new-project planning and baseline repo implementation rules (`docs/ai/ENGINEERING_RULES.md`) do not exist yet, leave a `$bootstrap-project-rules` requirement in `Blocking issues`.
+- If `ui-first` is selected but any of `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, or `DESIGN_REFERENCES/manifest.json` is empty, or if the 30-second checklist, glossary, interaction, accessibility, live-update, degradation, or task-based approval sections are missing, record that in `Blocking issues`.
+- When an existing shipped UI, Figma, or design system is clearly available, weak reference capture may be lowered to advisory, but the reason for that judgment must be recorded.
+- Do not auto-clear this blocking issue during the design phase. Only mark it cleared after post-design bootstrap is complete.
 
 ## `EXECUTION_PLAN.md`
 
-아래 level-1 heading 순서를 유지한다.
+Preserve the level-1 heading order below.
 
 - `Execution slices`
 - `Verification`
 - `Stop / Replan conditions`
 
-`Execution slices` 안의 각 slice는 최소 아래 항목을 포함한다.
+Every slice inside `Execution slices` includes at least the fields below.
 
 - Change boundary
 - Expected files
@@ -298,16 +299,16 @@ gate 규칙:
 - Focused validation plan
 - Stop / Replan trigger
 
-`delivery_strategy=ui-first`면 추가 규칙:
+Additional rules for `delivery_strategy=ui-first`:
 
-- `SLICE-1`: static/visual UI, information architecture, copy, navigation, visual shell만 다룬다. real API/integration 금지.
-- `SLICE-2`: local interaction, mock data, loading/empty/error/permission/responsive/a11y state만 다룬다. real API/integration 금지.
-- `SLICE-3+`: real API/backend/data contract/integration과 회귀 보강을 다룬다.
-- `SLICE-1` 미승인 또는 `SLICE-2` 상태 모델 미정이면 다음 slice 진입을 stop/replan으로 막는다.
+- `SLICE-1`: handle only static or visual UI, information architecture, copy, navigation, and visual shell. Real API or integration is forbidden.
+- `SLICE-2`: handle only local interaction, mock data, and loading, empty, error, permission, responsive, and accessibility states. Real API or integration is forbidden.
+- `SLICE-3+`: handle real API, backend, data contract, integration, and regression hardening.
+- If `SLICE-1` is not approved or the `SLICE-2` state model is unresolved, block entry to the next slice through stop or replan.
 
 ## `README.md`
 
-한 페이지로 유지한다.
+Keep it to one page.
 
 - Goal
 - Document map
@@ -315,13 +316,13 @@ gate 규칙:
 - Validation gate status
 - Implementation slice order
 
-greenfield/new-project 설계라면 `Document map` 또는 `Validation gate status`에 post-design bootstrap handoff를 함께 남긴다.
-bootstrap 이후에는 `IMPLEMENTATION_CONTRACT.md`가 document map에 추가될 수 있다.
-reuse-existing 경로에서 bootstrap supplement를 유지했다면 `Task continuity` 또는 `Key decisions`에 preserved 사실을 남긴다.
+If this is greenfield or new-project planning, leave the post-design bootstrap handoff in `Document map` or `Validation gate status`.
+After bootstrap, `IMPLEMENTATION_CONTRACT.md` may be added to the document map.
+If a bootstrap supplement was preserved on a `reuse-existing` path, record that preserved fact in `Task continuity` or `Key decisions`.
 
-`delivery_strategy=ui-first`면 `Implementation slice order`는 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 그대로 반영한다.
+If `delivery_strategy=ui-first`, `Implementation slice order` must reflect the exact order `SLICE-1 -> SLICE-2 -> SLICE-3+`.
 
 ## `STATUS.md`
 
-설계 단계에서 초기 템플릿을 미리 만든다.
-`Current slice`는 `Not started.`, `Next slice`는 `SLICE-1`로 고정한다.
+Create the initial template during the design phase.
+Fix `Current slice` to `Not started.` and `Next slice` to `SLICE-1`.

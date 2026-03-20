@@ -1,6 +1,6 @@
 # UI Planning Templates
 
-`figma-less-ui-design`이 packet skeleton이나 handoff 문장을 빠르게 맞출 때만 이 파일을 읽는다.
+Read this file only when `figma-less-ui-design` needs to align packet skeletons or handoff wording quickly.
 
 ## `UX_SPEC.md` Skeleton
 

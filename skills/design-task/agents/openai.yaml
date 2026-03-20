@@ -2,59 +2,75 @@ interface:
   display_name: "Design Task"
   short_description: "Classify non-trivial work into a task bundle, derive `delivery_strategy`, apply a continuity gate, and create `task.yaml`-based design bundles with dual UX docs and task-local reference packs for ui-first work"
   default_prompt: >-
-    $design-task quality preflight verdict와 근거를 기록하고 continuity gate를 먼저 적용해.
-    기존 TS/JS/React 코드 작업이면 structure preflight(대상 파일 역할, 예상 post-change LOC,
-    split-first 필요 여부)를 포함하고, split-first trigger가 켜지면 기존 파일 append 전제
-    설계를 금지해. 새 task는 `task.yaml` 기반 bundle(`README.md`, `EXECUTION_PLAN.md`,
-    `SPEC_VALIDATION.md`, `STATUS.md` 포함)로 설계하고 legacy `PLAN.md`는 fallback으로만
-    사용해. `task.yaml`에는 `success_criteria`, `major_boundaries`, `delivery_strategy`를
-    반드시 채워. `delivery_strategy`는 `work_type in {feature, bugfix, refactor, prototype}`
-    이고 `impact_flags`에 `ui_surface_changed` 또는 `workflow_changed`가 있으면 `ui-first`,
-    그 외는 `standard`로 고정해. `execution_topology`는 optional이며 기본값은
-    `keep-local`이다. csv-fanout 판정 5조건(repeat unit, independent acceptance, sparse deps,
-    fixed schema, clear merge boundary)을 모두 만족하면 `csv-fanout`, 일부면 `hybrid`로
-    설정해. `csv-fanout` 또는 `hybrid`이면 `orchestration` block(`row_unit`, `batch_mode`,
-    `shared_context_files`, `roles`, `csv`, `merge_policy`)을 task.yaml에 추가해.
-    `csv-fanout`이면 `GLOBAL_CONTEXT.md`, `work-items/*.csv`, `MERGE_POLICY.md`를 bundle에
-    추가하고 row worker의 shared file 수정을 금지해. continuity 비교에서는 post-design
-    bootstrap supplement인 `IMPLEMENTATION_CONTRACT.md`와
-    `source_of_truth.implementation`을 normalize하고 identity 차이로 취급하지 마.
-    reuse-existing 경로라면 기존 bundle에 이미 있던 bootstrap supplement는 삭제하지 말고
-    preserved로 기록해. 기존 task는 goal, success_criteria, work type, impact flags,
-    normalized required docs, major boundaries, delivery strategy가 모두 같은 단일 후보일
-    때만 재사용해. `delivery_strategy=ui-first`면 `reference-pack`을 먼저 자동 실행해
-    `DESIGN_REFERENCES/`를 채우고 `figma-less-ui-design`이 `UX_SPEC.md`와
-    `UX_BEHAVIOR_ACCESSIBILITY.md`를 작성하게 해. `source_of_truth.ux = UX_SPEC.md`,
-    `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`,
-    `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`를 기록하고, 기존
-    design system/shipped UI/Figma가 있으면 새 스타일 대신 반드시 `reuse + delta`를
-    기록해. `UX_SPEC.md` section order는 `Goal/Audience/Platform`, `30-Second Understanding
-    Checklist`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary +
-    Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow
-    Coverage`, `Implementation Prompt/Handoff`를 유지하고,
-    `UX_BEHAVIOR_ACCESSIBILITY.md` section order는 `Interaction Model`, `Keyboard + Focus
-    Contract`, `Accessibility Contract`, `Live Update Semantics`, `State Matrix + Fixture
-    Strategy`, `Large-run Degradation Rules`, `Microcopy + Information Expression Rules`,
-    `Task-based Approval Criteria`를 유지해. UI planning fan-out은 `web-researcher`,
-    `structure-reviewer`, `architecture-reviewer`를 조건이 있을 때만 추가해. read-only
-    repo 탐색은 `explorer`, 외부 웹 리서치는 `web-researcher`, 브라우저 재현은
-    `browser-explorer`가 담당하고 메인 스레드 직접 웹 조사는 금지해. planning role card
-    overlay가 필요하면 `planning-role-cards.md`를 `explorer`와 함께 사용해.
-    `EXECUTION_PLAN.md`에는 `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`,
-    `SLICE-3+=real API/integration` 순서를 명시해. `SLICE-1`은
-    checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고, `SLICE-2`는
-    keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval
-    criteria를 읽는다고 적어. `SLICE-1`과 `SLICE-2`에는 real API/integration 금지를 적고,
-    UX 문서 누락이나 reference pack 미완성, 30-second checklist/glossary/interaction/a11y/live/degradation/task-based
-    approval 미정은 `SPEC_VALIDATION.md`의 blocking issue로 남겨. greenfield/new-project인데
-    repo-level implementation rules가 아직 없으면 `SPEC_VALIDATION.md`의 `Blocking issues`에
-    `$bootstrap-project-rules` 필요 문구를 남기고, post-design bootstrap 후
-    `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`가 추가될 수 있음을
-    handoff로 적어. AI/agent workflow planning이면 `web-researcher`를 먼저 사용해 official
-    vendor docs를 우선 참고하고, helper unavailable이면 직접 조사로 대체하지 말고
-    blocked로 보고해. `EXECUTION_PLAN.md`는 `Execution slices`, `Verification`, `Stop /
-    Replan conditions` 순서를 지키고, 각 slice에는 change boundary, file budget,
-    validation owner, focused validation, split decision, stop/replan conditions를 명시해.
-    `STATUS.md` 초기값은 `Current slice=Not started.` / `Next slice=SLICE-1`로 맞춰.
+    $design-task should record the quality-preflight verdict plus evidence, then
+    apply the continuity gate first. For existing TS, JS, or React code work,
+    include structure preflight: target file role, expected post-change LOC, and
+    whether split-first is needed. If the split-first trigger is on, do not
+    author plans that assume target-file append. Design every new task as a
+    `task.yaml`-based bundle that includes `README.md`, `EXECUTION_PLAN.md`,
+    `SPEC_VALIDATION.md`, and `STATUS.md`, and keep legacy `PLAN.md` only as a
+    fallback. `task.yaml` must always include `success_criteria`,
+    `major_boundaries`, and `delivery_strategy`. Force `delivery_strategy=ui-first`
+    when `work_type in {feature, bugfix, refactor, prototype}` and
+    `impact_flags` contains `ui_surface_changed` or `workflow_changed`;
+    otherwise use `standard`. `execution_topology` is optional and defaults to
+    `keep-local`. Choose `csv-fanout` only when all 5 conditions hold: repeat
+    unit, independent acceptance, sparse dependencies, fixed schema, and clear
+    merge boundary. Use `hybrid` when only part of that holds. If
+    `csv-fanout` or `hybrid` is selected, add the `orchestration` block
+    (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`,
+    `merge_policy`) to `task.yaml`. If `csv-fanout` is selected, add
+    `GLOBAL_CONTEXT.md`, `work-items/*.csv`, and `MERGE_POLICY.md` to the
+    bundle, and forbid row-worker edits to shared files. In continuity
+    comparison, normalize post-design bootstrap supplements
+    `IMPLEMENTATION_CONTRACT.md` and `source_of_truth.implementation` and do not
+    treat them as identity differences. On a `reuse-existing` path, preserve any
+    existing bootstrap supplement instead of deleting it, and record it as
+    preserved. Reuse an existing task only when there is exactly 1 candidate
+    whose goal, success criteria, work type, impact flags, normalized required
+    docs, major boundaries, and delivery strategy all match. If
+    `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill
+    `DESIGN_REFERENCES/`, then let `figma-less-ui-design` write `UX_SPEC.md` and
+    `UX_BEHAVIOR_ACCESSIBILITY.md`. Record `source_of_truth.ux = UX_SPEC.md`,
+    `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and
+    `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`. If an
+    existing design system, shipped UI, or Figma exists, record `reuse + delta`
+    instead of inventing a new style. Preserve the exact `UX_SPEC.md` section
+    order `Goal/Audience/Platform`, `30-Second Understanding Checklist`,
+    `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary +
+    Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`,
+    `Screen + Flow Coverage`, `Implementation Prompt/Handoff`. Preserve the
+    exact `UX_BEHAVIOR_ACCESSIBILITY.md` section order `Interaction Model`,
+    `Keyboard + Focus Contract`, `Accessibility Contract`, `Live Update
+    Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation
+    Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval
+    Criteria`. Add `web-researcher`, `structure-reviewer`, and
+    `architecture-reviewer` to UI-planning fan-out only when conditions justify
+    them. Read-only repo discovery belongs to `explorer`, external web research
+    belongs to `web-researcher`, and browser reproduction belongs to
+    `browser-explorer`; do not replace helper research with direct main-thread
+    web exploration. When a planning-role overlay is needed, use
+    `planning-role-cards.md` together with `explorer`. In `EXECUTION_PLAN.md`,
+    keep the order `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`,
+    `SLICE-3+=real API/integration`. State that `SLICE-1` reads checklist,
+    layout, token, screen-flow, interaction, accessibility, and microcopy, and
+    that `SLICE-2` reads keyboard, focus, live semantics, state matrix or
+    fixtures, degradation, and task-based approval criteria. Explicitly forbid
+    real API or integration work in `SLICE-1` and `SLICE-2`. If UX docs are
+    missing, the reference pack is incomplete, or the 30-second checklist,
+    glossary, interaction, accessibility, live-update, degradation, or
+    task-based approval sections are undefined, leave them as blocking issues in
+    `SPEC_VALIDATION.md`. If baseline repo implementation rules do not yet exist
+    for greenfield or new-project work, leave a `$bootstrap-project-rules`
+    requirement in `SPEC_VALIDATION.md` under `Blocking issues`, and note in the
+    handoff that `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`
+    may be added after post-design bootstrap. For AI or agent-workflow planning,
+    start with `web-researcher` and prioritize official vendor docs. If helpers
+    are unavailable, report blocked instead of substituting direct research.
+    Preserve the `Execution slices`, `Verification`, and `Stop / Replan
+    conditions` order in `EXECUTION_PLAN.md`, and make every slice include
+    change boundary, file budget, validation owner, focused validation, split
+    decision, and stop or replan conditions. Set the initial `STATUS.md` values
+    to `Current slice=Not started.` and `Next slice=SLICE-1`.
 policy:
   allow_implicit_invocation: false

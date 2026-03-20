@@ -2,44 +2,44 @@
 name: clean-code-inspector
 description: >
   AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%).
-  TS/JS 특화 코드 품질 분석 스킬. AST/정적분석 기반 정량 메트릭과 정성 오버레이(근거 기반 루브릭)를
-  결합해 clean-code-inspect-result.json / .md를 생성한다.
-  트리거: "코드 리뷰", "품질 검사", "클린 코드", "인스펙션", "코드 분석" 등
+  Specialized TS/JS code quality inspection that combines AST/static-analysis metrics with an evidence-based
+  qualitative overlay to generate `clean-code-inspect-result.json` and `.md`.
+  Triggers: "code review", "quality inspection", "clean code", "inspection", "code analysis", etc.
 ---
 
-# Clean Code Inspector v2.1 (AST 기반 정량 + 정성 오버레이)
+# Clean Code Inspector v2.1 (AST-Based Quantitative Metrics + Qualitative Overlay)
 
-## 핵심 원칙
+## Core Principles
 
-- **정량 자동 생성**: 수동 계수 대신 AST/정적분석 도구로 `quantitative-metrics.json`을 생성한다.
-- **정성은 오버레이**: 정량 `Hotspot 상위 20%` 파일에만 적용한다.
-- **근거 필수**: 정성 항목은 파일+라인 근거 2개 이상 없으면 `N/A` 처리한다.
-- **고정 가중치**: 최종 점수는 `정량 85% + 정성 15%`를 사용한다.
-- **정성 단독 Fail 금지**: 정량이 통과인데 정성만으로 실패시키지 않는다.
+- **Generate quantitative metrics automatically**: Use AST/static-analysis tools to create `quantitative-metrics.json` instead of manual counting.
+- **Qualitative scoring is an overlay**: Apply it only to the top 20% of quantitative hotspots.
+- **Evidence is mandatory**: Mark a qualitative item as `N/A` unless it has at least two file+line evidence points.
+- **Fixed weights**: The final score uses `quantitative 85% + qualitative 15%`.
+- **No qualitative-only fail**: Do not fail a result when the quantitative score passes and only the qualitative score is low.
 
-## Phase 1: 입력 해석 및 파일 수집
+## Phase 1: Interpret Inputs and Collect Files
 
-사용자 인자를 아래 표에 매칭해 diff 명령을 결정한다.
+Map user arguments to the diff command using the table below.
 
-| 입력 패턴 | 파일 목록 명령 | 분석 모드 |
+| Input pattern | File listing command | Analysis mode |
 |-----------|---------------|-----------|
-| (없음) | `git diff --name-only` | `working` |
+| (none) | `git diff --name-only` | `working` |
 | `staged`, `--cached` | `git diff --cached --name-only` | `staged` |
-| 브랜치명 (예: `main`, `develop`) | `git diff {branch}...HEAD --name-only` | `branch` + target=branch |
-| 커밋 범위 `abc..def` | `git diff abc..def --name-only` | `range` + target=abc..def |
-| 파일 경로 직접 지정 | (입력 그대로 사용) | `files` + target="a.ts,b.ts" |
+| Branch name (for example `main`, `develop`) | `git diff {branch}...HEAD --name-only` | `branch` + target=branch |
+| Commit range `abc..def` | `git diff abc..def --name-only` | `range` + target=abc..def |
+| Direct file path input | (use the input as-is) | `files` + target="a.ts,b.ts" |
 
-필터링 규칙:
-- 포함: `.ts`, `.tsx`, `.js`, `.jsx`
-- 제외: `node_modules/`, `.d.ts`, `*.config.ts`, `*.config.js`, `*.stories.tsx`, `dist/`, `build/`
-- 결과 0개: `분석 가능한 변경 파일이 없습니다.` 출력 후 종료
-- 결과 25개 초과: 범위 축소 여부를 먼저 확인
+Filtering rules:
+- Include: `.ts`, `.tsx`, `.js`, `.jsx`
+- Exclude: `node_modules/`, `.d.ts`, `*.config.ts`, `*.config.js`, `*.stories.tsx`, `dist/`, `build/`
+- If the result count is 0: print `No analyzable changed files.` and exit
+- If the result count exceeds 25: confirm whether the scope should be narrowed first
 
-## Phase 2: Toolchain 보장 + 정량 자동 수집
+## Phase 2: Ensure the Toolchain and Collect Quantitative Metrics
 
-### 2-1) Toolchain 보장
+### 2-1) Ensure the Toolchain
 
-먼저 다음 명령으로 의존성 상태를 확인한다.
+First, verify dependency availability with this command.
 
 ```bash
 node "${SKILL_DIR}/scripts/ensure-toolchain.mjs" \
@@ -47,12 +47,12 @@ node "${SKILL_DIR}/scripts/ensure-toolchain.mjs" \
   --auto-install true
 ```
 
-동작 규칙:
-- 패키지 누락 시 `pnpm --dir <skill_dir> install --frozen-lockfile` 1회 자동 시도
-- 실패 시 `analysisMode=degraded`로 계속 진행
-- 누락 사유는 `unavailableMetrics`에 누적
+Execution rules:
+- If packages are missing, automatically try `pnpm --dir <skill_dir> install --frozen-lockfile` once
+- If that fails, continue with `analysisMode=degraded`
+- Record missing-tool reasons in `unavailableMetrics`
 
-### 2-2) 정량 JSON 생성
+### 2-2) Generate Quantitative JSON
 
 ```bash
 node "${SKILL_DIR}/scripts/collect-quantitative-metrics.mjs" \
@@ -65,38 +65,38 @@ node "${SKILL_DIR}/scripts/collect-quantitative-metrics.mjs" \
   --out-unavailable ".clean-code-inspector/unavailable-metrics.json"
 ```
 
-수집 규칙:
-- 기본 분석 범위는 `변경 파일 + import 클로저`
-- import 클로저는 BFS 전이 탐색, 기본 상한 300파일
-- 상한 초과 시 잘라내고 `unavailableMetrics`에 기록
+Collection rules:
+- The default analysis scope is `changed files + import closure`
+- Traverse the import closure with BFS, capped at 300 files by default
+- If the cap is exceeded, truncate the scope and record that in `unavailableMetrics`
 
-산출물:
+Outputs:
 - `.clean-code-inspector/quantitative-metrics.json`
 - `.clean-code-inspector/unavailable-metrics.json`
 
-## Phase 3: Hotspot 상위 20% 선정
+## Phase 3: Select the Top 20% Hotspots
 
-정량 JSON의 `files[].hotspotScore`를 기준으로 내림차순 정렬한다.
-- 상위 `max(1, ceil(N * 0.2))` 파일만 정성 평가 대상
+Sort `files[].hotspotScore` from the quantitative JSON in descending order.
+- Only the top `max(1, ceil(N * 0.2))` files become qualitative review targets
 
-## Phase 4: Qualitative Overlay (정성)
+## Phase 4: Qualitative Overlay
 
-`architecture-reviewer`를 Hotspot 파일에만 실행한다.
+Run `architecture-reviewer` only on hotspot files.
 
-참조 문서:
+Reference documents:
 - `references/qualitative-rubric.md`
 - `references/scoring-model-v2.md`
 
-필수 규칙:
-- 5개 기준만 평가: `Intent Clarity`, `Local Reasoning`, `Failure Semantics`, `Boundary Discipline`, `Test Oracle Quality`
-- 각 항목 `0~4점` 앵커드 루브릭
-- 항목별 근거가 2개 미만이면 `N/A`
-- `Boundary Discipline` 위반, `Failure Semantics` 부재는 `criticalFlags`에 반드시 기록
+Required rules:
+- Evaluate only these five criteria: `Intent Clarity`, `Local Reasoning`, `Failure Semantics`, `Boundary Discipline`, `Test Oracle Quality`
+- Use an anchored `0~4` rubric for each criterion
+- If a criterion has fewer than two evidence points, mark it `N/A`
+- Always record `Boundary Discipline` violations and missing `Failure Semantics` in `criticalFlags`
 
-산출물:
+Outputs:
 - `.clean-code-inspector/qualitative-overlay.json`
 
-## Phase 5: 스코어카드 생성
+## Phase 5: Generate the Scorecard
 
 ```bash
 node "${SKILL_DIR}/scripts/build-scorecard.mjs" \
@@ -107,23 +107,23 @@ node "${SKILL_DIR}/scripts/build-scorecard.mjs" \
   --profile "balanced"
 ```
 
-결과 규칙:
-- 최종 점수 = `정량점수×0.85 + 정성점수×0.15`
-- 정성 단독 fail 금지
-- `criticalFlags[]`는 등급과 별개로 경고 표시
+Result rules:
+- Final score = `quantitativeScore × 0.85 + qualitativeScore × 0.15`
+- No qualitative-only fail
+- Display `criticalFlags[]` as warnings regardless of grade
 
-## Phase 6: 사용자 요약 출력
+## Phase 6: Output a User Summary
 
-최종 요약은 아래 항목을 포함한다:
-- 분석 대상 파일 수
-- 정량/정성 점수와 최종 점수
-- Hotspot 대상 파일 수
-- Critical Flags 요약
-- `clean-code-inspect-result.md` 저장 경로
+The final summary must include:
+- Number of analyzed files
+- Quantitative score, qualitative score, and final score
+- Number of hotspot files
+- Critical Flags summary
+- Saved path for `clean-code-inspect-result.md`
 
-## 리포트 필수 섹션
+## Required Report Sections
 
-`clean-code-inspect-result.md`에는 다음 섹션이 반드시 있어야 한다:
-1. `정성 오버레이 결과`
-2. `정량-정성 교차 시그널`
+`clean-code-inspect-result.md` must contain these sections:
+1. `Qualitative Overlay Results`
+2. `Quantitative-Qualitative Cross Signals`
 3. `Critical Flags`

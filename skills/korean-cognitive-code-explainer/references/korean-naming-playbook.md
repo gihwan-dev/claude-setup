@@ -1,41 +1,41 @@
 # Korean Naming Playbook
 
-## 목적
+## Purpose
 
-원문 식별자를 삭제하지 않고, 이해를 돕는 한국어 별칭을 제공한다.
+Provide Korean aliases that improve understanding without removing the original identifiers.
 
-## 별칭 작성 규칙
+## Alias Writing Rules
 
-- 원문을 항상 함께 표기한다. 예: `calculateAdjustedPrice`(보정가격 계산)
-- 기능 의미를 보존하고, 구현 방식은 이름에 넣지 않는다.
-- 약어는 가능하면 풀어서 해석한다. 예: `ctx` -> 실행 문맥
-- 동사+목적어 구조를 유지한다. 예: `fetchUserProfile` -> 사용자 프로필 조회
+- Always show the original identifier alongside the alias. Example: `calculateAdjustedPrice` plus a Korean alias meaning "adjusted price calculation".
+- Preserve the functional meaning and do not encode the implementation method into the alias.
+- Expand abbreviations when possible. Example: `ctx` should become a Korean alias meaning "execution context".
+- Keep a verb + object shape when the original name uses it. Example: `fetchUserProfile` should become a Korean alias meaning "fetch user profile".
 
-## 권장 번역 패턴
+## Recommended Translation Patterns
 
-| 패턴 | 예시 원문 | 권장 별칭 |
+| Pattern | Example Original | Recommended Korean Alias Meaning |
 | --- | --- | --- |
-| `get*` | `getSession` | 세션 조회 |
-| `fetch*` | `fetchOrders` | 주문 목록 가져오기 |
-| `load*` | `loadConfig` | 설정 불러오기 |
-| `build*` | `buildPayload` | 페이로드 구성 |
-| `create*` | `createInvoice` | 인보이스 생성 |
-| `update*` | `updateProfile` | 프로필 갱신 |
-| `delete*` | `deleteComment` | 댓글 삭제 |
-| `validate*` | `validateInput` | 입력값 검증 |
-| `handle*` | `handleSubmit` | 제출 처리 |
-| `is*`/`has*` | `isExpired` | 만료 여부 |
+| `get*` | `getSession` | session lookup |
+| `fetch*` | `fetchOrders` | fetch order list |
+| `load*` | `loadConfig` | load configuration |
+| `build*` | `buildPayload` | build payload |
+| `create*` | `createInvoice` | create invoice |
+| `update*` | `updateProfile` | update profile |
+| `delete*` | `deleteComment` | delete comment |
+| `validate*` | `validateInput` | validate input |
+| `handle*` | `handleSubmit` | handle submission |
+| `is*`/`has*` | `isExpired` | whether it is expired |
 
-## 피해야 할 번역
+## Translations To Avoid
 
-- 의미가 넓은 단어만 단독 사용. 예: `processData` -> 데이터 처리(맥락 없음)
-- 구현 세부 포함. 예: `sortByQuickSort` -> 퀵소트로 정렬
-- 비속어/팀 내부 은어 사용
+- Do not use a broad generic word alone. Example: an alias meaning only "process data" gives no context.
+- Do not encode implementation detail. Example: an alias meaning "sort with quicksort" is too specific.
+- Do not use slang or team-internal jargon.
 
-## 설명용 표 템플릿
+## Explanation Table Template
 
 ```md
-| 원문 | 한국어 별칭 | 역할 | 비고 |
+| Original | Korean Alias | Role | Notes |
 | --- | --- | --- | --- |
-| `calculateFee` | 수수료 계산 | 주문 수수료 산출 | 세율 정책 의존 |
+| `calculateFee` | [natural Korean alias meaning fee calculation] | computes order fees | depends on tax policy |
 ```

@@ -1,6 +1,6 @@
 id = "explorer"
 role = "explorer"
-description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
+description = "Read-only evidence collector focused on discovery, ownership tracing, and repository context."
 source = "codex-builtin"
 
 [projection]

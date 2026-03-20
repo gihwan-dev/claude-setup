@@ -6,6 +6,7 @@
 
 | 작업 | 수정 위치 | 직접 수정 금지 |
 |------|-----------|----------------|
+| workflow/policy 수정 | `policy/workflow.toml`, `docs/agent-profile-architecture.md` | generated 파일 직접 수정 |
 | agent 수정 | `agent-registry/<agent-id>/agent.toml`, `agent-registry/<agent-id>/instructions.md` | `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml` |
 | skill 수정 | `skills/<skill-name>/...` | `skills/INDEX.md`, `skills/manifest.json`, 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
@@ -13,12 +14,20 @@
 
 ## Runbook
 
+### workflow/policy 수정
+
+1. `policy/workflow.toml` 또는 `docs/agent-profile-architecture.md`를 수정한다.
+2. policy 또는 agent와 연결된 검증을 갱신한다.
+3. `python3 scripts/validate_workflow_contracts.py`
+4. `python3 -m unittest discover -s tests -p 'test_*.py'`
+
 ### agent 수정
 
 1. `agent-registry/<agent-id>/agent.toml`을 수정한다.
 2. `agent-registry/<agent-id>/instructions.md`를 수정한다.
-3. `python3 scripts/sync_agents.py`
-4. `python3 scripts/sync_agents.py --check`
+3. agent-specific `references/`가 있으면 필요한 경우 함께 수정한다.
+4. `python3 scripts/sync_agents.py`
+5. `python3 scripts/sync_agents.py --check`
 
 ### skill 수정
 
@@ -80,4 +89,4 @@ hooks가 활성화되어 있으면 수동 설치는 보통 불필요하다.
 1. 어떤 파일이 source of truth인지 먼저 확인한다.
 2. generated 파일은 재생성으로 맞춘다.
 3. 설치 문제는 `--dry-run`으로 먼저 확인한다.
-4. 그래도 모호하면 [README.md](./README.md), 관련 `skills/`, `agent-registry/`를 다시 읽는다.
+4. agent profile 구조가 모호하면 `docs/agent-profile-architecture.md`, `policy/workflow.toml`, 관련 `skills/`, `agent-registry/`를 다시 읽는다.

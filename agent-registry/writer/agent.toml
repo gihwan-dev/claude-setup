@@ -1,6 +1,6 @@
 id = "writer"
 role = "writer"
-description = "Delegated code writer for bounded file-scoped implementation slices. Use only when main-thread delegates explicit write scope with target_path constraints."
+description = "Delegated code writer focused on bounded implementation slices and readable, declarative code."
 source = "repo-agent"
 
 [projection]

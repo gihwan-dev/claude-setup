@@ -1,6 +1,6 @@
 # Agent Prompts
 
-`spawn_agents_on_csv`의 `instruction` 파라미터에 전달할 executor/verifier prompt 골격.
+Executor and verifier prompt skeletons to pass into the `instruction` parameter of `spawn_agents_on_csv`.
 
 ## Executor Prompt (Phase 2)
 
@@ -90,31 +90,31 @@ You are a code quality verifier. Your task is to run a specific check on a gener
 1. Figma URL: {figma_selection_url}
 2. Read shared context from `{shared_context_ref}`
 3. Create a temporary Storybook story for the component
-4. Capture implementation screenshot using component-screenshot skill's script
-5. Capture Figma screenshot using design-check skill's script
-6. Compare screenshots using design-check skill's compare script
+4. Capture implementation screenshot using the component-screenshot script
+5. Capture the Figma screenshot using the design-check script
+6. Compare screenshots using the design-check compare script
 7. Report: pass=true if diff ratio < 5%, findings=visual differences, artifact_paths=screenshot paths
 
 ### If check_type = "viewport"
 1. Viewport width: {viewport_width}
 2. Create a temporary story with the specified viewport width
-3. Capture screenshot at that width
-4. Verify layout adapts correctly (no overflow, proper stacking)
-5. Report: pass=true if layout is correct, findings=layout issues
+3. Capture a screenshot at that width
+4. Verify that the layout adapts correctly with no overflow and proper stacking
+5. Report: pass=true if the layout is correct, findings=layout issues
 
 ### If check_type = "accessibility"
 1. Check heading hierarchy (h1 > h2 > h3...)
-2. Check image alt texts
+2. Check image alt text
 3. Check form labels
 4. Check ARIA landmarks (nav, main, aside)
 5. Check focus order (tabindex usage)
-6. Report: pass=true if no critical a11y issues, severity based on impact
+6. Report: pass=true if no critical accessibility issues, severity based on impact
 
 ## Severity Scale
 
-- `critical`: Blocks user interaction or causes runtime error
+- `critical`: Blocks user interaction or causes a runtime error
 - `major`: Significant visual deviation or functionality gap
-- `minor`: Style inconsistency or minor improvement opportunity
+- `minor`: Style inconsistency or a minor improvement opportunity
 - `none`: Check passed
 
 ## Report
@@ -128,16 +128,16 @@ Call `report_agent_job_result` exactly once:
 
 ## Prompt Customization
 
-메인 에이전트는 위 골격을 기반으로 프로젝트별 컨텍스트를 추가할 수 있다:
+The main agent can extend these skeletons with project-specific context:
 
-- `shared_context.json`의 `design_system.primary_library`가 특정 라이브러리인 경우 해당 라이브러리의 컴포넌트 매핑 규칙을 executor prompt에 인라인 추가
-- `code_rules.styling_approach`에 따라 스타일링 관련 instruction 조정
-- 토큰 매핑 규칙은 `skills/figma-to-code/references/token-mapping.md`에서 읽어 executor prompt에 압축 반영
+- If `design_system.primary_library` in `shared_context.json` points to a specific library, inline that library's component mapping rules into the executor prompt
+- Adjust styling instructions based on `code_rules.styling_approach`
+- Read `skills/figma-to-code/references/token-mapping.md` and compress the token mapping rules into the executor prompt
 
 ## Cross-Reference
 
-- 토큰 매핑 상세: `skills/figma-to-code/references/token-mapping.md`
-- 에러 처리 패턴: `skills/figma-to-code/references/error-handling.md`
-- Screenshot 캡처: `skills/component-screenshot/scripts/capture-screenshot.ts`
-- Figma screenshot: `skills/design-check/scripts/capture-figma-screenshot.ts`
-- Screenshot 비교: `skills/design-check/scripts/compare-screenshots.ts`
+- Token mapping details: `skills/figma-to-code/references/token-mapping.md`
+- Error handling patterns: `skills/figma-to-code/references/error-handling.md`
+- Screenshot capture: `skills/component-screenshot/scripts/capture-screenshot.ts`
+- Figma screenshot capture: `skills/design-check/scripts/capture-figma-screenshot.ts`
+- Screenshot comparison: `skills/design-check/scripts/compare-screenshots.ts`

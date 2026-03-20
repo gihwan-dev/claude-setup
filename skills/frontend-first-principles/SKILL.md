@@ -9,7 +9,7 @@ description: >
 
 # Frontend First Principles
 
-기능 구현 전에 프론트엔드 결정을 검증한다. 요구를 분해하고 가정을 걷어내며, 가장 단순하게 실현 가능한 해법을 고른다.
+Validate frontend decisions before implementation. Decompose the requirement, strip away assumptions, and choose the simplest workable solution.
 
 ## Language Rule
 
@@ -62,6 +62,6 @@ Use the exact section order below:
 
 ## Example Invocations
 
-- `$frontend-first-principles 결제 단계 UI 플로우를 바꾸려는데 지금 구조가 맞는지 먼저 검토해줘.`
-- `$frontend-first-principles 이 React 상태관리 접근이 과한지, 더 단순한 대안이 있는지 트레이드오프 비교해줘.`
-- `$frontend-first-principles 요구사항이 모호한데 구현 전에 하드 제약과 가정을 분리해서 실행 계획까지 정리해줘.`
+- `$frontend-first-principles I want to change the checkout-step UI flow. Review whether the current structure is right before we implement anything.`
+- `$frontend-first-principles Compare the tradeoffs of this React state-management approach and tell me whether it is overengineered or if there is a simpler alternative.`
+- `$frontend-first-principles The requirements are vague. Separate hard constraints from assumptions and turn that into an implementation plan before coding.`

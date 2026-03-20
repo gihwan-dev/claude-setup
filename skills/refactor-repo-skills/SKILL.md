@@ -9,41 +9,41 @@ description: >
 
 # Refactor Repo Skills
 
-`skills/`를 source-of-truth 기준으로 압축 리팩토링한다. 기본 동작은 전체 감사 후 상위 1~3개 후보만 수정하는 배치 실행이다.
+Refactor `skills/` against the source-of-truth structure. The default mode is a batch run that audits everything, then edits only the top one to three candidates.
 
 ## Hard Rules
 
-- 항상 `python3 ${SKILL_DIR}/scripts/audit_skills.py`로 감사부터 시작한다.
-- 사용자가 `skill name` 또는 `path`를 주면 해당 대상만 수정한다.
-- 대상이 없으면 감사 결과 상위 1~3개만 수정한다.
-- generated 파일(`skills/INDEX.md`, `skills/manifest.json`)은 직접 수정하지 않고 sync로만 맞춘다.
-- v1 범위는 `skills/`와 generated sync뿐이다. `agent-registry`와 non-skill repo infrastructure는 수정하지 않는다.
-- `SKILL.md` 본문에는 workflow, selection logic, guardrail만 남긴다.
-- 변형, 상세 기준, 예시, 장문 rationale은 `references/`로 이동한다.
-- 불필요한 fallback, 중복 checklist, 반복 explanation, 장문 non-goal은 제거한다.
-- extraneous docs(`README.md`, `CHANGELOG.md`, `INSTALLATION_GUIDE.md` 등)는 만들지 않는다.
-- 한 배치에서 source-of-truth 수정 대상은 최대 3개 skill이다.
+- Always start by auditing with `python3 ${SKILL_DIR}/scripts/audit_skills.py`.
+- If the user provides a `skill name` or `path`, edit only that target.
+- If no target is given, edit only the top one to three candidates from the audit.
+- Do not edit generated files such as `skills/INDEX.md` or `skills/manifest.json` directly. Keep them in sync only through sync commands.
+- In v1, the scope is limited to `skills/` plus generated sync. Do not edit `agent-registry` or non-skill repo infrastructure.
+- Keep only workflow, selection logic, and guardrails in `SKILL.md`.
+- Move variants, detailed criteria, examples, and long-form rationale into `references/`.
+- Remove unnecessary fallback explanations, duplicate checklists, repeated explanations, and long non-goal sections.
+- Do not create extraneous docs such as `README.md`, `CHANGELOG.md`, or `INSTALLATION_GUIDE.md`.
+- In a single batch, edit at most three source-of-truth skills.
 
 ## Required References
 
-- rewrite 기준이 필요할 때 `${SKILL_DIR}/references/rewrite-rules.md`를 읽는다.
+- Read `${SKILL_DIR}/references/rewrite-rules.md` when you need the rewrite criteria.
 
 ## Workflow
 
-1. `audit_skills.py`로 전체 또는 지정 scope를 스캔한다.
-2. score와 이유를 보고 상위 1~3개 후보를 고른다.
-3. 대상 skill의 `SKILL.md`, 필요 시 `references/`, `agents/openai.yaml`을 읽고 source-of-truth 구조를 판단한다.
-4. frontmatter description을 trigger 중심으로 압축하고, 본문은 workflow와 guardrail만 남긴다.
-5. 세부 규칙이 필요하면 같은 skill의 `references/`로 분리한다.
-6. `agents/openai.yaml`이 없고 explicit invocation이 유용하면 추가한다.
-7. `python3 scripts/sync_skills_index.py`와 `python3 scripts/sync_skills_index.py --check`로 generated output을 맞춘다.
-8. 필요 시 `python3 scripts/install_assets.py --dry-run --target all`과 관련 테스트를 실행하고 결과와 잔여 리스크를 요약한다.
+1. Run `audit_skills.py` over the full scope or the requested target.
+2. Review the scores and reasons, then choose the top one to three candidates.
+3. Read the target skill's `SKILL.md` and, when needed, its `references/` and `agents/openai.yaml` to understand the source-of-truth structure.
+4. Compress the frontmatter description around triggers, and keep only workflow and guardrails in the body.
+5. If more detailed rules are needed, split them into the same skill's `references/`.
+6. If `agents/openai.yaml` is missing and explicit invocation would help, add it.
+7. Run `python3 scripts/sync_skills_index.py` and `python3 scripts/sync_skills_index.py --check` to sync generated outputs.
+8. When needed, run `python3 scripts/install_assets.py --dry-run --target all` and any relevant tests, then summarize outcomes and residual risks.
 
 ## Targeting
 
-- 기본 입력 없음: 전체 감사 + 상위 1~3개 수정.
-- `skill name` 또는 `path`가 주어지면 해당 대상만 수정.
-- 후보가 이미 짧고 구조가 명확하면 수정하지 않고 감사 결과만 보고한다.
+- No explicit input: audit everything, then edit the top one to three candidates.
+- If a `skill name` or `path` is given: edit only that target.
+- If a candidate is already short and structurally clear, leave it unchanged and report only the audit result.
 
 ## Validation
 

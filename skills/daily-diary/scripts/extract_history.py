@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""AI 에이전트 history.jsonl에서 특정 날짜의 활동을 추출하고,
-각 프로젝트 디렉토리의 git log를 수집하여 구조화된 텍스트로 출력한다."""
+"""Extract activity for a target date from AI agent history.jsonl and collect
+git logs from each project directory, then print the result as structured text."""
 
 import argparse
 import json
@@ -30,7 +30,7 @@ def parse_args():
 
 
 def parse_history(target_date: str) -> dict[str, list[dict]]:
-    """history.jsonl을 스트리밍 파싱하여 날짜별 프로젝트별 요청을 그룹화한다."""
+    """Stream-parse history.jsonl and group requests by date and project."""
     projects = defaultdict(list)
 
     if not HISTORY_FILE.exists():
@@ -54,13 +54,13 @@ def parse_history(target_date: str) -> dict[str, list[dict]]:
             if not display or not timestamp_ms or not project:
                 continue
 
-            # 필터: /clear, /compact, 10자 미만
+            # Filters: /clear, /compact, shorter than the minimum display length
             if any(display.strip().startswith(p) for p in SKIP_PREFIXES):
                 continue
             if len(display.strip()) < MIN_DISPLAY_LENGTH:
                 continue
 
-            # 타임스탬프 → KST 날짜 변환
+            # Convert the timestamp into a KST date
             dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=KST)
             if dt.strftime("%Y-%m-%d") != target_date:
                 continue
@@ -74,7 +74,7 @@ def parse_history(target_date: str) -> dict[str, list[dict]]:
                 }
             )
 
-    # 시간순 정렬
+    # Sort chronologically
     for name in projects:
         projects[name].sort(key=lambda x: x["time"])
 
@@ -82,7 +82,7 @@ def parse_history(target_date: str) -> dict[str, list[dict]]:
 
 
 def get_git_log(project_path: str, target_date: str) -> list[str]:
-    """프로젝트 디렉토리에서 해당 날짜의 git commit 목록을 가져온다."""
+    """Return the git commits for the target date from a project directory."""
     if not os.path.isdir(project_path):
         return []
 
@@ -110,9 +110,9 @@ def get_git_log(project_path: str, target_date: str) -> list[str]:
 
 
 def format_output(projects: dict[str, list[dict]], target_date: str) -> str:
-    """프로젝트별 활동을 구조화된 텍스트로 포매팅한다."""
+    """Format project activity into structured text."""
     if not projects:
-        return "활동 없음"
+        return "No activity"
 
     sections = []
 
@@ -122,13 +122,13 @@ def format_output(projects: dict[str, list[dict]], target_date: str) -> str:
 
         lines = [f"## {project_name} ({time_range})"]
 
-        # 사용자 요청
-        lines.append("### 사용자 요청")
+        # User requests
+        lines.append("### User Requests")
         display_entries = entries[:MAX_ITEMS_PER_PROJECT]
         for e in display_entries:
             lines.append(f"- {e['time']}: {e['display']}")
         if len(entries) > MAX_ITEMS_PER_PROJECT:
-            lines.append(f"- ... 외 {len(entries) - MAX_ITEMS_PER_PROJECT}건")
+            lines.append(f"- ... and {len(entries) - MAX_ITEMS_PER_PROJECT} more")
 
         # Git Commits
         commits = get_git_log(project_path, target_date)
@@ -137,7 +137,7 @@ def format_output(projects: dict[str, list[dict]], target_date: str) -> str:
             for c in commits[:MAX_ITEMS_PER_PROJECT]:
                 lines.append(f"- {c}")
             if len(commits) > MAX_ITEMS_PER_PROJECT:
-                lines.append(f"- ... 외 {len(commits) - MAX_ITEMS_PER_PROJECT}건")
+                lines.append(f"- ... and {len(commits) - MAX_ITEMS_PER_PROJECT} more")
 
         sections.append("\n".join(lines))
 
@@ -148,7 +148,7 @@ def main():
     args = parse_args()
     target_date = args.date
 
-    # 날짜 형식 검증
+    # Validate date format
     try:
         datetime.strptime(target_date, "%Y-%m-%d")
     except ValueError:

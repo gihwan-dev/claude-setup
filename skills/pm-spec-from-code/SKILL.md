@@ -1,65 +1,66 @@
 ---
 name: pm-spec-from-code
 description: >
-  Convert implemented code into PM-perspective spec documents focusing on user-facing behavior and rules.
-  코드로 구현된 기능을 기획자(PM) 시선의 간결한 스펙 문서로 변환한다. 사용자 관점 동작, 규칙, 제약, 예외, 비목표를 명확한 bullet로 정리하고 함수/변수/컴포넌트 내부 구현 등 기술 상세는 제외한다. "테이블 리사이즈 기능 스펙 문서 만들어줘", "코드 기준으로 기능 스펙 정리해줘", "기획 문서 형태로 요약해줘" 같은 요청에서 사용한다.
+  Convert implemented code into a PM-style spec focused on user-visible behavior and rules.
+  Use when the user wants a concise feature spec derived from code, with behaviors, rules, constraints,
+  exceptions, and non-goals captured in product language rather than implementation detail.
 ---
 
 # PM Spec from Code
 
 ## Goal
 
-- 코드 구현을 바탕으로 제품 동작 중심의 스펙 문서를 작성한다.
-- 장문 설명 대신 짧고 단정적인 규칙 문장으로 결과를 정리한다.
+- Produce a product-behavior spec based on the implemented code.
+- Prefer short, declarative rule sentences over long explanations.
 
 ## Output Format
 
-다음 형식을 유지해 마크다운으로 작성한다.
+Write the result in Markdown using this structure.
 
 ```md
-# <기능명> 스펙
+# <Feature Name> Spec
 
-## 목적
-- <기능이 해결하는 사용자 문제>
+## Purpose
+- <The user problem this feature solves>
 
-## 핵심 동작
-- <사용자 관점의 동작 1>
-- <사용자 관점의 동작 2>
+## Core Behavior
+- <User-visible behavior 1>
+- <User-visible behavior 2>
 
-## 상세 규칙
-- <조건 -> 결과 형태의 규칙>
-- <우선순위 또는 충돌 처리 규칙>
+## Detailed Rules
+- <A rule in condition -> outcome form>
+- <Priority or conflict-resolution rule>
 
-## 제약 및 예외
-- <최소/최대/불가 조건>
-- <경계 상황 처리>
+## Constraints And Exceptions
+- <Minimum / maximum / disallowed condition>
+- <Boundary-case handling>
 
-## 비목표
-- <이번 기능에서 다루지 않는 범위>
+## Non-goals
+- <Scope not covered by this feature>
 
-## 확인이 필요한 항목
-- <코드만으로 확정할 수 없는 정책 질문>
+## Open Questions
+- <Policy question that cannot be confirmed from code alone>
 ```
 
 ## Writing Rules
 
-- 한 bullet에는 하나의 규칙만 적는다.
-- 각 bullet은 한 문장으로 끝낸다.
-- "적절히", "유연하게", "가능한 한" 같은 모호한 표현을 쓰지 않는다.
-- 구현 상세를 쓰지 않는다: 함수명, 변수명, 파일 경로, 상태 관리 방식, 라이브러리 이름.
-- 코드 근거가 없는 내용은 추측으로 단정하지 않고 `확인이 필요한 항목`에 기록한다.
+- Put exactly one rule in each bullet.
+- End each bullet with a single sentence.
+- Avoid vague wording such as "appropriately," "flexibly," or "when possible."
+- Do not describe implementation details such as function names, variable names, file paths, state management choices, or library names.
+- If the code does not support a conclusion, do not guess. Record it under `Open Questions`.
 
 ## Workflow
 
-1. 기능 관련 코드를 읽고 사용자에게 보이는 동작을 추출한다.
-2. 동작을 조건과 결과가 드러나는 규칙 문장으로 재작성한다.
-3. 제약, 예외, 비목표를 분리해 섹션별로 배치한다.
-4. 문장을 짧게 다듬고 중복 규칙을 제거한다.
+1. Read the relevant code and extract user-visible behavior.
+2. Rewrite the behavior as rule sentences that make the condition and outcome explicit.
+3. Separate constraints, exceptions, and non-goals into their own sections.
+4. Tighten the wording and remove duplicate rules.
 
 ## Example Style
 
-요청: `테이블 리사이즈 기능 스펙 문서 만들어줘`
+Request: `Create a spec for the table resize feature`
 
-규칙 문장 예시:
-- 고정 사이즈가 아닌 칼럼들은 너비가 균등 분배 된다.
-- 리사이즈를 하면 우측 칼럼들의 너비가 줄어든다.
+Rule sentence examples:
+- Columns without a fixed size share the available width evenly.
+- When a column is resized, the columns to its right shrink to absorb the change.

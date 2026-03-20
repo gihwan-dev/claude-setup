@@ -1,108 +1,108 @@
 # Codex API Contract
 
-Figma Codex Pipeline에서 사용하는 Codex `spawn_agents_on_csv` / `report_agent_job_result` API 사용 규약.
+API usage rules for the Codex `spawn_agents_on_csv` and `report_agent_job_result` calls used by Figma Codex Pipeline.
 
 ## spawn_agents_on_csv
 
-### Phase 2: Execute (컴포넌트 코드 생성)
+### Phase 2: Execute (Generate Component Code)
 
 ```python
 spawn_agents_on_csv(
     csv_path="components.csv",
-    instruction=EXECUTOR_PROMPT,        # {column_name} 플레이스홀더 사용
+    instruction=EXECUTOR_PROMPT,        # Uses {column_name} placeholders
     id_column="row_id",
     output_schema={
-        "component_path": "string",     # 실제 생성된 파일 경로
-        "exports": "string",            # export된 심볼 (쉼표 구분)
-        "tokens_used": "string",        # 사용된 디자인 토큰 (쉼표 구분)
-        "dependencies": "string",       # import한 패키지/컴포넌트 (쉼표 구분)
-        "warnings": "string"            # 경고 사항
+        "component_path": "string",     # Actual generated file path
+        "exports": "string",            # Exported symbols, comma-separated
+        "tokens_used": "string",        # Design tokens used, comma-separated
+        "dependencies": "string",       # Imported packages or components, comma-separated
+        "warnings": "string"            # Warning messages
     },
     max_concurrency=6,
     max_runtime_seconds=300
 )
 ```
 
-### Phase 4: Verify (검증)
+### Phase 4: Verify
 
 ```python
 spawn_agents_on_csv(
     csv_path="verification.csv",
-    instruction=VERIFIER_PROMPT,        # {column_name} 플레이스홀더 사용
+    instruction=VERIFIER_PROMPT,        # Uses {column_name} placeholders
     id_column="row_id",
     output_schema={
-        "pass": "boolean",             # 검증 통과 여부
-        "severity": "string",          # "none" | "minor" | "major" | "critical"
-        "findings": "string",          # 발견 사항 설명
-        "artifact_paths": "string"     # 생성된 artifact 경로 (쉼표 구분)
+        "pass": "boolean",              # Whether the check passed
+        "severity": "string",           # "none" | "minor" | "major" | "critical"
+        "findings": "string",           # Description of findings
+        "artifact_paths": "string"      # Generated artifact paths, comma-separated
     },
     max_concurrency=6,
     max_runtime_seconds=180
 )
 ```
 
-## Instruction Placeholder 규칙
+## Instruction Placeholder Rules
 
-`instruction` 파라미터 내에서 `{column_name}` 형식으로 CSV 컬럼 값을 참조한다.
+Within the `instruction` parameter, `{column_name}` references a CSV column value.
 
-- `{row_id}` -> 해당 행의 `row_id` 값으로 치환
-- `{component_name}` -> 해당 행의 `component_name` 값으로 치환
-- CSV에 없는 컬럼을 참조하면 빈 문자열로 치환된다
-- 플레이스홀더는 instruction 텍스트 내 어디서든 사용 가능
+- `{row_id}` -> replaced with that row's `row_id` value
+- `{component_name}` -> replaced with that row's `component_name` value
+- Referencing a column that does not exist in the CSV resolves to an empty string
+- Placeholders may appear anywhere inside the instruction text
 
 ## report_agent_job_result
 
-각 워커는 작업 완료 시 정확히 1회 호출한다.
+Each worker calls this exactly once when the job is complete.
 
 ```python
 report_agent_job_result(
     row_id="{row_id}",
     status="success" | "failed",
     output={
-        # output_schema에 정의된 필드들
+        # Fields defined in output_schema
     }
 )
 ```
 
-### 규칙
+### Rules
 
-- 워커당 정확히 1회 호출. 중복 호출 금지.
-- `status="failed"`일 때도 가능한 한 `output`에 에러 정보를 포함한다.
-- 호출하지 않고 워커가 종료되면 `max_runtime_seconds` 후 timeout으로 처리된다.
+- Call exactly once per worker. No duplicate calls.
+- Even when `status="failed"`, include as much error information as possible in `output`.
+- If a worker exits without calling this, it is treated as a timeout after `max_runtime_seconds`.
 
-## 실패 복구 전략
+## Failure Recovery Strategy
 
-### Phase 2 (Execute) 실패 복구
+### Phase 2 (Execute) Failure Recovery
 
-1. `spawn_agents_on_csv` 완료 후 output CSV에서 `status=failed` 행 수집
-2. 실패 행에 에러 컨텍스트를 `acceptance_criteria`에 추가 (`[RETRY] 이전 에러: {error}. 다른 접근법 시도`)
-3. 실패 행만 포함한 `components_retry.csv` 생성
-4. 동일 `spawn_agents_on_csv` 호출로 1회 재시도
-5. 2회 실패 시 해당 행은 `skipped` 처리
+1. After `spawn_agents_on_csv` completes, collect rows with `status=failed` from the output CSV
+2. Append error context to `acceptance_criteria` for the failed rows using a note like `[RETRY] Previous error: {error}. Try a different approach`
+3. Generate `components_retry.csv` with only the failed rows
+4. Retry once with the same `spawn_agents_on_csv` call
+5. If a row fails twice, mark it as `skipped`
 
-### Phase 4 (Verify) 실패 복구
+### Phase 4 (Verify) Failure Recovery
 
-1. Critical 발견이 있으면 Phase 3에서 수정
-2. 수정 후 해당 컴포넌트만 재검증 CSV 생성
-3. 최대 2회 반복
+1. If a Critical issue is found, fix it in Phase 3
+2. Generate a verification CSV containing only the affected component
+3. Repeat up to 2 rounds
 
-### 중단 조건
+### Stop Conditions
 
-- Phase 2 전체 성공률 50% 미만 -> 파이프라인 중단, 사용자에게 분해 재검토 요청
-- Phase 4 Critical 발견이 3회 반복 후에도 해소 안 됨 -> 사용자에게 수동 개입 요청
+- If the overall Phase 2 success rate is below 50%, stop the pipeline and ask the user to revisit decomposition
+- If Phase 4 Critical issues remain unresolved after 3 rounds, ask the user for manual intervention
 
-## Concurrency 가이드라인
+## Concurrency Guidelines
 
-| 파라미터 | Phase 2 | Phase 4 | 근거 |
+| Parameter | Phase 2 | Phase 4 | Rationale |
 |----------|---------|---------|------|
-| `max_concurrency` | 6 | 6 | Codex 기본 제한 내 |
-| `max_runtime_seconds` | 300 | 180 | 코드 생성은 검증보다 오래 걸림 |
+| `max_concurrency` | 6 | 6 | Stays within the Codex default limits |
+| `max_runtime_seconds` | 300 | 180 | Code generation takes longer than verification |
 
-컴포넌트 수가 6개 이하이면 모두 동시 실행. 초과 시 큐에서 순차 dispatch.
+If there are 6 or fewer components, run them all concurrently. If there are more, dispatch them through the queue.
 
-## 독립 산출물 원칙
+## Independent Output Principle
 
-- 각 워커는 자신의 `target_path`에만 파일을 생성/수정한다.
-- 워커 간 파일 참조, import, 상호 의존 금지.
-- 공유 컨텍스트는 오직 `shared_context.json` (읽기 전용)을 통해서만 접근.
-- 워커가 다른 워커의 output을 참조해야 하는 통합 작업은 Phase 3에서 메인 에이전트가 수행.
+- Each worker creates or modifies files only at its own `target_path`
+- No cross-worker file references, imports, or direct dependencies
+- Shared context is accessed only through `shared_context.json`, which is read-only
+- Integration work that needs outputs from multiple workers is handled by the main agent in Phase 3

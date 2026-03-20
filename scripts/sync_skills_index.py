@@ -116,7 +116,7 @@ def _render_index(entries: list[SkillEntry]) -> str:
         "",
         "# Skills Index",
         "",
-        "Canonical skill source는 `skills/`다. `.agents/skills`는 설치 호환을 위한 legacy overlay이며 이 index에는 포함하지 않는다.",
+        "The canonical skill source is `skills/`. `.agents/skills` is a legacy overlay for install compatibility and is not included in this index.",
         "",
         "## Available Skills",
         "",

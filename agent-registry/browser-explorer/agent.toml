@@ -1,6 +1,6 @@
 id = "browser-explorer"
 role = "explorer"
-description = "브라우저 탐색 에이전트. local web/Electron 앱의 재현, 상호작용 QA, 시각 증거 수집을 수행한다."
+description = "Browser exploration agent focused on reproduction, interaction QA, and visual evidence collection."
 source = "repo-agent"
 
 [projection]

@@ -2,67 +2,65 @@
 name: prompt-builder
 description: >
   Transform rough task requests into high-quality structured prompts for AI agents.
-  사용자의 거친 작업 요청을 AI 에이전트 실행용 고품질 프롬프트로 변환한다. 작업 목적, 완료 조건,
-  필수 컨텍스트, 비목표, 제약, 리스크/예외 케이스를 질의응답으로 정리해 최종 프롬프트를 작성할 때 사용한다.
-  "프롬프트 만들어줘", "요청 정리해줘", "컨텍스트 포함해서 프롬프트 작성", "예외 케이스까지 프롬프트 구성"
-  같은 요청에서 사용한다.
+  Use when the user wants a request clarified into an execution-ready prompt with goals, completion
+  criteria, required context, non-goals, constraints, and edge cases clearly organized.
 ---
 
 # Prompt Builder
 
-불완전한 사용자 요청을 바로 실행 가능한 완성형 프롬프트로 구조화한다.
+Turn an incomplete user request into a ready-to-run prompt.
 
-## 목표
+## Goal
 
-- 목적과 완료 조건을 명확히 적어 모호성을 줄인다.
-- AI 에이전트가 읽어야 할 컨텍스트만 지정해 불필요한 파일 탐색을 줄인다.
-- 실패 가능성이 높은 예외 케이스와 대응 규칙을 프롬프트에 포함한다.
+- Make the goal and completion criteria explicit so the task is less ambiguous.
+- Limit context to only what the agent actually needs to read.
+- Include high-risk edge cases and response rules directly in the prompt.
 
-## 실행 절차
+## Workflow
 
-### 1) 사용자 요청을 문제 정의로 압축한다
+### 1) Compress the request into a problem statement
 
-- 사용자 요청을 1~2문장으로 재정의한다.
-- 아래 항목 중 비어 있는 부분을 체크한다.
-  - 결과물 타입
-  - 완료 기준
-  - 제약(시간/성능/정책/호환성)
-  - 입력 데이터/소스 위치
+- Restate the user's request in one or two sentences.
+- Check which of these fields are still missing:
+  - deliverable type
+  - completion criteria
+  - constraints such as time, performance, policy, or compatibility
+  - input data or source location
 
-### 2) 질의응답을 두 라운드로 수행한다
+### 2) Run a two-round Q&A
 
-- 질문을 한 번에 몰아서 하지 말고, 라운드당 핵심 질문만 묻는다.
-- 기본적으로 라운드당 최대 3개만 질문한다.
-- 질문 후보는 `${SKILL_DIR}/references/question-flow.md`를 사용한다.
+- Do not ask everything at once. Ask only the most important questions each round.
+- Ask at most three questions per round by default.
+- Use `${SKILL_DIR}/references/question-flow.md` for question candidates.
 
-라운드 A (핵심 정렬):
+Round A (goal alignment):
 
-- 무엇을 최종 산출물로 원하나?
-- 성공을 어떻게 판단하나?
-- 반드시 포함/제외해야 할 범위는 무엇인가?
+- What is the exact final deliverable?
+- How should success be judged?
+- What must be included or excluded?
 
-라운드 B (리스크/예외):
+Round B (risk and exceptions):
 
-- 깨지기 쉬운 조건과 경계값은 무엇인가?
-- 실패 시 허용 가능한 대안/폴백은 무엇인가?
-- 기존 시스템과의 충돌 가능성은 무엇인가?
+- Which conditions or edge cases are most likely to break?
+- What fallback or partial-completion outcome is acceptable if something fails?
+- What compatibility risks exist with the current system?
 
-### 3) 컨텍스트 범위를 최소화한다
+### 3) Minimize the context scope
 
-- 읽을 컨텍스트를 우선순위로 제한한다.
-- 읽지 말아야 할 경로/파일도 명시한다.
-- 경로가 불명확하면 추측하지 말고 짧게 재질문한다.
+- Prioritize the smallest useful reading list.
+- Explicitly list paths or files that should not be read.
+- If a path is unclear, do not guess. Ask one short follow-up question.
 
-컨텍스트 지시 형식:
+Use this context instruction format:
 
-- `Must Read`: 작업에 필수인 파일/문서만 명시
-- `Optional Read`: 필요 시에만 읽을 후보
-- `Do Not Read`: 제외할 경로/대용량 파일/무관 문서
+- `Must Read`: only files or documents that are required
+- `Optional Read`: candidates to read only if needed
+- `Do Not Read`: excluded paths, large files, or unrelated documents
 
-### 4) 최종 프롬프트를 조립한다
+### 4) Assemble the final prompt
 
-- 템플릿은 `${SKILL_DIR}/references/prompt-template.md`를 사용한다.
-- 섹션 순서를 유지한다.
+- Use `${SKILL_DIR}/references/prompt-template.md` as the template.
+- Keep the section order:
   - Objective
   - Deliverables
   - Context Plan
@@ -71,26 +69,26 @@ description: >
   - Validation Checklist
   - Output Format
 
-### 5) 완성도 게이트를 통과시킨다
+### 5) Pass the quality gate
 
-최종 출력 전에 아래를 검사한다.
+Before returning the final output, check these items:
 
-- "잘", "적당히", "가능하면" 같은 모호어를 제거했는가?
-- 완료 기준이 측정 가능하게 작성되었는가?
-- 비목표(Non-goals)가 명시되었는가?
-- 예외 상황 최소 3개와 대응 규칙이 포함되었는가?
-- 누락 정보는 `Assumptions`로 분리되었는가?
+- Did you remove vague words such as "well," "appropriately," or "if possible"?
+- Are the completion criteria measurable?
+- Are non-goals stated explicitly?
+- Did you include at least three edge cases and response rules?
+- Is missing information separated under `Assumptions`?
 
-## 출력 규칙
+## Output Rules
 
-- 항상 두 가지 버전으로 제공한다.
-  - `Production Prompt`: 바로 실행 가능한 완성형
-  - `Quick Prompt`: 짧은 요약형
-- 답변 마지막에 `Open Questions`를 최대 3개만 남긴다.
-- 사용자가 추가 답변을 주면 기존 프롬프트를 패치 방식으로 갱신한다.
-- 프롬프트 실행은 다른 워크트리에서 진행될 수 있으므로, 모든 경로는 프로젝트 루트 기반의 상대 경로로 명시한다.
+- Always provide two versions:
+  - `Production Prompt`: a complete version that is ready to run
+  - `Quick Prompt`: a short summary version
+- Leave at most three items under `Open Questions` at the end.
+- If the user provides more answers, update the existing prompt incrementally instead of rebuilding it from scratch.
+- Because the prompt may be executed in another worktree, write all paths as project-root-relative paths.
 
-## 참조 파일
+## References
 
-- 질문 카탈로그: `${SKILL_DIR}/references/question-flow.md`
-- 프롬프트 템플릿: `${SKILL_DIR}/references/prompt-template.md`
+- question catalog: `${SKILL_DIR}/references/question-flow.md`
+- prompt template: `${SKILL_DIR}/references/prompt-template.md`

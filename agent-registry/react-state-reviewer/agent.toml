@@ -1,6 +1,6 @@
 id = "react-state-reviewer"
 role = "reviewer"
-description = "Read-only reviewer for React state management anti-patterns, unnecessary useEffect+setState, and type-safe state modeling."
+description = "Read-only reviewer focused on React state modeling, derived state, and impossible state reduction."
 source = "repo-agent"
 
 [projection]

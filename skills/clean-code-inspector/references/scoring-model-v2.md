@@ -1,42 +1,42 @@
 # Clean Code Inspector Scoring Model v2.1
 
-## 1) 목적
+## 1) Purpose
 
-이 문서는 clean-code-inspector v2.1 점수 계산 규칙을 정의한다.
-핵심 원칙은 **AST/정적분석 기반 정량 측정** 위에 **근거 있는 정성 오버레이**를 얹는 것이다.
+This document defines the scoring rules for clean-code-inspector v2.1.
+The core principle is to layer an **evidence-based qualitative overlay** on top of **AST/static-analysis quantitative measurement**.
 
-## 2) 최종 점수 공식
+## 2) Final Score Formula
 
-- 정량 점수(0~100): `Q`
-- 정성 점수(0~100): `S`
-- 최종 점수(0~100): `F`
+- Quantitative score (0-100): `Q`
+- Qualitative score (0-100): `S`
+- Final score (0-100): `F`
 
 `F = Q * 0.85 + S * 0.15`
 
-정성 데이터가 모두 `N/A`인 경우:
+When all qualitative data is `N/A`:
 - `F = Q`
-- 왜 `N/A`인지 `unavailableMetrics`에 사유를 남긴다.
+- Record the reason for `N/A` in `unavailableMetrics`
 
-## 3) 정량 축 정의 및 가중치
+## 3) Quantitative Axes and Weights
 
-정량 축은 아래 4개로 고정한다.
+The quantitative model fixes these four axes:
 
 1. Complexity (35)
 2. Type Safety (30)
 3. Test Reliability (20)
 4. Change Risk (15)
 
-각 축 계산에 필요한 데이터가 부족하면 해당 축은 `N/A`로 표시한다.
-축별 재정규화는 하지 않는다.
+If there is not enough data for an axis, mark that axis as `N/A`.
+Do not renormalize the weights per axis.
 
-## 4) 정성 오버레이 범위
+## 4) Qualitative Overlay Scope
 
-- 정성 평가는 정량 기준 `Hotspot 상위 20%` 파일에만 적용한다.
-- 파일 수가 적어도 `최소 1개`는 평가 대상에 포함한다.
+- Apply qualitative evaluation only to files in the top 20% of quantitative hotspots
+- Always include at least one file, even when the total file count is small
 
-## 5) 정성 항목 및 점수 변환
+## 5) Qualitative Criteria and Score Conversion
 
-정성 항목은 아래 5개로 고정한다.
+The qualitative overlay fixes these five criteria:
 
 1. Intent Clarity
 2. Local Reasoning
@@ -44,48 +44,47 @@
 4. Boundary Discipline
 5. Test Oracle Quality
 
-각 항목은 `0~4점`으로 평가하고, 항목 점수 평균을 `avgC`라고 할 때:
+Each criterion is scored from `0~4`. If the average criterion score is `avgC`:
 
 `S = avgC * 25`
 
-## 6) 근거 부족 처리
+## 6) Handling Insufficient Evidence
 
-각 항목은 코드 근거(파일+라인) 2개 이상이 있어야 점수로 인정한다.
-- 근거 2개 미만: 항목 점수 `N/A`
-- `N/A` 항목은 평균 계산에서 제외
+Each criterion needs at least two code evidence points (file + line) to count.
+- Fewer than two evidence points: criterion score is `N/A`
+- Exclude `N/A` criteria from the average
 
-## 7) 정성 단독 Fail 금지
+## 7) No Qualitative-Only Fail
 
-정량 점수가 Fail이 아닌데 정성 반영으로 최종이 Fail이 되면 안 된다.
-- Fail 기준은 `F < 50` (grade F)
-- `Q >= 50`이고 `F < 50`이면 `F`를 50으로 보정하고 로그를 남긴다.
+If the quantitative score is not a fail, the qualitative overlay must not drag the final result into fail.
+- Fail threshold: `F < 50` (grade F)
+- If `Q >= 50` and `F < 50`, clamp `F` to 50 and leave a log entry
 
-## 8) Critical Flag 규칙
+## 8) Critical Flag Rules
 
-등급과 무관하게 아래 항목은 강제 경고한다.
+Emit forced warnings for the following items regardless of grade:
 
 - `boundary_discipline_violation`
 - `missing_failure_semantics`
 
-Critical Flag는 반드시 `criticalFlags[]`에 기록하고,
-`clean-code-inspect-result.md`의 `Critical Flags` 섹션에 출력한다.
+Always record Critical Flags in `criticalFlags[]` and print them in the `Critical Flags` section of `clean-code-inspect-result.md`.
 
-## 9) 등급 기준
+## 9) Grade Bands
 
-- A: 90~100
-- B: 80~89.99
-- C: 70~79.99
-- D: 60~69.99
-- E: 50~59.99
-- F: 0~49.99
+- A: 90-100
+- B: 80-89.99
+- C: 70-79.99
+- D: 60-69.99
+- E: 50-59.99
+- F: 0-49.99
 
-## 10) 출력 스키마 요구사항
+## 10) Output Schema Requirements
 
 ### `quantitative-metrics.json`
 
 - `schemaVersion`, `generatedAt`, `profile`, `analysisMode`
 - `files[]`: `{ path, metrics, hotspotScore }`
-- `files[].metrics` 필수 키:
+- Required keys inside `files[].metrics`:
   - `cyclomatic`, `cognitive`, `halsteadVolume`, `maintainabilityIndex`
   - `locLogical`, `locPhysical`, `importCount`, `stateCount`
   - `anyCount`, `assertionCount`, `tsIgnoreCount`

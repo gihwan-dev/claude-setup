@@ -9,76 +9,76 @@ description: >
 
 # Implement Task
 
-승인된 task bundle 또는 legacy plan의 다음 실행 slice를 구현한다.
+Implement the next execution slice from an approved task bundle or legacy plan.
 
 ## Trigger
 
-- 사용자가 정확한 스킬명 `implement-task` 또는 `$implement-task`를 직접 적었을 때만 호출한다.
+- Invoke only when the user explicitly writes the exact skill name `implement-task` or `$implement-task`.
 
 ## Required Inputs
 
 - bundle: `task.yaml`, `EXECUTION_PLAN.md`, `STATUS.md`
-- `delivery_strategy=ui-first`면 `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`
-- `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`
-- `execution_topology=csv-fanout`이면 `GLOBAL_CONTEXT.md`, `work-items/*.csv`, `MERGE_POLICY.md`, `task.yaml.orchestration` block
+- if `delivery_strategy=ui-first`, also read `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`
+- if `task.yaml.source_of_truth.implementation` exists, read `IMPLEMENTATION_CONTRACT.md`
+- if `execution_topology=csv-fanout`, read `GLOBAL_CONTEXT.md`, `work-items/*.csv`, `MERGE_POLICY.md`, and the `task.yaml.orchestration` block
 - legacy fallback only: `PLAN.md`, `STATUS.md`
-- blocking 판정이 필요한 bundle이면 `SPEC_VALIDATION.md`
+- if the bundle needs a blocking decision, read `SPEC_VALIDATION.md`
 
 ## Task Selection
 
-- 여러 active task 폴더가 공존하는 것은 정상 경로다.
-- path 미지정이면 먼저 active 후보를 만든다.
-- 후보가 정확히 1개일 때만 자동 선택한다.
-- 후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.
+- Multiple active task folders are a normal state.
+- If no path is specified, build the active candidate set first.
+- Auto-select only when there is exactly 1 candidate.
+- If there are 2 or more candidates, always confirm with the user instead of auto-running.
 
 ## Core Flow
 
-1. `STATUS.md`를 먼저 읽고 bundle vs legacy를 판정한다. `STATUS.md`가 없으면 고정 템플릿 섹션으로 생성하고, `task.yaml`가 있으면 bundle을 우선하며 `PLAN.md` fallback은 legacy task에만 허용한다.
-2. path/slug 지정이 있으면 해당 task를 사용하고, 미지정일 때는 위 candidate rule을 그대로 적용한다.
-3. bundle이면 `task.yaml.success_criteria`, `major_boundaries`, `delivery_strategy`를 구현 계약으로 유지하고 `SPEC_VALIDATION.md` blocking issue를 확인한다. `task.yaml.source_of_truth.implementation`이 있으면 `IMPLEMENTATION_CONTRACT.md`를 선행 입력으로 함께 읽는다.
-3a. `task.yaml.execution_topology`를 확인하고 `csv-fanout` 또는 `hybrid`이면 `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, `orchestration` block을 함께 읽는다.
-3b. `csv-fanout`이면 현재 slice에 대응하는 `work-items/*.csv`를 확인한다.
-3c. Codex 환경(`spawn_agents_on_csv` 가용)이면 CSV 행별 row worker를 병렬 실행하고, Codex 없으면 `keep-local` fallback으로 순차 실행한다.
-3d. row worker 완료 후 output CSV를 수집하고, 실패 행은 1회 재시도한다. 50% 이상 행이 실패하면 중단한다.
-3e. `csv-fanout`이면 integrator 역할로 shared file(barrel exports, route registration 등)을 `MERGE_POLICY.md` 규칙에 따라 통합한다.
-4. `delivery_strategy=ui-first`면 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json`을 함께 읽는다. `SLICE-1`은 checklist/layout/token/screen-flow와 interaction/a11y/microcopy를 읽고, `SLICE-2`는 keyboard/focus, live semantics, state matrix/fixture, degradation, task-based approval criteria를 읽는다.
-5. 현재 slice 범위를 고정한 뒤 structure preflight 후 code/doc diff를 적용한다. `split-first trigger`가 켜지면 기존 파일 append 대신 같은 slice 안에서 분해 경계를 먼저 고정하고, 범위를 줄이지 못하면 `exact split proposal`로 되돌린다.
-5a. writer 위임 판정: 현재 slice의 변경 대상이 2+ 파일이고 파일 경계가 명확하며 shared file 직접 수정이 불필요하면 `writer` 에이전트 위임을 고려한다. 병렬 writer가 가능하려면 대상 파일 간 의존이 없어야 한다.
-5b. writer 위임 시 handoff에는 `target_path`(수정 허용 파일 목록), `change_spec`(변경 사양), `context_files`(참조 파일), `validation_command`(검증 명령), `slice_budget`(파일/LOC 상한)을 포함한다.
-5c. writer 결과가 `상태: blocked`이면 메인 스레드가 직접 구현으로 전환하거나 split/replan한다.
-5d. writer 결과가 `상태: final`이면 메인 스레드가 shared file 통합(barrel exports, route registration 등)을 수행하고 focused validation으로 넘어간다.
-5e. 병렬 writer 사용 시 `isolation: worktree`로 독립 git worktree에서 실행하고, 완료 후 메인 스레드가 diff를 통합한다.
-6. 브라우저 재현이나 시각 증거가 필요할 때만 `browser-explorer`를 사용하고 handoff에는 `target URL 또는 Electron entry`, `scenario checklist`, `evidence checklist`를 포함한다.
-7. 메인 스레드가 focused validation을 실행한다. 기본값은 `타깃 검증 1개 + 저비용 체크 1개`다.
-8. 검증이 통과하면 커밋을 수행하고 `STATUS.md`를 manager-facing 요약으로 갱신한다.
-9. 기본 single-slice mode는 slice 1개에서 종료하고, run-to-boundary mode는 stop/replan 조건을 만날 때까지 같은 순서를 반복한다.
+1. Read `STATUS.md` first and determine bundle vs legacy. If `STATUS.md` is missing, create it with the fixed template sections. If `task.yaml` exists, prefer the bundle path, and allow `PLAN.md` fallback only for legacy tasks.
+2. If a path or slug is specified, use that task. Otherwise apply the candidate rule above as-is.
+3. For bundle work, keep `task.yaml.success_criteria`, `major_boundaries`, and `delivery_strategy` as the implementation contract, and check `SPEC_VALIDATION.md` for blocking issues. If `task.yaml.source_of_truth.implementation` exists, also read `IMPLEMENTATION_CONTRACT.md` as a primary input.
+3a. Check `task.yaml.execution_topology`. If it is `csv-fanout` or `hybrid`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the `orchestration` block.
+3b. If it is `csv-fanout`, inspect the `work-items/*.csv` file for the current slice.
+3c. In Codex environments with `spawn_agents_on_csv`, run row workers in parallel per CSV row. Without Codex, fall back to sequential `keep-local` fallback execution.
+3d. After row workers finish, collect the output CSV. Retry failed rows once. Abort when 50 percent or more of rows fail.
+3e. In `csv-fanout`, let the integrator merge shared files such as barrel exports or route registration according to `MERGE_POLICY.md`.
+4. If `delivery_strategy=ui-first`, read `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/manifest.json` together. `SLICE-1` reads checklist/layout/token/screen-flow plus interaction/a11y/microcopy sections. `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture, degradation, and task-based approval criteria.
+5. Lock the current slice boundary, run structure preflight, then apply the code or doc diff. If the `split-first trigger` is on, do not append to the existing target file. Fix the decomposition boundary inside the same slice first, and fall back to an `exact split proposal` if the scope cannot be reduced.
+5a. Writer delegation rule: if the current slice touches 2 or more files, the file boundaries are clear, and shared-file edits are unnecessary, consider delegating to the `writer` agent. Parallel writers require no dependency between target files.
+5b. A writer handoff must include `target_path` (allowed edit files), `change_spec` (requested change), `context_files` (reference files), `validation_command`, and `slice_budget` (file and LOC cap).
+5c. If the writer returns `status: blocked`, the main thread either implements directly or switches to split or replan.
+5d. If the writer returns `status: final`, the main thread performs shared-file integration such as barrel exports or route registration, then proceeds to focused validation.
+5e. For parallel writers, use `isolation: worktree` with independent git worktrees, then have the main thread integrate the resulting diffs.
+6. Use `browser-explorer` only when browser reproduction or visual evidence is needed. The handoff must include `target URL or Electron entry`, `scenario checklist`, and `evidence checklist`.
+7. The main thread runs focused validation. The default is `one target-specific validation + one low-cost check`.
+8. If validation passes, commit the change and update `STATUS.md` with a manager-facing summary.
+9. Default single-slice mode stops after 1 slice. Run-to-boundary mode repeats the same loop until a stop or replan condition is hit.
 
 ## Guardrails
 
-- mixed mode(`task.yaml`와 `PLAN.md` 공존)는 구현하지 않고 중단한다.
-- `validation_gate: blocking`인데 blocking issue가 남아 있으면 구현을 시작하지 않는다.
-- `$bootstrap-project-rules`, `IMPLEMENTATION_CONTRACT.md`, project implementation rules가 unresolved면 구현을 시작하지 않는다.
-- `delivery_strategy=ui-first`면 `SLICE-1 -> SLICE-2 -> SLICE-3+` 순서를 건너뛰거나 병합하지 않고, early UI slice에 real API/integration diff를 섞지 않는다.
-- `slice implementation -> main focused validation -> commit` 순서를 유지한다.
-- hybrid mode default는 `small slices + run-to-boundary`다.
-- slice budget이 small slices 기준(`repo-tracked files 3개 이하`, 순 diff `150 LOC 내외`)을 넘기면 `split/replan before execution`으로 되돌린다.
-- focused validation이 실패하면 커밋하지 않고 slice 실패를 기록한다.
-- 문서/SSOT 변경이 있으면 필요한 sync와 `--check`까지 끝난 뒤 종료한다.
-- `csv-fanout`에서 row worker는 `target_path`에만 파일을 생성/수정한다. shared file 직접 수정을 금지한다.
-- `writer`는 `target_path` 밖의 파일을 수정하지 않는다. shared file은 메인 스레드가 통합한다.
-- `writer`는 git commit을 수행하지 않는다. 커밋은 메인 스레드 전용이다.
-- 병렬 writer 간 같은 파일을 동시에 수정하지 않는다. 파일 경계 충돌이 감지되면 순차 실행으로 전환한다.
-- `MERGE_POLICY.md`에 명시된 integrator-only 파일은 integrator 역할만 수정한다.
-- Codex 없는 환경(Claude Code)에서는 `csv-fanout`/`hybrid`가 자동으로 keep-local fallback으로 순차 실행된다.
+- Do not implement mixed mode where `task.yaml` and `PLAN.md` coexist.
+- If `validation_gate: blocking` still has blocking issues, do not begin implementation.
+- If `$bootstrap-project-rules`, `IMPLEMENTATION_CONTRACT.md`, or project implementation rules are unresolved, do not begin implementation.
+- If `delivery_strategy=ui-first`, do not skip or merge the `SLICE-1 -> SLICE-2 -> SLICE-3+` order, and do not mix real API or integration diff into early UI slices.
+- Preserve the `slice implementation -> main focused validation -> commit` order.
+- The default for hybrid mode is `small slices + run-to-boundary`.
+- If the slice budget exceeds the small-slice guardrail (`repo-tracked files 3 or fewer`, net diff around `150 LOC`), fall back to `split/replan before execution`.
+- If focused validation fails, do not commit and record the slice failure.
+- If docs or other SSOT files change, finish the required sync and `--check` runs before exit.
+- In `csv-fanout`, row workers may create or edit files only at `target_path`. They must not modify shared files directly.
+- `writer` does not edit files outside `target_path`. Shared files are integrated by the main thread.
+- `writer` does not perform git commit. Commit stays main-thread only.
+- Do not let parallel writers edit the same file concurrently. If file-boundary conflicts are detected, switch back to sequential execution.
+- Integrator-only files listed in `MERGE_POLICY.md` may be edited only by the integrator role.
+- In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` automatically fall back to sequential `keep-local` execution.
 
 ## References
 
-- 상세 실행 규칙, validation fallback, STATUS 계약: `references/execution-rules.md`
+- Detailed execution rules, validation fallback, and STATUS contract: `references/execution-rules.md`
 
 ## Validation
 
-- bundle이면 `EXECUTION_PLAN.md`, legacy면 `PLAN.md`의 검증 명령을 우선 사용한다.
-- 검증 명령이 비어 있을 때만 repo-aware fallback을 사용한다.
-- `skills`, `agent-registry` 같은 SSOT를 바꿨다면 대응 sync + `--check`를 실행한다.
-- `skills`를 바꿨다면 `python3 scripts/sync_skills_index.py --check`를 포함한다.
-- `agent-registry`를 바꿨다면 `python3 scripts/sync_agents.py --check`를 포함한다.
+- In bundles, prefer validation commands from `EXECUTION_PLAN.md`. In legacy tasks, prefer `PLAN.md`.
+- Use repo-aware fallback only when the documented validation command is empty.
+- If you changed SSOT such as `skills` or `agent-registry`, run the matching sync plus `--check`.
+- If you changed `skills`, include `python3 scripts/sync_skills_index.py --check`.
+- If you changed `agent-registry`, include `python3 scripts/sync_agents.py --check`.

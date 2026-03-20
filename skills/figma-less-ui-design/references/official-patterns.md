@@ -1,35 +1,35 @@
 # Official Patterns
 
-`figma-less-ui-design`이 product UI 방향을 고정할 때만 이 파일을 읽는다.
+Read this file only when `figma-less-ui-design` needs to lock in product UI direction.
 
 ## Reuse + Delta First
 
-- existing design system, shipped screen, brand guide, Figma가 있으면 새 style invention 대신 `reuse + delta`
-- `reuse`: 그대로 따를 shell, token, primitive, spacing, motion, copy tone
-- `delta`: 이번 MVP/prototype에서 추가/변형할 화면, interaction, a11y/live rules, degradation policy
+- If an existing design system, shipped screen, brand guide, or Figma exists, prefer `reuse + delta` instead of net-new style invention.
+- `reuse`: shell, token, primitive, spacing, motion, and copy tone that should be followed as-is
+- `delta`: screens, interactions, accessibility or live rules, and degradation policy added or changed for this MVP or prototype
 
 ## Reference Pack Rules
 
-- `adopt`: product fit가 높고 바로 구현 가능한 패턴만 남긴다.
-- `avoid`: 복잡도, brand mismatch, information scent 저하를 만드는 패턴을 남긴다.
-- reference는 visual moodboard가 아니라 shell, hierarchy, live behavior, state handling, accessibility 근거로 사용한다.
-- saved reference는 `DESIGN_REFERENCES/manifest.json` 경로와 함께 문서에 직접 연결한다.
+- `adopt`: keep only patterns with high product fit that are ready to implement.
+- `avoid`: keep patterns that introduce complexity, brand mismatch, or weaker information scent.
+- Use references as evidence for shell, hierarchy, live behavior, state handling, and accessibility, not as a moodboard.
+- Link saved references directly in the documents with their `DESIGN_REFERENCES/manifest.json` paths.
 
 ## App-shell Priorities
 
-- MVP/prototype는 novelty보다 orientation을 우선한다.
-- 첫 화면에서 navigation, primary work area, detail context가 한눈에 보여야 한다.
-- shell contract는 `SLICE-1`에서 구현 가능한 수준으로 구체적이어야 한다.
-- `30-Second Understanding Checklist`와 `Glossary + Object Model`은 shell contract보다 먼저 고정한다.
+- In MVP or prototype work, orientation matters more than novelty.
+- The first screen should make navigation, primary work area, and detail context legible at a glance.
+- The shell contract should be concrete enough to implement in `SLICE-1`.
+- Lock `30-Second Understanding Checklist` and `Glossary + Object Model` before the shell contract.
 
 ## Token + Primitive Bias
 
-- token은 적게, primitive는 명확하게 고정한다.
-- typography, spacing, surface, border, status color의 source를 먼저 적는다.
-- primitive source는 design system, component library, custom layer 중 하나로 제한한다.
+- Keep tokens minimal and primitive sources explicit.
+- Define sources for typography, spacing, surfaces, borders, and status colors first.
+- Limit primitive sources to one of: design system, component library, or custom layer.
 
 ## Behavior + Accessibility Minimum
 
-- selection sync, drawer/overlay, filter persistence, keyboard focus order를 명시한다.
-- 색상 외 구분, focus ring, target size, reduced motion, hover/focus parity를 명시한다.
-- live update, stale/reconnect, partial failure, large-run degradation은 시각 방향과 별개로 별도 계약으로 고정한다.
+- Specify selection sync, drawer or overlay behavior, filter persistence, and keyboard focus order.
+- Specify non-color distinction, focus ring, target size, reduced motion, and hover or focus parity.
+- Lock live update, stale or reconnect behavior, partial failure, and large-run degradation as separate contracts, not as vague visual direction.

@@ -2,108 +2,105 @@
 name: writing-best-practices
 description: >
   Write or rewrite prose so it reads naturally, clearly, and quickly.
-  글을 처음부터 작성하거나 초안을 자연스럽고 이해가 빠른 글로 다시 쓰는 산문 작성 스킬이다.
-  주제만 주어졌을 때도 목적, 독자, 매체, 길이, 톤을 합리적으로 추론해 바로 작성하고,
-  초안이 있으면 어색한 구조, 번역투, 군더더기, 상투적 표현을 정리해 최종본으로 다듬는다.
-  "글 써줘", "초안 다듬어줘", "자연스럽게 다시 써줘", "문장 흐름 고쳐줘", "산문 정리해줘"
-  같은 요청에서 사용한다.
+  Use when the user wants a draft polished or new prose written from a topic, while preserving the
+  requested tone and format and removing stiffness, translation tone, filler, and cliches.
 ---
 
 # Writing Best Practices
 
-문법적으로만 맞는 글이 아니라 사람이 읽었을 때 자연스럽고 빠르게 이해되는 글을 만든다.
-목표는 "잘 쓴 척하는 글"이 아니라 "한 번에 이해되는 글"이다.
+Produce writing that feels natural to a human reader and becomes easy to understand on the first pass.
+The goal is not writing that merely sounds polished. The goal is writing that lands clearly.
 
 ## Goal
 
-- 명확성, 자연스러운 흐름, 정보 밀도를 우선한다.
-- 쉬우면서 정확한 어휘를 고른다.
-- 과하게 형식적이거나 AI 티가 나는 문장을 먼저 제거한다.
-- 사용자가 요청한 톤과 형식은 지키되 허세, 번역투, 군더더기는 줄인다.
+- Prioritize clarity, natural flow, and information density.
+- Choose words that are simple when possible and precise when needed.
+- Remove sentences that feel overly formal or obviously AI-generated.
+- Respect the user's requested tone and format while reducing grandstanding, translation tone, and filler.
 
 ## Input Handling
 
-- 사용자가 초안을 주면 문제를 진단한 뒤 더 자연스럽고 읽기 쉽게 다시 쓴다.
-- 사용자가 주제만 주면 목적, 독자, 매체, 길이, 톤을 합리적으로 추론해 바로 작성한다.
-- 정보가 조금 부족해도 대부분은 추론해서 진행한다.
-- 결과를 크게 바꿀 핵심 정보가 없을 때만 짧게 한 번 묻고, 그 외에는 묻지 말고 진행한다.
-- 사용자가 다른 언어를 명시하지 않으면 한국어로 쓴다.
+- If the user provides a draft, diagnose the problems and rewrite it so it reads more naturally.
+- If the user provides only a topic, infer the purpose, audience, medium, length, and tone reasonably, then start writing.
+- Proceed with reasonable inference even when some information is missing.
+- Ask one short follow-up question only when a missing fact would materially change the result. Otherwise keep going.
+- If the user does not specify another language, write in Korean.
 
 ## Style Priorities
 
-우선순위는 아래 순서를 따른다.
+Use this order of priority:
 
-1. 명확성
-2. 자연스러운 흐름
-3. 정보 밀도
-4. 쉬우면서 정확한 어휘
-5. 톤의 일관성
+1. clarity
+2. natural flow
+3. information density
+4. simple but precise vocabulary
+5. tonal consistency
 
-그럴듯함, 있어 보이는 표현, 과장된 세련됨은 위 기준보다 항상 뒤에 둔다.
+Anything that merely sounds impressive or polished comes after those priorities.
 
 ## Writing Rules
 
-- 한 문장에는 핵심 생각 하나만 담는다. 관계가 겹치면 문장을 나눈다.
-- 쉬운 단어로 같은 뜻을 전달할 수 있으면 쉬운 단어를 쓴다.
-- 전문용어는 꼭 필요할 때만 쓰고 처음 한 번만 짧게 풀어 설명한다.
-- 명사만 이어 붙인 추상적 표현보다 동사가 살아 있는 문장을 선호한다.
-- 문단 첫 문장은 요지를 분명히 말하고, 뒤 문장은 설명, 예시, 근거로 받친다.
-- 같은 길이와 같은 구조의 문장을 연속해서 쓰지 않는다. 짧은 문장과 중간 길이 문장을 섞어 리듬을 만든다.
-- 연결어는 꼭 필요할 때만 쓴다.
-- "또한", "더불어", "나아가", "특히", "결론적으로", "본질적으로", "궁극적으로" 같은 전환어를 습관적으로 반복하지 않는다.
-- 상투적 표현, 클리셰, 미사여구, 과장된 수식, 비어 있는 일반론을 줄인다.
-- 같은 내용을 형태만 바꿔 반복하지 않는다.
-- 사실, 수치, 인용이 필요한 글에서 근거가 없으면 꾸며 쓰지 않는다.
-- 사용자가 요청하지 않으면 목록, 체크리스트, 과한 소제목을 남발하지 않는다. 산문을 원하면 산문으로 쓴다.
-- 한국어로 쓸 때는 번역투를 피하고 쉼표를 남용하지 않는다. 호흡이 길어지면 문장을 나눈다.
-- 눈으로만 맞는 문장보다 소리 내어 읽었을 때 자연스러운 문장을 택한다.
-- 기본 문체는 "명확하고 담백한 전문가" 톤으로 둔다.
-- 사용자가 문학적, 브랜딩, 에세이 톤을 원하면 개성은 살리되 난해함과 허세만 제거한다.
+- Keep one main idea per sentence. If too many relationships pile up, split the sentence.
+- If an easier word can carry the same meaning, choose the easier word.
+- Use jargon only when it is truly necessary, and explain it briefly the first time.
+- Prefer sentences driven by verbs over abstract noun chains.
+- Make the first sentence of each paragraph state the point clearly, then support it with explanation, example, or evidence.
+- Do not stack sentences of identical length and structure. Mix short and medium sentences to create rhythm.
+- Use transitions only when they are actually needed.
+- Do not rely on stock transitions such as "additionally," "furthermore," "moreover," "especially," "in conclusion," "essentially," or "ultimately."
+- Reduce cliches, ornamental phrasing, inflated modifiers, and empty generalities.
+- Do not repeat the same idea in slightly different forms.
+- If a piece needs facts, numbers, or citations and you do not have them, do not invent them.
+- Unless the user asks for lists, checklists, or heavy subheadings, do not overuse them. If the user wants prose, answer with prose.
+- When writing in Korean, avoid translation tone and overused commas. Split the sentence if the breath gets too long.
+- Prefer sentences that sound natural when read aloud, not just ones that look correct on the page.
+- Default to the tone of a clear, restrained expert.
+- If the user wants a literary, branding, or essayistic tone, preserve personality while removing opacity and swagger.
 
 ## Problems To Remove
 
-최종 답변 전 아래 문제가 남아 있으면 반드시 고친다.
+Before returning the final answer, fix any remaining issue in this list:
 
-- 어색한 어휘 선택
-- 따라가기 어려운 문장 구조
-- 필요 이상으로 긴 설명과 군더더기
-- 상투적 표현과 흔한 AI식 전환어
-- 어려운 말로 쉬운 내용을 포장한 문장
-- 내용이 비어 있는 일반론
-- 낮은 정보 밀도
-- 지나치게 형식적이거나 무미건조한 톤
-- 문단 간 연결이 약한 전개
-- 같은 패턴의 문장 반복
-- 번역투, 과한 명사형 표현, 부자연스러운 쉼표 사용
-- 그럴듯하지만 읽고 남는 내용이 적은 문장
+- awkward word choice
+- sentence structures that are hard to follow
+- explanations that are longer than needed
+- cliches and common AI-style transitions
+- sentences that wrap a simple idea in difficult language
+- empty generalities
+- low information density
+- a tone that is too formal or too flat
+- weak transitions between paragraphs
+- repeated sentence patterns
+- translation tone, excessive nominalization, or unnatural comma use
+- sentences that sound polished but leave little behind
 
 ## Revision Loop
 
-출력 전 내부적으로 아래 순서로 점검하고, 점검 내용 자체는 출력하지 않는다.
+Internally review the draft in this order before output, but do not print the checklist itself.
 
-- 구조 점검: 각 문단의 핵심이 선명한가. 앞뒤 문단이 자연스럽게 이어지는가.
-- 문장 점검: 길이가 과도한 문장은 없는가. 주어와 서술어가 멀어지지 않았는가. 리듬이 단조롭지 않은가.
-- 어휘 점검: 더 쉬운 단어로 바꿀 수 있는가. 번역투나 관성적 표현이 남아 있지 않은가.
-- 밀도 점검: 줄여도 의미가 유지되는 문장은 없는가. 중복 설명은 없는가.
-- 독자 점검: 예상 독자가 한 번에 이해할 수 있는가.
-- 최종 점검: 잘 쓴 척하는 문장이 끼어 있지 않은가.
+- structure check: is each paragraph's point clear, and do adjacent paragraphs connect naturally?
+- sentence check: are any sentences too long, is the subject too far from the predicate, and is the rhythm too monotonous?
+- vocabulary check: can any word become simpler, and is any translation tone or habitual phrasing still present?
+- density check: is there any sentence that can be shortened without losing meaning, and is anything repeated?
+- reader check: can the expected audience understand it on the first pass?
+- final check: is there any sentence that merely tries to sound well-written?
 
 ## Output Contract
 
-- 기본 출력은 완성된 최종본만 제시한다.
-- 사용자가 요청했을 때만 문제 진단, 수정 포인트, 문장별 코멘트를 덧붙인다.
-- 사용자가 분량, 형식, 톤, 독자, 매체를 지정하면 반드시 따른다.
-- prose를 원하면 prose로 답하고, 목록을 원할 때만 목록을 사용한다.
-- 길이 제한이 있으면 그 제한 안에서 가장 밀도 높은 문장을 고른다.
-- 인사말, 군더더기 서론, 불필요한 사족 없이 바로 결과를 제시한다.
+- By default, provide only the finished final version.
+- Add diagnosis, revision points, or sentence-level commentary only when the user asks for them.
+- If the user specifies length, format, tone, audience, or medium, follow those constraints exactly.
+- If the user wants prose, answer with prose. Use lists only when they are explicitly wanted.
+- If there is a length limit, choose the densest wording that fits within it.
+- Present the result immediately without greetings, padded intros, or unnecessary afterwords.
 
 ## Quality Bar
 
-아래 기준을 모두 만족해야 완료로 본다.
+The result is complete only when all of these are true:
 
-- 읽는 즉시 뜻이 들어온다.
-- 문장 사이 연결이 자연스럽다.
-- 어려운 단어가 꼭 필요한 곳에만 있다.
-- 같은 구조가 반복되지 않는다.
-- 한 단락을 읽고 나면 핵심이 남는다.
-- 사람이 직접 다듬은 글처럼 자연스럽다.
+- the meaning lands immediately
+- the connections between sentences feel natural
+- difficult words appear only where they are necessary
+- the same structure does not repeat mechanically
+- each paragraph leaves a clear takeaway
+- it reads like writing refined by a person

@@ -2,106 +2,107 @@
 name: complexity-refactor
 description: >
   Refactor high cyclomatic complexity functions into human-readable, maintainable code.
-  순환 복잡도(Cyclomatic Complexity)가 높은 함수를 인간의 논리적 사고 흐름에 맞게 재구성하는 스킬.
-  "복잡한 함수 정리해줘", "이 함수 읽기 어려워", "순환 복잡도 낮춰줘", "리팩토링 해줘" 등의 요청에 사용.
-  단순 코드 추출이 아닌 논리적 재구성을 수행하며, 성능보다 가독성과 수정 용이성을 우선시함.
+  A skill for restructuring functions with high cyclomatic complexity so they match a human-friendly logical flow.
+  Use for requests like "clean up this complex function", "this function is hard to read", "reduce cyclomatic complexity",
+  or "please refactor this". The goal is logical reconstruction rather than simple extraction, with readability and ease
+  of modification prioritized over raw performance.
 ---
 
 # Complexity Refactor
 
-순환 복잡도가 높은 함수를 **인간이 이해하고 수정하기 쉬운 코드**로 재구성한다.
+Restructure highly complex functions into code that is **easy for humans to understand and modify**.
 
-## 핵심 철학
+## Core Philosophy
 
-### 1. 단순 추출 금지
+### 1. No blind extraction
 
+```text
+❌ Don't: Cut 10 lines of code and paste them into a new function as-is
+✅ Goal: Reconstruct logical units so the split feels obviously justified
 ```
-❌ 금지: 코드 10줄을 그대로 잘라서 새 함수에 붙여넣기
-✅ 목표: 논리적 단위로 재구성하여 "왜 이렇게 나눴는지" 납득 가능하게
-```
 
-### 2. 인간의 사고 흐름 우선
+### 2. Prioritize human reading flow
 
-코드는 위에서 아래로 읽으면서 "다음에 뭐가 나올지" 예측 가능해야 한다.
+Code should be predictable as a reader moves from top to bottom.
 
 ```typescript
-// ❌ AI가 흔히 만드는 코드: 추상적이고 예측 불가
+// ❌ A common AI output: abstract and hard to predict
 processDataWithValidationAndTransformation(data, config, options)
 
-// ✅ 인간 친화적: 구체적이고 순서대로
+// ✅ Human-friendly: concrete and sequential
 const validated = validateUserInput(data)
 const normalized = normalizePhoneNumber(validated.phone)
 const saved = saveToDatabase({ ...validated, phone: normalized })
 ```
 
-### 3. 이름은 한국어로 설명 가능할 정도로
+### 3. Names should be easy to explain
 
 ```typescript
-// ❌ 나쁜 이름: 무슨 뜻인지 모름
+// ❌ Bad names: unclear meaning
 handleDataProcessingWithContext()
 executeOperationWithFallback()
 processEntityBatch()
 
-// ✅ 좋은 이름: "~하는 함수"로 바로 설명 가능
-filterExpiredUsers()      // "만료된 사용자 거르는 함수"
-calculateShippingFee()    // "배송비 계산하는 함수"
-sendWelcomeEmail()        // "환영 이메일 보내는 함수"
+// ✅ Good names: easy to explain in one phrase
+filterExpiredUsers()      // function that filters expired users
+calculateShippingFee()    // function that calculates shipping cost
+sendWelcomeEmail()        // function that sends a welcome email
 ```
 
-### 4. 성능 < 가독성
+### 4. Readability > performance
 
-루프를 한 번 더 도는 정도의 차이는 무시한다. 가독성이 우선이다.
+Ignore the cost of looping one extra time if it makes the code easier to read. Readability comes first.
 
-## 리팩토링 절차
+## Refactoring Procedure
 
-### Step 1: 복잡도 측정
+### Step 1: Measure complexity
 
-대상 함수의 순환 복잡도 계산:
+Calculate cyclomatic complexity for the target function:
 
+```text
+Complexity = 1 + (number of branch points)
+
+Branch points: if, else if, case, while, for, catch, &&, ||, ? (ternary)
 ```
-복잡도 = 1 + (분기문 개수)
 
-분기문: if, else if, case, while, for, catch, &&, ||, ? (삼항)
-```
-
-| 점수 | 상태 | 조치 |
+| Score | State | Action |
 |------|------|------|
-| 1-10 | 양호 | 유지 |
-| 11-20 | 주의 | 개선 권장 |
-| 21+ | 위험 | 반드시 개선 |
+| 1-10 | Healthy | Keep |
+| 11-20 | Warning | Improvement recommended |
+| 21+ | Risky | Must improve |
 
-### Step 2: 논리 흐름 파악
+### Step 2: Understand the logical flow
 
-코드를 읽으며 **인간의 사고 단위**로 나눈다:
+Read the code and split it by **human reasoning units**:
 
-1. **준비 단계**: 데이터 검증, 초기화
-2. **핵심 로직**: 실제 비즈니스 처리
-3. **마무리**: 결과 반환, 정리
+1. **Preparation**: data validation, initialization
+2. **Core logic**: real business processing
+3. **Wrap-up**: return values, cleanup
 
-### Step 3: 재구성 패턴 선택
+### Step 3: Choose a restructuring pattern
 
-상황에 맞는 패턴을 적용한다. 상세 패턴은 `references/patterns.md` 참조.
+Apply the pattern that matches the situation. See `references/patterns.md` for details.
 
-- **Early Return**: 예외 케이스를 먼저 처리하여 중첩 제거
-- **Step-by-Step**: 순차적 단계로 분리
-- **Strategy**: 조건에 따른 분기를 객체/맵으로 대체
+- **Early Return**: handle exceptional cases first to remove nesting
+- **Step-by-Step**: split the logic into sequential stages
+- **Strategy**: replace conditional branching with an object / map
 
-### Step 4: 코드 작성
+### Step 4: Write the code
 
-리팩토링 시 반드시 지킬 것:
+Always preserve the following while refactoring:
 
-1. **함수명**: 동사 + 목적어, 한국어로 "~하는 함수"로 설명 가능
-2. **흐름**: 위에서 아래로 읽으면 로직이 그대로 이해됨
-3. **중첩**: 최대 2단계 (if 안에 if 안에 if 금지)
-4. **길이**: 한 함수 30줄 이내 권장
+1. **Function names**: verb + object
+2. **Flow**: the logic should be understandable by reading top to bottom
+3. **Nesting**: maximum depth of 2 (no `if` inside `if` inside `if`)
+4. **Length**: recommend keeping one function within 30 lines
 
-### Step 5: 검증
+### Step 5: Verify
 
-- 리팩토링 후 복잡도 재측정 (10 이하 목표)
-- 함수명만 읽어도 전체 흐름 파악 가능한지 확인
-- 원본과 동일한 동작 보장
+- Re-measure complexity after the refactor (target: 10 or below)
+- Confirm that the overall flow is understandable from function names alone
+- Guarantee identical behavior to the original
 
-## 참고
+## References
 
-- 리팩토링 패턴 상세: `references/patterns.md`
-- 안티패턴 예시: `references/antipatterns.md`
+- Detailed refactoring patterns: `references/patterns.md`
+- Anti-pattern examples: `references/antipatterns.md`

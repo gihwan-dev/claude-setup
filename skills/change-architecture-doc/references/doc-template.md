@@ -1,21 +1,21 @@
 # Architecture Change Note Template
 
-아래 템플릿을 복사해 문서를 작성한다. 제목과 본문은 프로젝트 문맥에 맞게 수정한다.
+Copy the template below when writing the document. Adjust the title and body to fit the project context.
 
 ```markdown
-# [브랜치/작업명] 아키텍처 변경 요약
+# [Branch / Work Item] Architecture Change Summary
 
-## 1) 변경 배경
-- 이번 변경이 필요한 이유를 2~4개 bullet로 작성한다.
-- 기능 구현 상세보다 구조적 목적(확장성, 경계 정리, 결합도 감소)을 기록한다.
+## 1) Background
+- Write 2-4 bullets explaining why this change was needed.
+- Record the structural purpose, such as extensibility, cleaner boundaries, or lower coupling, rather than feature-level implementation detail.
 
-## 2) 변경 전/후 구조
+## 2) Before / After Structure
 
-### 변경 요약
-- Before: 기존 구조의 핵심 제약
-- After: 변경 후 구조의 핵심 차이
+### Change Summary
+- Before: the core constraints of the previous structure
+- After: the key structural difference introduced by the change
 
-### 구조 다이어그램 (필수)
+### Structure Diagram (Required)
 ```mermaid
 flowchart LR
   Client["Client"] --> UI["UI Layer"]
@@ -24,10 +24,10 @@ flowchart LR
   Domain --> Infra["Infra Adapter"]
 ```
 
-## 3) 주요 흐름
-- 요청/데이터/이벤트 흐름을 핵심 5단계 이내로 정리한다.
+## 3) Key Flows
+- Summarize the request/data/event flow in five core steps or fewer.
 
-### 시퀀스 다이어그램 (필수)
+### Sequence Diagram (Required)
 ```mermaid
 sequenceDiagram
   actor User
@@ -45,22 +45,22 @@ sequenceDiagram
   API-->>UI: Render model
 ```
 
-## 4) 영향 범위
-- 영향받는 레이어/모듈/패키지
-- 호환성 영향(있음/없음)
-- 운영 리스크와 완화 방안
+## 4) Impact Scope
+- affected layers/modules/packages
+- compatibility impact (yes/no)
+- operational risks and mitigations
 
-## 5) 후속 작업
-- 즉시 후속 작업(테스트, 마이그레이션, 모니터링)
-- 오픈 질문(결정 보류 항목)
+## 5) Follow-Up Work
+- immediate follow-up tasks such as tests, migration, or monitoring
+- open questions and deferred decisions
 
-## 6) 기준 시점
-- 문서 작성 시점: YYYY-MM-DD
-- 분석한 git 범위: 예) origin/main...HEAD
+## 6) Reference Point
+- document written at: YYYY-MM-DD
+- analyzed git range: e.g. `origin/main...HEAD`
 ```
 
-## 작성 규칙
+## Writing Rules
 
-- Mermaid 다이어그램은 최소 2개 이상 유지한다.
-- 세부 구현 설명은 전체 문서의 20% 이내로 제한한다.
-- 파일 목록 그대로 나열하지 말고 구조적 의미를 함께 적는다.
+- Keep at least two Mermaid diagrams.
+- Limit implementation detail to 20% or less of the entire document.
+- Do not list file names without also explaining their structural meaning.

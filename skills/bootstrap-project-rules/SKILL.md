@@ -13,105 +13,107 @@ description: >
 
 ## Goal
 
-선택된 task bundle을 구현 가능한 계약으로 고정한다.
-`design-task` 산출물을 읽고, repo baseline `docs/ai/ENGINEERING_RULES.md`와
-task supplement `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`를 만들거나 갱신한 뒤
-필요하면 root `README.md`의 managed link section을 맞춘다.
-강화된 `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `DESIGN_REFERENCES/manifest.json`은 UX source of truth로 유지하고,
-bootstrap은 구현 스택/도구/경계만 잠근다.
+Lock the selected task bundle into an implementation-ready contract.
+Read the `design-task` outputs, create or update the repo baseline
+`docs/ai/ENGINEERING_RULES.md` and the task supplement
+`tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`, and align the managed link section in the
+root `README.md` when needed.
+Keep `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/manifest.json`
+as the UX source of truth; bootstrap should lock only the implementation stack, tooling,
+and boundaries.
 
 ## Hard Rules
 
-- 코드, 설정, 테스트, 패키지 설치는 하지 않는다. 문서와 agent memory 계약만 갱신한다.
-- `design-task` 이후 단계로만 사용한다. bundle `task.yaml`이 없으면 시작하지 않는다.
-- path 후보가 2개 이상이면 자동 선택하지 않고 사용자 확인이 필요하다고 멈춘다.
-- 현재 repo 사실(manifest, config, 기존 문서, 기존 AGENTS/CLAUDE)부터 탐색하고, 되돌리기 어려운 결정만 짧게 질의한다.
-- dependency policy는 반드시 `Locked now`, `Deferred`, `Banned/Avoid` 세 분류로 기록한다.
-- `Locked now`에는 runtime/language, framework, package manager, lint/format/typecheck/test stack, 기본 state/data fetching 전략, 기본 styling/design-system 방향, 폴더/모듈 경계를 포함한다.
-- `Locked now`에는 styling stack, component source, Storybook/screenshot tooling, token source path도 포함한다.
-- 선택 라이브러리는 scope가 아직 문서로 고정되지 않았으면 upfront으로 승인하지 않고 `Deferred`에 남긴다. 각 항목에는 재결정 trigger를 적는다.
-- repo-level implementation rules는 `docs/ai/ENGINEERING_RULES.md`에만 기록한다.
-- root global memory markdown은 만들거나 갱신하지 않는다.
-- `README.md`는 human-facing 문서로 유지한다. `AI Workflow` 또는 `Engineering Rules` 링크 섹션만 짧게 추가한다.
-- 기존 `README.md` 전체 overwrite를 금지한다. managed section만 갱신한다.
-- `README.md` managed section marker는 아래 두 줄을 사용한다.
+- Do not change code, config, tests, or install packages. Update only documentation and agent-memory contracts.
+- Use this only after `design-task`. If the bundle has no `task.yaml`, do not start.
+- If there is more than one path candidate, do not auto-select. Stop and ask the user to confirm.
+- Start from current repo facts first: manifests, config, existing docs, and existing AGENTS/CLAUDE files. Ask only short questions for hard-to-reverse decisions.
+- The dependency policy must always be recorded under the three categories `Locked now`, `Deferred`, and `Banned/Avoid`.
+- `Locked now` must include runtime/language, framework, package manager, lint/format/typecheck/test stack, the default state/data-fetching strategy, the default styling/design-system direction, and folder/module boundaries.
+- `Locked now` must also include the styling stack, component source, Storybook/screenshot tooling, and token source path.
+- If an optional library is not yet fixed by the current documentation scope, do not approve it up front. Leave it under `Deferred` and record a re-decision trigger for each item.
+- Record repo-level implementation rules only in `docs/ai/ENGINEERING_RULES.md`.
+- Do not create or update a root global memory markdown file.
+- Keep `README.md` human-facing. Add only a short `AI Workflow` or `Engineering Rules` link section.
+- Do not overwrite the entire existing `README.md`. Update only the managed section.
+- Use the following lines as the `README.md` managed-section markers.
   - `<!-- bootstrap-project-rules:start -->`
   - `<!-- bootstrap-project-rules:end -->`
-- `README.md`가 없으면 새로 장문 README를 만들지 않는다. advisory만 남기고 AI 문서만 작성한다.
-- `SPEC_VALIDATION.md`에 bootstrap 관련 blocking issue 외 다른 blocker가 남아 있으면 이를 임의로 해소하지 않는다.
-- 핵심 아키텍처 결정이 unresolved면 `IMPLEMENTATION_CONTRACT.md`를 부분 초안으로 남길 수는 있어도 bootstrap blocker는 해소하지 않는다.
-- UX ownership은 계속 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`에 남기고 bootstrap은 visual direction이나 behavior contract를 재정의하지 않는다.
+- If `README.md` does not exist, do not create a long new README. Leave only an advisory and write the AI docs.
+- If `SPEC_VALIDATION.md` still has blockers beyond bootstrap-specific blocking issues, do not resolve them on your own.
+- If a core architecture decision is still unresolved, you may leave `IMPLEMENTATION_CONTRACT.md` as a partial draft, but do not claim the bootstrap blocker is resolved.
+- Keep UX ownership in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`; bootstrap must not redefine visual direction or behavior contracts.
 
 ## Required References
 
-- 결정 분류와 defer 기준이 필요할 때만 `${SKILL_DIR}/references/decision-catalog.md`를 읽는다.
-- 문서 skeleton과 managed section 형식은 `${SKILL_DIR}/references/doc-templates.md`를 읽는다.
+- Read `${SKILL_DIR}/references/decision-catalog.md` only when you need the decision categories and defer criteria.
+- Read `${SKILL_DIR}/references/doc-templates.md` for the document skeleton and managed section format.
 
 ## Inputs
 
-- 선택된 `tasks/<task-path>/task.yaml`
-- 같은 task의 `README.md`, `SPEC_VALIDATION.md`, `EXECUTION_PLAN.md`
-- 존재하는 `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `TECH_SPEC.md`, `ADRs/`, `ACCEPTANCE.feature`
-- repo root의 `README.md`
-- manifest/config (`package.json`, lockfile, `pyproject.toml`, `tsconfig.json`, `eslint`, formatter, CI/workflow 파일 등)
+- The selected `tasks/<task-path>/task.yaml`
+- The same task's `README.md`, `SPEC_VALIDATION.md`, and `EXECUTION_PLAN.md`
+- Any existing `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `TECH_SPEC.md`, `ADRs/`, and `ACCEPTANCE.feature`
+- The repo-root `README.md`
+- Manifests/config such as `package.json`, lockfiles, `pyproject.toml`, `tsconfig.json`, `eslint`, formatter, and CI/workflow files
 
 ## Task Selection Rules
 
-1. 사용자가 slug/path를 직접 지정하면 해당 task를 사용한다.
-2. path가 없으면 active bundle 후보를 만든다.
-3. 후보가 정확히 1개일 때만 자동 선택한다.
-4. 후보가 2개 이상이면 자동 실행하지 않고 사용자 확인이 필요하다고 멈춘다.
-5. legacy `PLAN.md` task에는 적용하지 않는다.
+1. If the user specifies a slug/path directly, use that task.
+2. If no path is given, build the active bundle candidates.
+3. Auto-select only when there is exactly one candidate.
+4. If there are two or more candidates, stop and ask the user to confirm instead of auto-running.
+5. Do not apply this to legacy `PLAN.md` tasks.
 
 ## Workflow
 
-1. task path와 bundle mode를 판정한다.
-2. `task.yaml`, `SPEC_VALIDATION.md`, `README.md`, source-of-truth design docs를 읽고 구현에 영향을 주는 불확실성을 추린다. `UX_SPEC.md`가 있으면 checklist/layout/token/screen-flow를, `UX_BEHAVIOR_ACCESSIBILITY.md`가 있으면 interaction/a11y/live/state/approval contract를 우선 확인한다.
-3. repo root 문서와 manifest/config를 읽고 이미 고정된 사실을 `Fact`로 분류한다.
-4. `${SKILL_DIR}/references/decision-catalog.md` 기준으로 결정을 분류한다.
+1. Determine the task path and bundle mode.
+2. Read `task.yaml`, `SPEC_VALIDATION.md`, `README.md`, and the source-of-truth design docs, then extract the uncertainties that affect implementation. If `UX_SPEC.md` exists, check checklist/layout/token/screen-flow first. If `UX_BEHAVIOR_ACCESSIBILITY.md` exists, check interaction/a11y/live/state/approval contracts first.
+3. Read the repo-root docs and manifests/config and classify already-fixed facts as `Fact`.
+4. Classify decisions using `${SKILL_DIR}/references/decision-catalog.md`.
    - `Locked now`
    - `Deferred`
    - `Banned/Avoid`
-5. `Locked now`인데 repo 탐색으로 확정할 수 없는 항목만 high-leverage 질문으로 좁힌다.
-6. `docs/ai/ENGINEERING_RULES.md`를 작성 또는 갱신한다. styling stack, component source, Storybook/screenshot tooling, token source path를 implementation-facing rule로 잠근다.
-7. `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`를 작성 또는 갱신한다. `UX_SPEC.md`/`UX_BEHAVIOR_ACCESSIBILITY.md` ownership은 유지하고 slice가 읽어야 할 implementation guardrail만 추가한다.
-8. `task.yaml.required_docs`에 `IMPLEMENTATION_CONTRACT.md`를 추가하고, `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`를 기록한다.
-9. task `README.md`의 document map과 key decisions를 implementation contract 관점으로 보강한다.
-10. 존재하는 경우 root `README.md`의 managed section을 갱신한다.
-11. `SPEC_VALIDATION.md`의 blocking issue 중 아래 조건을 동시에 만족하는 항목만 해소한다.
-    - greenfield/new-project bootstrap 요구
-    - `$bootstrap-project-rules` 실행 요구
-    - 현재 문서로 실제로 해소됐음
-12. 다른 blocker가 남아 있으면 `Proceed verdict`는 유지하고, bootstrap 이후에도 구현 시작 불가 상태를 명시한다.
-13. 구현이나 패키지 설치는 시작하지 않고 `implement-task` handoff만 정리한다.
+5. Narrow follow-up questions to only the `Locked now` items that cannot be confirmed from repo exploration alone.
+6. Write or update `docs/ai/ENGINEERING_RULES.md`. Lock the styling stack, component source, Storybook/screenshot tooling, and token source path as implementation-facing rules.
+7. Write or update `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md`. Preserve ownership in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`, and add only the implementation guardrails each slice needs to read.
+8. Add `IMPLEMENTATION_CONTRACT.md` to `task.yaml.required_docs` and record `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md`.
+9. Strengthen the task `README.md` document map and key decisions from the implementation-contract point of view.
+10. If it exists, update the managed section in the root `README.md`.
+11. Resolve only the blocking issues in `SPEC_VALIDATION.md` that meet all of the following conditions.
+    - They require greenfield/new-project bootstrap.
+    - They explicitly require running `$bootstrap-project-rules`.
+    - They are actually resolved by the current documentation.
+12. If other blockers remain, keep the `Proceed verdict` as-is and state that implementation still cannot start after bootstrap.
+13. Do not start implementation or install packages. Leave only the `implement-task` handoff.
 
 ## Document Update Rules
 
-- repo baseline은 `docs/ai/ENGINEERING_RULES.md` 하나를 SSOT로 둔다.
-- task supplement는 `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md` 하나를 SSOT로 둔다.
-- root global memory markdown은 bootstrap 산출물에 포함하지 않는다.
-- `README.md`는 사람이 읽는 목적/실행법/doc map을 유지하고 AI 문서는 링크만 건다.
-- root README 갱신은 managed section 안에서만 수행한다.
-- managed section이 없으면 파일 끝에 추가한다.
-- managed section 밖 사용자 텍스트는 보존한다.
-- UX direction, anti-goals, reference pack ownership은 계속 `UX_SPEC.md`에 남기고, interaction/a11y/live/approval ownership은 `UX_BEHAVIOR_ACCESSIBILITY.md`에 남긴다.
+- Use `docs/ai/ENGINEERING_RULES.md` as the single source of truth for the repo baseline.
+- Use `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md` as the single source of truth for the task supplement.
+- Do not include a root global memory markdown file in bootstrap outputs.
+- Keep `README.md` focused on human-readable purpose, run instructions, and doc map; AI docs should be linked only.
+- Update the root README only inside the managed section.
+- If the managed section does not exist, append it to the end of the file.
+- Preserve all user-authored text outside the managed section.
+- Keep UX direction, anti-goals, and reference-pack ownership in `UX_SPEC.md`, and keep interaction/a11y/live/approval ownership in `UX_BEHAVIOR_ACCESSIBILITY.md`.
 
 ## Handoff Rules
 
-- bootstrap 성공 후 다음 단계는 `implement-task`다.
-- `source_of_truth.implementation`이 생긴 task는 이후 구현 단계에서 이를 선행 입력으로 읽어야 한다.
-- unresolved architecture decision, missing validation command, conflicting source-of-truth가 남아 있으면 bootstrap blocker를 유지하고 `implement-task`로 넘어가지 않는다.
-- `Deferred` 항목은 구현 slice에서 자동 승인하지 않는다. 문서에 적힌 trigger가 충족될 때만 재결정한다.
-- `SLICE-1`/`SLICE-2` 구현자는 `UX_SPEC.md`와 `UX_BEHAVIOR_ACCESSIBILITY.md`를 먼저 읽고, bootstrap 문서는 그 구현 guardrail만 보강한다.
+- After bootstrap succeeds, the next step is `implement-task`.
+- If a task now has `source_of_truth.implementation`, later implementation steps must read it as a required upstream input.
+- If unresolved architecture decisions, missing validation commands, or conflicting sources of truth remain, keep the bootstrap blocker and do not hand off to `implement-task`.
+- Do not auto-approve `Deferred` items during implementation slices. Re-decide them only when the documented trigger is met.
+- `SLICE-1` and `SLICE-2` implementers should read `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` first; the bootstrap docs only reinforce implementation guardrails.
 
 ## Output Quality Checklist
 
-- `docs/ai/ENGINEERING_RULES.md`가 fixed section order를 따르는가?
-- `IMPLEMENTATION_CONTRACT.md`가 task bundle 입력과 task-specific 결정을 분리해 기록하는가?
-- `Locked now` / `Deferred` / `Banned/Avoid`가 모두 채워졌는가?
-- `Deferred` 항목마다 재결정 trigger가 있는가?
-- `task.yaml.required_docs`와 `source_of_truth.implementation`이 반영됐는가?
-- root `README.md`는 managed section만 갱신했는가?
-- bootstrap 관련 blocking issue를 해소했거나, 해소하지 못한 이유를 남겼는가?
-- 구현이나 패키지 설치 없이 문서 계약만 남겼는가?
-- styling stack, component source, Storybook/screenshot tooling, token source path를 잠그되 UX ownership은 `UX_SPEC.md`/`UX_BEHAVIOR_ACCESSIBILITY.md`에 남겼는가?
+- Does `docs/ai/ENGINEERING_RULES.md` follow the fixed section order?
+- Does `IMPLEMENTATION_CONTRACT.md` separate task-bundle inputs from task-specific decisions?
+- Are `Locked now`, `Deferred`, and `Banned/Avoid` all filled in?
+- Does every `Deferred` item include a re-decision trigger?
+- Were `task.yaml.required_docs` and `source_of_truth.implementation` updated?
+- Was only the managed section updated in the root `README.md`?
+- Were the bootstrap-related blocking issues resolved, or was the reason they remain unresolved recorded?
+- Did the work leave only documentation contracts, without implementation or package installation?
+- Did you lock the styling stack, component source, Storybook/screenshot tooling, and token source path while keeping UX ownership in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`?

@@ -14,31 +14,31 @@
 ### Tier 1
 
 - 2 agents
-- mutual critique 1회 또는 convergence shortcut
-- 빠른 synthesis 중심
+- one round of mutual critique or a convergence shortcut
+- optimized for fast synthesis
 
 ### Tier 2
 
 - 3 agents
 - targeted critique
-- structured confidence 포함
+- include structured confidence
 
 ### Tier 3
 
 - 4-5 agents
 - pre-mortem
-- critique 후 author reflection
-- disagreement tracking을 final answer에 남긴다
+- author reflection after critique
+- keep disagreement tracking in the final answer
 
 ## Track Output
 
 ### Track A
 
-`.deep-think/` 아래에 frame, paths, critiques, synthesis, final answer를 쌓는다.
+Store the frame, paths, critiques, synthesis, and final answer under `.deep-think/`.
 
 ### Track B
 
-plan file에 아래를 남긴다.
+Leave the following in the plan file.
 
 - Context
 - Approach
@@ -47,11 +47,11 @@ plan file에 아래를 남긴다.
 - Dissenting Views
 - Verification
 
-그 뒤 `ExitPlanMode`로 승인 대기한다.
+Then wait for approval with `ExitPlanMode`.
 
 ## Troubleshooting
 
-- evidence tag가 없으면 경로를 다시 쓰게 한다
-- critique가 vague하면 숫자/시나리오를 요구한다
-- convergence가 애매하면 Core Thesis 수준에서 같은 권고인지 먼저 본다
-- Tier가 애매하면 낮추기보다 한 단계 올리는 쪽을 우선한다
+- If a path has no evidence tags, make it rewrite the path.
+- If a critique is vague, require numbers or a concrete scenario.
+- If convergence is unclear, first check whether the recommendations match at the Core Thesis level.
+- If the tier is ambiguous, prefer moving one level up rather than down.

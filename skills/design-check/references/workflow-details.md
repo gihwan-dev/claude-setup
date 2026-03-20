@@ -1,8 +1,8 @@
 # Design Check Workflow Details
 
-`SKILL.md`의 core flow를 실제 단계/명령으로 펼친 문서다.
+This document expands the core flow from `SKILL.md` into concrete stages and commands.
 
-## Stage 1: 병렬 수집
+## Stage 1: Parallel Collection
 
 ### A. Figma screenshot + bbox metadata
 
@@ -13,27 +13,27 @@ pnpm exec tsx ${SKILL_DIR}/scripts/capture-figma-screenshot.ts \
   --scale 2
 ```
 
-- `.meta.json`에서 `bbox.width`, `bbox.height`를 읽는다.
-- `bbox.width`는 이후 구현 캡처의 `--container-width`로 연결한다.
+- Read `bbox.width` and `bbox.height` from `.meta.json`.
+- Pipe `bbox.width` into `--container-width` for the implementation capture step.
 
 ### B. Figma context + variable definitions
 
 - `get_design_context(nodeId)`
 - `get_variable_defs(nodeId)`
 
-Task B 실패는 warning으로 남기고 진행할 수 있다.
+Task B may continue with a warning if it fails.
 
 ### C. Story preparation
 
-- 컴포넌트 export, props, import dependency를 분석한다.
-- screenshot Story는 `../_shared/storybook-screenshot-guidelines.md` 규칙을 따른다.
-- 새 Story를 만들면 `../_shared/storybook-screenshot-template.tsx`를 출발점으로 쓴다.
+- Analyze component exports, props, and import dependencies.
+- The screenshot Story must follow `../_shared/storybook-screenshot-guidelines.md`.
+- If a new Story is required, start from `../_shared/storybook-screenshot-template.tsx`.
 
-## Stage 2: bbox injection + implementation capture
+## Stage 2: Bbox Injection and Implementation Capture
 
-1. Story wrapper width placeholder를 `bbox.width`로 교체한다.
-2. Storybook story id를 만든다.
-3. 구현 캡처를 수행한다.
+1. Replace the Story wrapper width placeholder with `bbox.width`.
+2. Build the Storybook story ID.
+3. Capture the implementation screenshot.
 
 ```bash
 pnpm exec tsx ${SKILLS_ROOT}/component-screenshot/scripts/capture-screenshot.ts \
@@ -46,7 +46,7 @@ pnpm exec tsx ${SKILLS_ROOT}/component-screenshot/scripts/capture-screenshot.ts 
   --rebuild
 ```
 
-## Stage 3: quantitative compare
+## Stage 3: Quantitative Comparison
 
 ```bash
 pnpm exec tsx ${SKILL_DIR}/scripts/compare-screenshots.ts \
@@ -55,16 +55,16 @@ pnpm exec tsx ${SKILL_DIR}/scripts/compare-screenshots.ts \
   --output "artifacts/screenshots/diff/{Name}.png"
 ```
 
-보고서에는 최소한 아래를 넣는다.
+The report must include at least:
 
 - `diffPixels`
 - `diffRatio`
 - `result`
-- size mismatch 여부
+- Whether a size mismatch occurred
 
-## Stage 4: qualitative review
+## Stage 4: Qualitative Review
 
-비교 대상:
+Compare:
 
 - layout / alignment / spacing
 - typography
@@ -72,13 +72,13 @@ pnpm exec tsx ${SKILL_DIR}/scripts/compare-screenshots.ts \
 - icon/image size and placement
 - responsive/container fit
 
-severity는 `Critical`, `Major`, `Minor`, `Nitpick` 네 단계로 정리한다.
+Use four severity levels: `Critical`, `Major`, `Minor`, and `Nitpick`.
 
 ## Report Skeleton
 
-출력 위치: `artifacts/design-check/{Name}-report.md`
+Output path: `artifacts/design-check/{Name}-report.md`
 
-필수 섹션:
+Required sections:
 
 1. Executive Summary
 2. Quantitative Analysis

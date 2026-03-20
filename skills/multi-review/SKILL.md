@@ -7,8 +7,8 @@ description: >
 
 # Multi Review
 
-작업 완료 후 명시적으로 호출하는 멀티 에이전트 리뷰 진입점이다.
-기본 reviewer 3개를 항상 병렬로 실행하고, 필요 조건이 있을 때만 추가 reviewer를 붙인다.
+This is the explicit multi-agent review entry point, invoked after implementation work.
+Always run the 3 baseline reviewers in parallel, then add extra reviewers only when the conditions justify it.
 
 ## Trigger
 
@@ -18,22 +18,22 @@ description: >
 
 ## Hard Rules
 
-- 기본은 read-only review다. 코드를 수정하지 않는다.
-- 멀티 에이전트 reviewer fan-out이 불가능한 런타임이면 단일 리뷰로 축소하지 말고 blocked로 보고한다.
-- 서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.
-- 메인 에이전트는 reviewer fan-out 뒤 병렬로 개인 작업을 하지 않고, 필요한 후속 탐색은 결과를 받은 뒤 최소 범위로만 수행한다.
-- reviewer fan-out은 `${SKILL_DIR}/references/reviewer-matrix.md`와 workflow helper 기준을 따른다.
-- 기본 리뷰 대상은 current worktree diff 대 `HEAD`다.
-- 사용자가 path, commit, range를 지정하면 그 대상을 우선한다.
-- 결과는 반드시 findings first, summary second 형식으로 종합한다.
+- Default to read-only review. Do not modify code.
+- If multi-agent reviewer fan-out is unavailable in the runtime, report blocked instead of collapsing to a single review.
+- Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
+- After reviewer fan-out, the main agent does not do parallel side work. Any follow-up exploration happens only after results return and stays minimal.
+- Keep reviewer fan-out aligned with `${SKILL_DIR}/references/reviewer-matrix.md` and the workflow helper rules.
+- The default review target is the current worktree diff vs `HEAD`.
+- If the user specifies a path, commit, or range, that target takes precedence.
+- Synthesize the result as findings first and summary second.
 
 ## Workflow
 
-1. `${SKILL_DIR}/references/reviewer-matrix.md`를 읽고 리뷰 대상을 고정한다.
-2. baseline reviewer를 항상 병렬 실행하고, 추가 reviewer는 diff 성격에 따라 붙인다.
-3. reviewer fan-out 후에는 결과가 돌아올 때까지 `wait`/결과 수집만 수행하고, 메인 에이전트의 추가 파일 읽기나 검색은 중단한다.
-4. reviewer 결과를 severity 순으로 정리하고 file/line 근거를 붙인다.
-5. findings를 먼저 제시한 뒤, 필요한 경우에만 짧은 요약과 residual risk를 덧붙인다.
+1. Read `${SKILL_DIR}/references/reviewer-matrix.md` and lock the review target.
+2. Always run the baseline reviewers in parallel, then add conditional reviewers based on the diff shape.
+3. After reviewer fan-out, do only `wait` and result collection until results return. Pause additional file reads and searches in the main agent.
+4. Order reviewer findings by severity and attach file or line evidence when possible.
+5. Present findings first, then add only a short summary and residual risk if needed.
 
 ## Required References
 
@@ -41,8 +41,8 @@ description: >
 
 ## Validation
 
-- baseline reviewer 3개가 항상 포함됐는지 확인한다.
-- reviewer fan-out 후 결과 수집 전까지 메인 에이전트가 추가 파일 읽기/검색을 하지 않았는지 확인한다.
-- frontend diff면 `react-state-reviewer`가 추가됐는지 확인한다.
-- public/shared contract 리스크가 있으면 `architecture-reviewer` 또는 `type-specialist`가 추가됐는지 확인한다.
-- 결과가 findings first, summary second를 지키는지 확인한다.
+- Confirm the 3 baseline reviewers are always included.
+- Confirm the main agent does not continue file reads or searches between reviewer fan-out and result collection.
+- Confirm `react-state-reviewer` is added for frontend diffs.
+- Confirm `architecture-reviewer` or `type-specialist` is added when public or shared contract risk exists.
+- Confirm the output stays findings first and summary second.

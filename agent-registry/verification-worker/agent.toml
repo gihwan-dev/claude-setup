@@ -1,6 +1,6 @@
 id = "verification-worker"
 role = "reviewer"
-description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
+description = "Read-only validation summarizer focused on turning noisy logs into actionable signals."
 source = "codex-builtin"
 
 [projection]

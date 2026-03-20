@@ -10,52 +10,52 @@
     },
     {
       "name": "change-architecture-doc",
-      "description": "Analyze git changes and generate/update architecture documentation with Mermaid diagrams. 현재 브랜치와 워크트리의 git 변경사항을 분석해 아키텍처 중심 변경 문서를 생성하거나 갱신한다. 프로젝트 안에서 이미 문서가 관리되는 폴더(docs, packages/docs, guides, documentation, doc)를 우선 사용하고, 적합한 위치가 없으면 프로젝트 루트에 마크다운 문서를 생성한다. 세부 구현보다 시스템 경계, 모듈 상호작용, 데이터/이벤트 흐름, 영향 범위를 Mermaid 다이어그램으로 시각화해 기록해야 할 때 사용한다. 트리거: \"변경사항 문서화\", \"브랜치 작업 문서 정리\", \"아키텍처 문서 업데이트\", \"worktree 변경 요약\", \"머메이드 문서\".",
+      "description": "Analyze git changes and generate/update architecture documentation with Mermaid diagrams. Analyze git changes in the current branch/worktree and create or update an architecture-centered change note. Prefer an existing documentation folder inside the project (`docs`, `packages/docs`, `guides`, `documentation`, `doc`); if none fits, create a markdown file at the project root. Use this when you need to document system boundaries, module interactions, data/event flow, and impact scope with Mermaid diagrams rather than implementation detail.",
       "path": "skills/change-architecture-doc/SKILL.md"
     },
     {
       "name": "clean-code-inspector",
-      "description": "AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%). TS/JS 특화 코드 품질 분석 스킬. AST/정적분석 기반 정량 메트릭과 정성 오버레이(근거 기반 루브릭)를 결합해 clean-code-inspect-result.json / .md를 생성한다. 트리거: \"코드 리뷰\", \"품질 검사\", \"클린 코드\", \"인스펙션\", \"코드 분석\" 등",
+      "description": "AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%). Specialized TS/JS code quality inspection that combines AST/static-analysis metrics with an evidence-based qualitative overlay to generate `clean-code-inspect-result.json` and `.md`. Triggers: \"code review\", \"quality inspection\", \"clean code\", \"inspection\", \"code analysis\", etc.",
       "path": "skills/clean-code-inspector/SKILL.md"
     },
     {
       "name": "code-cleaner",
-      "description": "Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis. AI 코드 생성 후 불필요한 코드 정리 스킬. git diff로 변경된 TS/JS 파일을 분석하여 사용되지 않는 코드를 자동 제거한다. 트리거: unused 코드 정리, 불필요한 코드 삭제, dead code 제거, 코드 클린업, AI 작업 후 정리 요청 시",
+      "description": "Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis. Cleanup skill for removing unnecessary code after AI-generated changes. It analyzes changed TS/JS files from git diff and automatically removes unused code. Triggers include unused-code cleanup, removing unnecessary code, dead code cleanup, code cleanup, and post-AI cleanup requests.",
       "path": "skills/code-cleaner/SKILL.md"
     },
     {
       "name": "commit",
-      "description": "Generate conventional commit messages with logical diff splitting. 컨벤셔널 커밋 메시지 생성. \"커밋해줘\", \"커밋\", \"변경사항 저장\" 등의 요청 시 사용",
+      "description": "Generate conventional commit messages with logical diff splitting. Use when the user asks to commit changes, save work, or create a conventional commit.",
       "path": "skills/commit/SKILL.md"
     },
     {
       "name": "commter",
-      "description": "Add/improve JSDoc and inline comments for changed TS/JS code based on git diff. git diff 기준으로 변경된 TypeScript/JavaScript 코드에 필요한 주석과 JSDoc을 추가/개선한다. 유지보수자 관점에서 의도, 제약, 부작용, 트레이드오프를 문서화하고, 자명하거나 코드와 불일치한 코멘트를 제거해 가독성과 신뢰도를 높인다. 코드 리뷰 준비, 신규 팀원 온보딩, 공개 API 문서화, 복잡 로직 설명 보강 요청에서 사용한다. 트리거: \"주석 추가\", \"JSDoc 작성\", \"코멘트 보강\", \"diff 기반 문서화\", \"주석 정리\".",
+      "description": "Add or improve JSDoc and inline comments for changed TS/JS code based on git diff. Use when the user wants comment coverage improved for changed code, with maintainer-facing intent, constraints, side effects, and tradeoffs documented while stale or obvious comments are removed.",
       "path": "skills/commter/SKILL.md"
     },
     {
       "name": "complexity-refactor",
-      "description": "Refactor high cyclomatic complexity functions into human-readable, maintainable code. 순환 복잡도(Cyclomatic Complexity)가 높은 함수를 인간의 논리적 사고 흐름에 맞게 재구성하는 스킬. \"복잡한 함수 정리해줘\", \"이 함수 읽기 어려워\", \"순환 복잡도 낮춰줘\", \"리팩토링 해줘\" 등의 요청에 사용. 단순 코드 추출이 아닌 논리적 재구성을 수행하며, 성능보다 가독성과 수정 용이성을 우선시함.",
+      "description": "Refactor high cyclomatic complexity functions into human-readable, maintainable code. A skill for restructuring functions with high cyclomatic complexity so they match a human-friendly logical flow. Use for requests like \"clean up this complex function\", \"this function is hard to read\", \"reduce cyclomatic complexity\", or \"please refactor this\". The goal is logical reconstruction rather than simple extraction, with readability and ease of modification prioritized over raw performance.",
       "path": "skills/complexity-refactor/SKILL.md"
     },
     {
       "name": "component-screenshot",
-      "description": "Capture component screenshots from Storybook stories. Story 파일에서 컴포넌트 스크린샷 캡처. \"/screenshot\", \"스크린샷 캡처\" 등의 요청 시 사용",
+      "description": "Capture component screenshots from Storybook stories. Use when you need to capture component screenshots from Story files, such as \"/screenshot\" or \"capture a screenshot\".",
       "path": "skills/component-screenshot/SKILL.md"
     },
     {
       "name": "daily-diary",
-      "description": "Auto-generate daily diary from AI agent activity logs and Obsidian vault changes. 매일 하루가 끝날 때 AI 에이전트 활동 히스토리와 Obsidian 볼트 변경사항을 기반으로 자동 일기를 생성한다. \"일기 써줘\", \"daily diary\", \"오늘 일기\", \"어제 일기\" 등의 요청 시 사용.",
+      "description": "Auto-generate daily diary from AI agent activity logs and Obsidian vault changes. At the end of a day, turn AI agent activity history and Obsidian vault changes into a reusable diary entry. Use this when the user asks for a daily diary, today's diary, yesterday's diary, or a diary for a specific date.",
       "path": "skills/daily-diary/SKILL.md"
     },
     {
       "name": "deep-think",
-      "description": "Adaptive multi-persona deep reasoning with tiered complexity (2-5 agents) and convergence-based synthesis. Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth. Uses tiered complexity (2-5 agents), targeted critique→reflect cycles, convergence shortcuts, and 3-pass PENCIL-inspired synthesis. Detects execution environment to choose between Agent Teams (normal mode) and Task Orchestration (plan mode). Use when the user prefixes with \"deep think\", \"딥씽크\", \"깊게 생각해\", or requests thorough analysis. Best for complex architecture, debugging, algorithmic, or multi-domain problems. NOT for simple lookups. Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.",
+      "description": "Adaptive multi-persona deep reasoning with tiered complexity (2-5 agents) and convergence-based synthesis. Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth. Uses tiered complexity (2-5 agents), targeted critique→reflect cycles, convergence shortcuts, and 3-pass PENCIL-inspired synthesis. Detects execution environment to choose between Agent Teams (normal mode) and Task Orchestration (plan mode). Use when the user prefixes with `deep think`, uses an equivalent phrase meaning \"think deeply\", or requests thorough analysis. Best for complex architecture, debugging, algorithmic, or multi-domain problems. NOT for simple lookups. Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.",
       "path": "skills/deep-think/SKILL.md"
     },
     {
       "name": "design-check",
-      "description": "Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill. 디자인 검증 자동화. Figma vs 구현 비교 리포트 생성. \"/design-check\", \"디자인 검증\" 등의 요청 시 사용",
+      "description": "Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill. Use when you need automated design verification and a Figma vs implementation comparison report, such as \"/design-check\" or \"run design verification\".",
       "path": "skills/design-check/SKILL.md"
     },
     {
@@ -65,12 +65,12 @@
     },
     {
       "name": "figma-codex-pipeline",
-      "description": "Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. Figma 페이지를 의미 단위로 분해하고 컴포넌트별 병렬 코드 생성 후 통합/검증하는 4-phase 파이프라인. 단일 컴포넌트는 figma-to-code, 페이지 단위는 이 스킬을 사용한다.",
+      "description": "Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. This 4-phase pipeline decomposes a Figma page into semantic units, generates code for each component in parallel, then integrates and verifies the result. Use `figma-to-code` for a single component and this skill for page-level work.",
       "path": "skills/figma-codex-pipeline/SKILL.md"
     },
     {
       "name": "figma-design-pipeline",
-      "description": "End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills. Figma 디자인 구현 + 검증 파이프라인. figma-to-code 후 design-check 순차 실행. \"/figma-pipeline\", \"피그마 파이프라인\" 등의 요청 시 사용",
+      "description": "End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills. Use when you want a full Figma implementation and verification pipeline that runs figma-to-code first and then design-check, such as \"/figma-pipeline\".",
       "path": "skills/figma-design-pipeline/SKILL.md"
     },
     {
@@ -80,7 +80,7 @@
     },
     {
       "name": "figma-to-code",
-      "description": "Generate React component code from a Figma URL and target file path. Figma URL과 대상 컴포넌트 파일 경로를 받아 디자인 데이터를 수집하고, 프로젝트 패턴과 토큰 규칙을 반영한 React 코드를 만든다. 상세 토큰 매핑과 에러/출력 포맷은 `references/`를 사용한다.",
+      "description": "Generate React component code from a Figma URL and target file path. This skill collects design data, reads local project patterns and token rules, and produces React code. Use `references/` for detailed token mapping and error/output contracts.",
       "path": "skills/figma-to-code/SKILL.md"
     },
     {
@@ -105,7 +105,7 @@
     },
     {
       "name": "korean-cognitive-code-explainer",
-      "description": "Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams. 코드/함수/컴포넌트의 동작을 한국어로 인지부하를 낮추는 방식으로 설명한다. 프로그래머의 뇌(작업기억 한계, 청킹, 스키마 형성) 기반으로 복잡도를 분해하고, 필요한 경우 함수/변수에 한국어 별칭을 붙여 이해를 돕는다. Mermaid 다이어그램(흐름도, 시퀀스, 상태 전이)을 적극 사용해 시각적으로 설명해야 할 때 사용한다. \"이 코드 설명해줘\", \"이 함수 이해가 안 돼\", \"한국어로 쉽게\", \"시각화해서 설명\", \"함수명 번역해줘\" 요청에서 사용한다.",
+      "description": "Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams. Explain code, functions, and components in Korean with lower cognitive load. Break complexity down using programmer-oriented cognitive principles such as working-memory limits, chunking, and schema formation, and add Korean aliases for functions or variables when helpful. Use Mermaid diagrams actively when a visual explanation such as a flowchart, sequence, or state transition helps. Use this when the user asks for a Korean explanation of code, a simpler explanation, a visual walkthrough, or help translating function names into Korean.",
       "path": "skills/korean-cognitive-code-explainer/SKILL.md"
     },
     {
@@ -120,17 +120,17 @@
     },
     {
       "name": "pm-spec-from-code",
-      "description": "Convert implemented code into PM-perspective spec documents focusing on user-facing behavior and rules. 코드로 구현된 기능을 기획자(PM) 시선의 간결한 스펙 문서로 변환한다. 사용자 관점 동작, 규칙, 제약, 예외, 비목표를 명확한 bullet로 정리하고 함수/변수/컴포넌트 내부 구현 등 기술 상세는 제외한다. \"테이블 리사이즈 기능 스펙 문서 만들어줘\", \"코드 기준으로 기능 스펙 정리해줘\", \"기획 문서 형태로 요약해줘\" 같은 요청에서 사용한다.",
+      "description": "Convert implemented code into a PM-style spec focused on user-visible behavior and rules. Use when the user wants a concise feature spec derived from code, with behaviors, rules, constraints, exceptions, and non-goals captured in product language rather than implementation detail.",
       "path": "skills/pm-spec-from-code/SKILL.md"
     },
     {
       "name": "prompt-builder",
-      "description": "Transform rough task requests into high-quality structured prompts for AI agents. 사용자의 거친 작업 요청을 AI 에이전트 실행용 고품질 프롬프트로 변환한다. 작업 목적, 완료 조건, 필수 컨텍스트, 비목표, 제약, 리스크/예외 케이스를 질의응답으로 정리해 최종 프롬프트를 작성할 때 사용한다. \"프롬프트 만들어줘\", \"요청 정리해줘\", \"컨텍스트 포함해서 프롬프트 작성\", \"예외 케이스까지 프롬프트 구성\" 같은 요청에서 사용한다.",
+      "description": "Transform rough task requests into high-quality structured prompts for AI agents. Use when the user wants a request clarified into an execution-ready prompt with goals, completion criteria, required context, non-goals, constraints, and edge cases clearly organized.",
       "path": "skills/prompt-builder/SKILL.md"
     },
     {
       "name": "react-refactoring",
-      "description": "Critically evaluate React/TypeScript refactoring requests before changing code. React 컴포넌트 경로와 문제점이 주어지면 먼저 문제를 검증하고, 계획과 승인 후 실행한다. 상세 분석 모드와 프롬프트는 `references/analysis-modes.md`, 평가 기준은 `references/evaluation-criteria.md`를 사용한다.",
+      "description": "Critically evaluate React/TypeScript refactoring requests before changing code. When given a React component path and a list of concerns, validate whether those concerns are real first, then execute only after a plan and explicit approval. Use `references/analysis-modes.md` for detailed analysis modes and prompts, and `references/evaluation-criteria.md` for evaluation criteria.",
       "path": "skills/react-refactoring/SKILL.md"
     },
     {
@@ -145,22 +145,22 @@
     },
     {
       "name": "story-generator",
-      "description": "Auto-generate Storybook story files for component screenshot comparison. 스크린샷 비교용 Story 파일 자동 생성. \"/story-gen\", \"스토리 생성\" 등의 요청 시 사용",
+      "description": "Auto-generate Storybook story files for component screenshot comparison. Use when you need to auto-generate Story files for screenshot comparison, such as \"/story-gen\" or \"generate a Story\".",
       "path": "skills/story-generator/SKILL.md"
     },
     {
       "name": "test",
-      "description": "Write reliable test code (unit/browser/integration) focusing on failure detection over coverage metrics. 테스트 코드 작성 스킬. \"테스트 작성\", \"브라우저 테스트\", \"유닛 테스트\", \"테이블 테스트\" 등의 요청 시 사용",
+      "description": "Write reliable test code (unit/browser/integration) focusing on failure detection over coverage metrics. Test-writing skill for requests such as \"write tests\", \"browser test\", \"unit test\", and \"table test\".",
       "path": "skills/test/SKILL.md"
     },
     {
       "name": "writing-best-practices",
-      "description": "Write or rewrite prose so it reads naturally, clearly, and quickly. 글을 처음부터 작성하거나 초안을 자연스럽고 이해가 빠른 글로 다시 쓰는 산문 작성 스킬이다. 주제만 주어졌을 때도 목적, 독자, 매체, 길이, 톤을 합리적으로 추론해 바로 작성하고, 초안이 있으면 어색한 구조, 번역투, 군더더기, 상투적 표현을 정리해 최종본으로 다듬는다. \"글 써줘\", \"초안 다듬어줘\", \"자연스럽게 다시 써줘\", \"문장 흐름 고쳐줘\", \"산문 정리해줘\" 같은 요청에서 사용한다.",
+      "description": "Write or rewrite prose so it reads naturally, clearly, and quickly. Use when the user wants a draft polished or new prose written from a topic, while preserving the requested tone and format and removing stiffness, translation tone, filler, and cliches.",
       "path": "skills/writing-best-practices/SKILL.md"
     },
     {
       "name": "writing-review-workflow",
-      "description": "Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger final version. 작성된 글 초안을 3개의 병렬 리뷰어 관점으로 검토하고, 그 결과를 메인 에이전트가 종합해 최종 수정본으로 다시 쓰는 글쓰기 리뷰 워크플로우다. 구조, 독자 관점 가독성, 정보 정확성·과장을 분리해서 검토해야 할 때 사용한다. \"글 리뷰해줘\", \"초안 검토 후 고쳐줘\", \"문장 구조랑 흐름 검토해줘\", \"3개 관점으로 리뷰해줘\", \"수정 전에 먼저 검토해줘\" 같은 요청에서 사용한다.",
+      "description": "Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger final version. Use when the user wants structure, reader experience, and accuracy or overstatement reviewed separately before the main agent produces the final rewrite.",
       "path": "skills/writing-review-workflow/SKILL.md"
     }
   ]

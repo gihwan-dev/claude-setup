@@ -1,6 +1,6 @@
 id = "web-researcher"
 role = "explorer"
-description = "Web research specialist for competitor scans and external solution benchmarking."
+description = "Web research specialist focused on external evidence, current practices, and comparable solutions."
 source = "repo-agent"
 
 [projection]

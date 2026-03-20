@@ -28,6 +28,13 @@ from workflow_contract import (
     SLICE_BUDGET_MAX_REPO_FILES,
     SPEC_VALIDATION_SECTION_ORDER,
     STATUS_SECTION_ORDER,
+    STRUCTURE_REVIEW_EXCEPTIONS,
+    STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR,
+    STRUCTURE_REVIEW_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+    STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR,
+    STRUCTURE_REVIEW_ROLE_LIMITS,
+    STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR,
+    STRUCTURE_REVIEW_SPLIT_ROLES,
     TASK_BUNDLE_CSV_FANOUT_DOCS,
     TASK_BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
     TASK_BUNDLE_DELIVERY_STRATEGIES,
@@ -114,24 +121,39 @@ class WorkflowContractTests(RepoTestCase):
         for agent_id in REQUIRED_HELPER_AGENT_IDS:
             self.assertIn(agent_id, AGENT_CONTRACTS_BY_ID)
 
-    def test_structure_reviewer_agent_has_thresholds(self) -> None:
-        agent_path = REPO_ROOT / "agent-registry" / "structure-reviewer" / "agent.toml"
-        data = tomllib.loads(agent_path.read_text(encoding="utf-8"))
-        thresholds = data.get("thresholds")
-        self.assertIsNotNone(thresholds)
-        self.assertEqual("split-first", thresholds["soft_limit_behavior"])
-        self.assertEqual("block", thresholds["hard_limit_behavior"])
-        self.assertEqual("block", thresholds["responsibility_mix_behavior"])
+    def test_structure_review_policy_has_thresholds(self) -> None:
+        policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
+        structure_review = policy.get("structure_review")
+
+        self.assertIsInstance(structure_review, dict)
         self.assertEqual(
-            "allow-only-without-additive-growth",
-            thresholds["legacy_oversized_file_behavior"],
+            STRUCTURE_REVIEW_SOFT_LIMIT_BEHAVIOR,
+            structure_review.get("soft_limit_behavior"),
         )
-        role_limits = thresholds["role_limits"]
-        self.assertEqual(220, role_limits["component_view"]["target"])
-        self.assertEqual(300, role_limits["component_view"]["hard"])
-        self.assertIn("component", thresholds["split_roles"])
-        self.assertIn("adapter", thresholds["split_roles"])
-        self.assertIn("migration snapshot", thresholds["exceptions"])
+        self.assertEqual(
+            STRUCTURE_REVIEW_HARD_LIMIT_BEHAVIOR,
+            structure_review.get("hard_limit_behavior"),
+        )
+        self.assertEqual(
+            STRUCTURE_REVIEW_RESPONSIBILITY_MIX_BEHAVIOR,
+            structure_review.get("responsibility_mix_behavior"),
+        )
+        self.assertEqual(
+            STRUCTURE_REVIEW_LEGACY_OVERSIZED_FILE_BEHAVIOR,
+            structure_review.get("legacy_oversized_file_behavior"),
+        )
+        self.assertEqual(
+            list(STRUCTURE_REVIEW_EXCEPTIONS),
+            structure_review.get("exceptions"),
+        )
+        self.assertEqual(
+            list(STRUCTURE_REVIEW_SPLIT_ROLES),
+            structure_review.get("split_roles"),
+        )
+        self.assertEqual(
+            STRUCTURE_REVIEW_ROLE_LIMITS,
+            structure_review.get("role_limits"),
+        )
 
     def test_slice_budget_constants(self) -> None:
         self.assertEqual(3, SLICE_BUDGET_MAX_REPO_FILES)
@@ -465,7 +487,7 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("continuity gate", skill_content)
         self.assertIn("Task continuity", skill_content)
         self.assertIn("goal differs", skill_content)
-        self.assertIn("새 task 생성이 기본", skill_content)
+        self.assertIn("Creating a new task is the default", skill_content)
         self.assertIn("task.yaml", skill_content)
         self.assertIn("SPEC_VALIDATION.md", skill_content)
         self.assertIn("success_criteria", skill_content)
@@ -523,10 +545,10 @@ class WorkflowContractTests(RepoTestCase):
 
     def test_implement_task_requires_user_confirmation_for_multiple_candidates(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
-        self.assertIn("여러 active task 폴더가 공존하는 것은 정상 경로다.", skill_content)
-        self.assertIn("path 미지정이면 먼저 active 후보를 만든다.", skill_content)
-        self.assertIn("후보가 정확히 1개일 때만 자동 선택한다.", skill_content)
-        self.assertIn("후보가 2개 이상이면 항상 사용자에게 task를 확인받고 자동 실행하지 않는다.", skill_content)
+        self.assertIn("Multiple active task folders are a normal state.", skill_content)
+        self.assertIn("If no path is specified, build the active candidate set first.", skill_content)
+        self.assertIn("Auto-select only when there is exactly 1 candidate.", skill_content)
+        self.assertIn("If there are 2 or more candidates, always confirm with the user instead of auto-running.", skill_content)
         self.assertIn("task.yaml", skill_content)
         self.assertIn("PLAN.md", skill_content)
         self.assertIn("blocking", skill_content)
@@ -564,15 +586,15 @@ class WorkflowContractTests(RepoTestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("explicitly writes `design-task` or `$design-task`", design_skill_content)
-        self.assertNotIn('"설계해줘"', design_skill_content)
-        self.assertNotIn('"계획 세워줘"', design_skill_content)
+        self.assertNotIn('"design this"', design_skill_content)
+        self.assertNotIn('"plan this"', design_skill_content)
         self.assertIn("allow_implicit_invocation: false", design_prompt_content)
 
         self.assertIn("explicitly writes `implement-task` or", implement_skill_content)
         self.assertIn("`$implement-task`", implement_skill_content)
-        self.assertNotIn("`구현해줘`", implement_skill_content)
-        self.assertNotIn("`다음 단계 진행해`", implement_skill_content)
-        self.assertNotIn("`계속해`", implement_skill_content)
+        self.assertNotIn("`implement this`", implement_skill_content)
+        self.assertNotIn("`go to the next step`", implement_skill_content)
+        self.assertNotIn("`continue`", implement_skill_content)
         self.assertIn("allow_implicit_invocation: false", implement_prompt_content)
 
     def test_multi_work_skill_contract_is_documented(self) -> None:
@@ -585,9 +607,9 @@ class WorkflowContractTests(RepoTestCase):
         ).read_text(encoding="utf-8")
 
         self.assertIn("/multi-work", skill_content)
-        self.assertIn("멀티 에이전트 탐색", skill_content)
+        self.assertIn("multi-agent exploration", skill_content)
         self.assertIn(
-            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             skill_content,
         )
         self.assertIn("`design-task`", skill_content)
@@ -596,11 +618,12 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/routing-contract.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
-        self.assertIn("`wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지", prompt_content)
+        self.assertIn("Before helper results return", prompt_content)
+        self.assertIn("result collection", prompt_content)
         self.assertIn("Helper Matrix", reference_content)
         self.assertIn("Routing Matrix", reference_content)
         self.assertIn(
-            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             reference_content,
         )
         self.assertIn("small slices + run-to-boundary", reference_content)
@@ -617,22 +640,23 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("/multi-review", skill_content)
         self.assertIn("read-only", skill_content)
         self.assertIn("reviewer-matrix.md", skill_content)
-        self.assertIn("current worktree diff 대 `HEAD`", skill_content)
+        self.assertIn("current worktree diff vs `HEAD`", skill_content)
         self.assertIn(
-            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             skill_content,
         )
-        self.assertIn("findings first, summary second", skill_content)
+        self.assertIn("findings first and summary second", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/reviewer-matrix.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
-        self.assertIn("`wait`/결과 수집 외 다른 파일 읽기", prompt_content)
+        self.assertIn("Before reviewer results return", prompt_content)
+        self.assertIn("run more searches", prompt_content)
         self.assertIn("summary second", prompt_content)
         self.assertIn("Target Precedence", reference_content)
         self.assertIn("Baseline Reviewers", reference_content)
         self.assertIn("Conditional Reviewers", reference_content)
         self.assertIn(
-            "서브 에이전트 결과 반환 전에는 `wait`/결과 수집 외 다른 파일 읽기, 검색, 추가 탐색을 금지한다.",
+            "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             reference_content,
         )
 
@@ -694,15 +718,61 @@ class WorkflowContractTests(RepoTestCase):
             risky_frontend_helpers,
         )
 
-    def test_structure_reviewer_instruction_drift_is_guarded(self) -> None:
+    def test_agent_profiles_use_shared_schema_without_operational_contracts(self) -> None:
         self.assertFalse((REPO_ROOT / "agent-registry" / "worker").exists())
+        expected_headings = [
+            "Identity",
+            "Domain Lens",
+            "Preferred Qualities",
+            "Sensitive Smells",
+            "Collaboration Posture",
+        ]
+        forbidden_snippets = (
+            "Input contract",
+            "Output format",
+            "Workflow",
+            "`status:",
+            "`progress status:",
+            "Final line:",
+        )
 
-        reviewer_content = (
+        for agent_id in REQUIRED_HELPER_AGENT_IDS:
+            path = REPO_ROOT / "agent-registry" / agent_id / "instructions.md"
+            content = path.read_text(encoding="utf-8")
+            headings = [
+                line[3:].strip()
+                for line in content.splitlines()
+                if line.startswith("## ")
+            ]
+            self.assertEqual(expected_headings, headings, msg=f"unexpected headings in {path}")
+            for forbidden in forbidden_snippets:
+                self.assertNotIn(forbidden, content, msg=f"forbidden snippet {forbidden!r} in {path}")
+
+        structure_content = (
             REPO_ROOT / "agent-registry" / "structure-reviewer" / "instructions.md"
         ).read_text(encoding="utf-8")
-        self.assertIn("이미 soft limit를 넘긴 파일에 additive diff를 더하면 `FAIL`이다.", reviewer_content)
-        self.assertIn("component/view file: target <=", reviewer_content)
-        self.assertIn("React hook/provider/view-model file: target <=", reviewer_content)
+        self.assertNotIn("target <=", structure_content)
+        self.assertNotIn("`FAIL`", structure_content)
+
+    def test_profile_architecture_doc_and_heavy_playbooks_exist(self) -> None:
+        architecture_doc = REPO_ROOT / "docs" / "agent-profile-architecture.md"
+        self.assertTrue(architecture_doc.exists())
+        architecture_content = architecture_doc.read_text(encoding="utf-8")
+        self.assertIn("## Four Layers", architecture_content)
+        self.assertIn("### Profile", architecture_content)
+        self.assertIn("### Orchestration", architecture_content)
+        self.assertIn("### Task Contract", architecture_content)
+        self.assertIn("### Schema/Eval", architecture_content)
+
+        expected_refs = (
+            REPO_ROOT / "agent-registry" / "browser-explorer" / "references" / "observation-points.md",
+            REPO_ROOT / "agent-registry" / "react-state-reviewer" / "references" / "state-anti-patterns.md",
+            REPO_ROOT / "agent-registry" / "structure-reviewer" / "references" / "decomposition-playbook.md",
+            REPO_ROOT / "agent-registry" / "test-engineer" / "references" / "test-review-playbook.md",
+            REPO_ROOT / "agent-registry" / "writer" / "references" / "writing-style.md",
+        )
+        for path in expected_refs:
+            self.assertTrue(path.exists(), msg=f"missing playbook: {path}")
 
     def test_design_and_implement_skills_capture_split_decision_contract(self) -> None:
         design_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -710,17 +780,17 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertIn("structure preflight", design_content)
         self.assertIn("split decision", design_content)
-        self.assertIn("target-file append 금지", design_content)
-        self.assertIn("repo-tracked files 3개 이하", design_content)
+        self.assertIn("target-file append forbidden", design_content)
+        self.assertIn("repo-tracked files 3 or fewer", design_content)
         self.assertIn("split/replan before execution", design_content)
-        self.assertNotIn("하나의 응집된 모듈 경계", design_content)
+        self.assertNotIn("a single cohesive module boundary", design_content)
 
         self.assertIn("structure preflight", implement_content)
         self.assertIn("split-first trigger", implement_content)
         self.assertIn("exact split proposal", implement_content)
-        self.assertIn("repo-tracked files 3개 이하", implement_content)
+        self.assertIn("repo-tracked files 3 or fewer", implement_content)
         self.assertIn("split/replan before execution", implement_content)
-        self.assertNotIn("하나의 응집된 모듈 경계", implement_content)
+        self.assertNotIn("a single cohesive module boundary", implement_content)
 
     def test_documentation_recheck_contract_is_documented(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
@@ -737,11 +807,11 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("small slices + run-to-boundary", skill_content)
         self.assertIn("slice implementation -> main focused validation -> commit", skill_content)
         self.assertIn("split/replan before execution", reference_content)
-        self.assertIn("실질 영향 문서를 다시 확인", reference_content)
-        self.assertIn("실질 영향 문서를 다시 확인", normalized_prompt_content)
+        self.assertIn("rechecks materially affected docs", reference_content)
+        self.assertIn("recheck materially affected docs", normalized_prompt_content)
         self.assertIn("small slices + run-to-boundary", normalized_prompt_content)
         self.assertIn("slice implementation -> main focused validation -> commit", normalized_prompt_content)
-        self.assertIn("split/replan before execution", normalized_prompt_content)
+        self.assertIn("split or replan before execution", normalized_prompt_content)
         self.assertIn("python3 scripts/sync_skills_index.py", normalized_prompt_content)
         self.assertIn("python3 scripts/sync_agents.py", normalized_prompt_content)
         self.assertNotIn("python3 scripts/sync_instructions.py", normalized_prompt_content)
@@ -817,7 +887,7 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertIn("DESIGN_REFERENCES/", skill_content)
         self.assertIn("manifest.json", skill_content)
-        self.assertIn("최소 3개", skill_content)
+        self.assertIn("at least 3", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
 
     def test_ui_first_fixtures_use_ui_planning_packet_headings(self) -> None:
@@ -928,7 +998,7 @@ class WorkflowContractTests(RepoTestCase):
 
         self.assertIn("execution_topology", skill_content)
         self.assertIn("csv-fanout", skill_content)
-        self.assertIn("keep-local fallback", skill_content)
+        self.assertIn("`keep-local` fallback", skill_content)
         self.assertIn("spawn_agents_on_csv", skill_content)
         self.assertIn("GLOBAL_CONTEXT.md", skill_content)
         self.assertIn("MERGE_POLICY.md", skill_content)

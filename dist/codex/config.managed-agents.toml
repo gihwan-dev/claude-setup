@@ -2,45 +2,45 @@
 # Run: python3 scripts/sync_agents.py
 
 [agents.architecture-reviewer]
-description = "Read-only reviewer for boundaries, layering, public-surface changes, and large refactors."
+description = "Read-only architecture reviewer focused on boundaries, layering, and public surface stability."
 config_file = "agents/architecture-reviewer.toml"
 
 [agents.browser-explorer]
-description = "브라우저 탐색 에이전트. local web/Electron 앱의 재현, 상호작용 QA, 시각 증거 수집을 수행한다."
+description = "Browser exploration agent focused on reproduction, interaction QA, and visual evidence collection."
 config_file = "agents/browser-explorer.toml"
 
 [agents.code-quality-reviewer]
-description = "Read-only reviewer for non-trivial diffs, risky logic, missing validation, or explicit review requests."
+description = "Read-only reviewer focused on risky logic, missing validation, and local code quality."
 config_file = "agents/code-quality-reviewer.toml"
 
 [agents.explorer]
-description = "Read-only evidence collector. Use only when delegated lane needs discovery, ownership tracing, or evidence collection."
+description = "Read-only evidence collector focused on discovery, ownership tracing, and repository context."
 config_file = "agents/explorer-worker.toml"
 
 [agents.react-state-reviewer]
-description = "Read-only reviewer for React state management anti-patterns, unnecessary useEffect+setState, and type-safe state modeling."
+description = "Read-only reviewer focused on React state modeling, derived state, and impossible state reduction."
 config_file = "agents/react-state-reviewer.toml"
 
 [agents.structure-reviewer]
-description = "Read-only reviewer for module boundaries, file bloat, responsibility separation, decomposition planning, and quantitative complexity analysis."
+description = "Read-only reviewer focused on module boundaries, decomposition, and structural complexity."
 config_file = "agents/structure-reviewer.toml"
 
 [agents.test-engineer]
-description = "Read-only reviewer for test quality, AI-generated test detection, and regression risk."
+description = "Read-only reviewer focused on regression-resistant tests and test quality."
 config_file = "agents/test-engineer.toml"
 
 [agents.type-specialist]
-description = "Read-only reviewer for shared/public types, interfaces, generics, and contract-safety risks."
+description = "Read-only reviewer focused on type contracts, interfaces, generics, and migration safety."
 config_file = "agents/type-specialist.toml"
 
 [agents.verification-worker]
-description = "Read-only validation summarizer. Use only when validation output is noisy or multi-step."
+description = "Read-only validation summarizer focused on turning noisy logs into actionable signals."
 config_file = "agents/verification-worker.toml"
 
 [agents.web-researcher]
-description = "Web research specialist for competitor scans and external solution benchmarking."
+description = "Web research specialist focused on external evidence, current practices, and comparable solutions."
 config_file = "agents/web-researcher.toml"
 
 [agents.writer]
-description = "Delegated code writer for bounded file-scoped implementation slices. Use only when main-thread delegates explicit write scope with target_path constraints."
+description = "Delegated code writer focused on bounded implementation slices and readable, declarative code."
 config_file = "agents/writer.toml"
