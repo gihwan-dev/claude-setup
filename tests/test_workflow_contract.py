@@ -13,15 +13,27 @@ from workflow_contract import (
     decide_multi_work_route,
     decide_slice_execution_mode,
     derive_csv_fanout_docs,
+    derive_multi_review_context,
+    derive_multi_review_scope,
     derive_multi_review_helpers,
     derive_multi_work_helpers,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
+    infer_structure_review_role,
+    is_structure_review_exception,
     LONG_RUNNING_PUBLIC_SURFACE,
+    MAX_FULL_FILE_STRUCTURE_HOTSPOTS,
     MultiWorkRoutingContext,
+    MULTI_REVIEW_DIFF_AND_HOTSPOTS,
+    MULTI_REVIEW_DIFF_ONLY,
+    MULTI_REVIEW_FINDING_TYPES,
+    MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH,
+    MULTI_REVIEW_MAINTAINABILITY_NOTE,
+    MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
+    ReviewTargetFile,
     SliceExecutionPlan,
     SLICE_BUDGET_ENFORCEMENT,
     SLICE_BUDGET_MAX_NET_LOC,
@@ -651,19 +663,30 @@ class WorkflowContractTests(RepoTestCase):
             skill_content,
         )
         self.assertIn("findings first and summary second", skill_content)
+        self.assertIn("`diff+full-file-hotspots`", skill_content)
+        self.assertIn("`hotspot_paths`", skill_content)
+        self.assertIn("`maintainability`", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/reviewer-matrix.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
         self.assertIn("Before reviewer results return", prompt_content)
         self.assertIn("run more searches", prompt_content)
         self.assertIn("summary second", prompt_content)
+        self.assertIn("`diff+full-file-hotspots`", prompt_content)
+        self.assertIn("`hotspot_paths`", prompt_content)
+        self.assertIn("`maintainability`", prompt_content)
         self.assertIn("Target Precedence", reference_content)
         self.assertIn("Baseline Reviewers", reference_content)
         self.assertIn("Conditional Reviewers", reference_content)
+        self.assertIn("Hotspot Full-File Pass", reference_content)
+        self.assertIn("`review_mode`", reference_content)
+        self.assertIn("`hotspot_paths`", reference_content)
+        self.assertIn("`maintainability_verdict`", reference_content)
         self.assertIn(
             "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             reference_content,
         )
+        self.assertIn("`maintainability`", reference_content)
 
     def test_multi_work_helper_derivation_and_route_defaults(self) -> None:
         self.assertEqual(DEFAULT_MULTI_WORK_EXPLORATION_HELPERS, derive_multi_work_helpers())
@@ -721,6 +744,133 @@ class WorkflowContractTests(RepoTestCase):
                 "browser-explorer",
             ),
             risky_frontend_helpers,
+        )
+
+    def test_structure_review_hotspot_classifier_uses_role_and_exception_rules(self) -> None:
+        self.assertEqual(
+            "component_view",
+            infer_structure_review_role("src/widgets/view/CausalGraphView.tsx"),
+        )
+        self.assertEqual(
+            "react_hook_provider_view_model",
+            infer_structure_review_role("src/hooks/useLiveSelection.ts"),
+        )
+        self.assertEqual(
+            "service_use_case_controller_repository_util_module",
+            infer_structure_review_role("src/domain/causal-graph/service/recompute_graph.ts"),
+        )
+        self.assertTrue(is_structure_review_exception("src/generated/routes.generated.ts"))
+        self.assertTrue(is_structure_review_exception("db/migration_snapshot.sql"))
+        self.assertFalse(is_structure_review_exception("src/widgets/view/CausalGraphView.tsx"))
+
+    def test_multi_review_scope_defaults_to_diff_only_when_no_hotspots_exist(self) -> None:
+        scope = derive_multi_review_scope(
+            (
+                ReviewTargetFile(
+                    path="src/domain/causal-graph/service/recompute_graph.ts",
+                    pre_loc=80,
+                    post_loc=95,
+                ),
+            )
+        )
+
+        self.assertEqual(MULTI_REVIEW_DIFF_ONLY, scope.review_mode)
+        self.assertEqual(tuple(), scope.hotspot_paths)
+        self.assertEqual(tuple(), scope.hotspots)
+        self.assertEqual("clear", scope.maintainability_verdict)
+
+    def test_multi_review_scope_maps_maintainability_verdicts(self) -> None:
+        split_scope = derive_multi_review_scope(
+            (
+                ReviewTargetFile(
+                    path="src/widgets/view/CausalGraphView.tsx",
+                    pre_loc=180,
+                    post_loc=240,
+                ),
+            )
+        )
+        self.assertEqual(MULTI_REVIEW_DIFF_AND_HOTSPOTS, split_scope.review_mode)
+        self.assertEqual(
+            MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST,
+            split_scope.maintainability_verdict,
+        )
+
+        additive_scope = derive_multi_review_scope(
+            (
+                ReviewTargetFile(
+                    path="src/widgets/view/CausalGraphView.tsx",
+                    pre_loc=240,
+                    post_loc=260,
+                ),
+            )
+        )
+        self.assertEqual(
+            MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH,
+            additive_scope.maintainability_verdict,
+        )
+
+        note_scope = derive_multi_review_scope(
+            (
+                ReviewTargetFile(
+                    path="src/widgets/view/CausalGraphView.tsx",
+                    pre_loc=240,
+                    post_loc=235,
+                ),
+            )
+        )
+        self.assertEqual(MULTI_REVIEW_MAINTAINABILITY_NOTE, note_scope.maintainability_verdict)
+
+    def test_multi_review_scope_caps_full_file_hotspots(self) -> None:
+        scope = derive_multi_review_scope(
+            tuple(
+                ReviewTargetFile(
+                    path=f"src/widgets/view/Hotspot{i}.tsx",
+                    pre_loc=180,
+                    post_loc=240 + i,
+                )
+                for i in range(MAX_FULL_FILE_STRUCTURE_HOTSPOTS + 1)
+            )
+        )
+
+        self.assertEqual(MULTI_REVIEW_DIFF_AND_HOTSPOTS, scope.review_mode)
+        self.assertEqual(MAX_FULL_FILE_STRUCTURE_HOTSPOTS, len(scope.hotspot_paths))
+        self.assertIn("hotspot-cap-exceeded", scope.maintainability_reason_codes)
+
+    def test_multi_review_context_carries_hotspot_scope_into_helper_context(self) -> None:
+        scoped = derive_multi_review_context(
+            AdvisorySliceContext(helper_id="structure-reviewer", can_change_current_decision=True),
+            (
+                ReviewTargetFile(
+                    path="src/widgets/view/CausalGraphView.tsx",
+                    pre_loc=180,
+                    post_loc=240,
+                ),
+            ),
+        )
+
+        self.assertEqual(MULTI_REVIEW_DIFF_AND_HOTSPOTS, scoped.review_mode)
+        self.assertEqual(
+            ("src/widgets/view/CausalGraphView.tsx",),
+            scoped.hotspot_paths,
+        )
+        self.assertEqual(
+            MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST,
+            scoped.maintainability_verdict,
+        )
+
+    def test_structure_reviewer_can_spawn_for_hotspot_scope_even_when_diff_is_small(self) -> None:
+        context = AdvisorySliceContext(
+            helper_id="structure-reviewer",
+            hotspot_paths=("src/widgets/view/CausalGraphView.tsx",),
+            review_mode=MULTI_REVIEW_DIFF_AND_HOTSPOTS,
+            can_change_current_decision=True,
+        )
+        self.assertTrue(should_spawn_advisory_helper(context))
+
+    def test_multi_review_finding_types_stay_partitioned(self) -> None:
+        self.assertEqual(
+            ("correctness", "state", "test gap", "maintainability"),
+            MULTI_REVIEW_FINDING_TYPES,
         )
 
     def test_agent_profiles_use_shared_schema_without_operational_contracts(self) -> None:

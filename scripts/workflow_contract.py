@@ -4,7 +4,8 @@ from __future__ import annotations
 import json
 import tomllib
 from dataclasses import dataclass, replace
-from pathlib import Path
+from fnmatch import fnmatch
+from pathlib import Path, PurePosixPath
 from typing import TypeAlias
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -358,6 +359,93 @@ OPTIONAL_MULTI_REVIEW_HELPERS = (
     "browser-explorer",
 )
 
+MULTI_REVIEW_DIFF_ONLY = "diff-only"
+MULTI_REVIEW_DIFF_AND_HOTSPOTS = "diff+full-file-hotspots"
+MULTI_REVIEW_MAINTAINABILITY_CLEAR = "clear"
+MULTI_REVIEW_MAINTAINABILITY_NOTE = "note"
+MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST = "split-first"
+MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH = "block-additive-growth"
+MULTI_REVIEW_FINDING_TYPES = (
+    "correctness",
+    "state",
+    "test gap",
+    "maintainability",
+)
+MAX_FULL_FILE_STRUCTURE_HOTSPOTS = 3
+STRUCTURE_REVIEW_LIMIT_EXCEPTION = "exception"
+STRUCTURE_REVIEW_LIMIT_WITHIN_LIMITS = "within-limits"
+STRUCTURE_REVIEW_LIMIT_SOFT_OVERSIZED = "soft-oversized"
+STRUCTURE_REVIEW_LIMIT_HARD_OVERSIZED = "hard-oversized"
+STRUCTURE_REVIEW_LIMIT_LEGACY_ADDITIVE_GROWTH = "legacy-additive-growth"
+STRUCTURE_REVIEW_LIMIT_LEGACY_NON_ADDITIVE = "legacy-oversized-non-additive"
+STRUCTURE_REVIEW_LIMIT_RESPONSIBILITY_MIX = "responsibility-mix-risk"
+STRUCTURE_REVIEW_ROLE_COMPONENT_VIEW = "component_view"
+STRUCTURE_REVIEW_ROLE_REACT_HOOK = "react_hook_provider_view_model"
+STRUCTURE_REVIEW_ROLE_SERVICE = "service_use_case_controller_repository_util_module"
+
+_STRUCTURE_REVIEW_LIMIT_PRIORITY = {
+    STRUCTURE_REVIEW_LIMIT_EXCEPTION: -1,
+    STRUCTURE_REVIEW_LIMIT_WITHIN_LIMITS: 0,
+    STRUCTURE_REVIEW_LIMIT_LEGACY_NON_ADDITIVE: 1,
+    STRUCTURE_REVIEW_LIMIT_SOFT_OVERSIZED: 2,
+    STRUCTURE_REVIEW_LIMIT_HARD_OVERSIZED: 3,
+    STRUCTURE_REVIEW_LIMIT_RESPONSIBILITY_MIX: 3,
+    STRUCTURE_REVIEW_LIMIT_LEGACY_ADDITIVE_GROWTH: 4,
+}
+
+
+def _normalize_review_path(path: str) -> str:
+    return PurePosixPath(path.replace("\\", "/")).as_posix()
+
+
+def _dedupe_preserving_order(items: list[str]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        ordered.append(item)
+    return tuple(ordered)
+
+
+@dataclass(frozen=True)
+class ReviewTargetFile:
+    path: str
+    pre_loc: int
+    post_loc: int
+    net_loc_delta: int | None = None
+    responsibility_mix_risk: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.path.strip():
+            raise ValueError("ReviewTargetFile.path must be a non-empty string")
+        if self.pre_loc < 0 or self.post_loc < 0:
+            raise ValueError("ReviewTargetFile LOC values must be non-negative")
+        if self.net_loc_delta is None:
+            object.__setattr__(self, "net_loc_delta", self.post_loc - self.pre_loc)
+
+
+@dataclass(frozen=True)
+class ReviewHotspot:
+    path: str
+    role: str
+    pre_loc: int
+    post_loc: int
+    net_loc_delta: int
+    limit_state: str
+    needs_full_file_structure_review: bool
+    reason_codes: tuple[str, ...] = tuple()
+
+
+@dataclass(frozen=True)
+class MultiReviewScope:
+    review_mode: str = MULTI_REVIEW_DIFF_ONLY
+    hotspot_paths: tuple[str, ...] = tuple()
+    hotspots: tuple[ReviewHotspot, ...] = tuple()
+    maintainability_verdict: str = MULTI_REVIEW_MAINTAINABILITY_CLEAR
+    maintainability_reason_codes: tuple[str, ...] = tuple()
+
 
 @dataclass(frozen=True)
 class AdvisorySliceContext:
@@ -378,6 +466,10 @@ class AdvisorySliceContext:
     needs_repo_exploration: bool = False
     needs_external_research: bool = False
     needs_browser_repro: bool = False
+    review_mode: str = MULTI_REVIEW_DIFF_ONLY
+    hotspot_paths: tuple[str, ...] = tuple()
+    maintainability_verdict: str = MULTI_REVIEW_MAINTAINABILITY_CLEAR
+    maintainability_reason_codes: tuple[str, ...] = tuple()
     can_change_current_decision: bool = True
 
 
@@ -420,6 +512,198 @@ class TaskBundleManifest:
     current_phase: str
     execution_topology: str = "keep-local"
     orchestration: dict[str, object] | None = None
+
+
+def infer_structure_review_role(path: str) -> str:
+    normalized = _normalize_review_path(path)
+    pure_path = PurePosixPath(normalized)
+    lower_parts = {part.lower() for part in pure_path.parts}
+    lower_name = pure_path.name.lower()
+    lower_stem = pure_path.stem.lower()
+
+    if pure_path.suffix.lower() in {".tsx", ".jsx"}:
+        return STRUCTURE_REVIEW_ROLE_COMPONENT_VIEW
+    if lower_parts & {"ui", "view", "views", "widget", "widgets", "screen", "screens", "page", "pages"}:
+        return STRUCTURE_REVIEW_ROLE_COMPONENT_VIEW
+    if lower_name.startswith("use") or lower_stem.startswith("use"):
+        return STRUCTURE_REVIEW_ROLE_REACT_HOOK
+    if lower_parts & {"hook", "hooks", "provider", "providers", "view-model", "view-models", "context", "contexts"}:
+        return STRUCTURE_REVIEW_ROLE_REACT_HOOK
+    if any(token in lower_stem for token in ("hook", "provider", "view-model", "viewmodel", "context")):
+        return STRUCTURE_REVIEW_ROLE_REACT_HOOK
+    return STRUCTURE_REVIEW_ROLE_SERVICE
+
+
+def is_structure_review_exception(path: str) -> bool:
+    normalized = _normalize_review_path(path).lower()
+    file_name = PurePosixPath(normalized).name
+    for exception in STRUCTURE_REVIEW_EXCEPTIONS:
+        lowered = exception.lower()
+        if any(token in lowered for token in "*?[]"):
+            if fnmatch(normalized, lowered) or fnmatch(file_name, lowered):
+                return True
+            continue
+        if lowered == "route manifest" and "route" in normalized and "manifest" in normalized:
+            return True
+        if lowered == "icon registry" and "icon" in normalized and "registry" in normalized:
+            return True
+        if lowered == "schema declaration files" and normalized.endswith(".d.ts") and "schema" in normalized:
+            return True
+        if lowered == "migration snapshot" and "migration" in normalized and "snapshot" in normalized:
+            return True
+        if lowered == "vendored third-party" and any(
+            token in normalized for token in ("vendor/", "vendors/", "third_party/", "third-party/", "node_modules/")
+        ):
+            return True
+    return False
+
+
+def _primary_hotspot_reason(reason_codes: tuple[str, ...]) -> str:
+    if not reason_codes:
+        return STRUCTURE_REVIEW_LIMIT_WITHIN_LIMITS
+    return max(
+        reason_codes,
+        key=lambda code: _STRUCTURE_REVIEW_LIMIT_PRIORITY.get(code, 0),
+    )
+
+
+def classify_review_hotspot(review_file: ReviewTargetFile) -> ReviewHotspot:
+    normalized_path = _normalize_review_path(review_file.path)
+    role = infer_structure_review_role(normalized_path)
+    pre_loc = review_file.pre_loc
+    post_loc = review_file.post_loc
+    net_loc_delta = review_file.net_loc_delta if review_file.net_loc_delta is not None else post_loc - pre_loc
+
+    if is_structure_review_exception(normalized_path):
+        return ReviewHotspot(
+            path=normalized_path,
+            role=role,
+            pre_loc=pre_loc,
+            post_loc=post_loc,
+            net_loc_delta=net_loc_delta,
+            limit_state=STRUCTURE_REVIEW_LIMIT_EXCEPTION,
+            needs_full_file_structure_review=False,
+        )
+
+    limits = STRUCTURE_REVIEW_ROLE_LIMITS.get(role, STRUCTURE_REVIEW_ROLE_LIMITS[STRUCTURE_REVIEW_ROLE_SERVICE])
+    target_limit = limits["target"]
+    hard_limit = limits["hard"]
+    pre_oversized = pre_loc > target_limit
+    post_oversized = post_loc > target_limit
+
+    reason_codes: list[str] = []
+    if pre_oversized and net_loc_delta > 0:
+        reason_codes.append(STRUCTURE_REVIEW_LIMIT_LEGACY_ADDITIVE_GROWTH)
+    elif pre_oversized and net_loc_delta <= 0 and post_oversized:
+        reason_codes.append(STRUCTURE_REVIEW_LIMIT_LEGACY_NON_ADDITIVE)
+    elif post_loc > hard_limit:
+        reason_codes.append(STRUCTURE_REVIEW_LIMIT_HARD_OVERSIZED)
+    elif post_oversized:
+        reason_codes.append(STRUCTURE_REVIEW_LIMIT_SOFT_OVERSIZED)
+
+    if review_file.responsibility_mix_risk:
+        reason_codes.append(STRUCTURE_REVIEW_LIMIT_RESPONSIBILITY_MIX)
+
+    ordered_reason_codes = _dedupe_preserving_order(reason_codes)
+    limit_state = _primary_hotspot_reason(ordered_reason_codes)
+    needs_full_file_structure_review = limit_state != STRUCTURE_REVIEW_LIMIT_WITHIN_LIMITS
+
+    return ReviewHotspot(
+        path=normalized_path,
+        role=role,
+        pre_loc=pre_loc,
+        post_loc=post_loc,
+        net_loc_delta=net_loc_delta,
+        limit_state=limit_state,
+        needs_full_file_structure_review=needs_full_file_structure_review,
+        reason_codes=ordered_reason_codes,
+    )
+
+
+def _hotspot_sort_key(hotspot: ReviewHotspot) -> tuple[int, int, int, str]:
+    return (
+        -_STRUCTURE_REVIEW_LIMIT_PRIORITY.get(hotspot.limit_state, 0),
+        -hotspot.post_loc,
+        -(hotspot.net_loc_delta),
+        hotspot.path,
+    )
+
+
+def _derive_maintainability_verdict(hotspots: tuple[ReviewHotspot, ...]) -> str:
+    reason_codes = {
+        reason_code
+        for hotspot in hotspots
+        for reason_code in hotspot.reason_codes
+    }
+    if STRUCTURE_REVIEW_LIMIT_LEGACY_ADDITIVE_GROWTH in reason_codes:
+        return MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH
+    if reason_codes & {
+        STRUCTURE_REVIEW_LIMIT_SOFT_OVERSIZED,
+        STRUCTURE_REVIEW_LIMIT_HARD_OVERSIZED,
+        STRUCTURE_REVIEW_LIMIT_RESPONSIBILITY_MIX,
+    }:
+        return MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST
+    if STRUCTURE_REVIEW_LIMIT_LEGACY_NON_ADDITIVE in reason_codes:
+        return MULTI_REVIEW_MAINTAINABILITY_NOTE
+    return MULTI_REVIEW_MAINTAINABILITY_CLEAR
+
+
+def derive_multi_review_scope(
+    review_target_files: tuple[ReviewTargetFile, ...],
+    *,
+    max_full_file_hotspots: int = MAX_FULL_FILE_STRUCTURE_HOTSPOTS,
+) -> MultiReviewScope:
+    if max_full_file_hotspots <= 0:
+        raise ValueError("max_full_file_hotspots must be positive")
+
+    all_hotspots = tuple(
+        classify_review_hotspot(review_target_file)
+        for review_target_file in review_target_files
+    )
+    full_file_hotspots = tuple(
+        sorted(
+            (
+                hotspot
+                for hotspot in all_hotspots
+                if hotspot.needs_full_file_structure_review
+            ),
+            key=_hotspot_sort_key,
+        )
+    )
+    selected_hotspots = full_file_hotspots[:max_full_file_hotspots]
+
+    reason_codes = [
+        reason_code
+        for hotspot in full_file_hotspots
+        for reason_code in hotspot.reason_codes
+    ]
+    if len(full_file_hotspots) > max_full_file_hotspots:
+        reason_codes.append("hotspot-cap-exceeded")
+
+    if not selected_hotspots:
+        return MultiReviewScope()
+
+    return MultiReviewScope(
+        review_mode=MULTI_REVIEW_DIFF_AND_HOTSPOTS,
+        hotspot_paths=tuple(hotspot.path for hotspot in selected_hotspots),
+        hotspots=selected_hotspots,
+        maintainability_verdict=_derive_maintainability_verdict(full_file_hotspots),
+        maintainability_reason_codes=_dedupe_preserving_order(reason_codes),
+    )
+
+
+def derive_multi_review_context(
+    slice_context: AdvisorySliceContext,
+    review_target_files: tuple[ReviewTargetFile, ...],
+) -> AdvisorySliceContext:
+    review_scope = derive_multi_review_scope(review_target_files)
+    return replace(
+        slice_context,
+        review_mode=review_scope.review_mode,
+        hotspot_paths=review_scope.hotspot_paths,
+        maintainability_verdict=review_scope.maintainability_verdict,
+        maintainability_reason_codes=review_scope.maintainability_reason_codes,
+    )
 
 
 def is_broad_execution_handoff(plan: SliceExecutionPlan) -> bool:
@@ -508,7 +792,7 @@ def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:
     if helper_id == "test-engineer":
         return slice_context.regression_risk_notable or slice_context.coverage_gap
     if helper_id == "structure-reviewer":
-        return slice_context.diff_is_nontrivial
+        return slice_context.diff_is_nontrivial or bool(slice_context.hotspot_paths)
     if helper_id == "react-state-reviewer":
         return slice_context.is_frontend_slice
 

@@ -20,6 +20,8 @@ from workflow_contract import (
     DEFAULT_MULTI_WORK_EXPLORATION_HELPERS,
     decide_multi_work_route,
     detect_task_document_mode,
+    derive_multi_review_context,
+    derive_multi_review_scope,
     derive_multi_review_helpers,
     derive_multi_work_helpers,
     DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS,
@@ -27,9 +29,19 @@ from workflow_contract import (
     derive_csv_fanout_docs,
     EXPECTED_CODEX_SANDBOX_BY_AGENT,
     expected_reasoning_effort_for,
+    infer_structure_review_role,
+    is_structure_review_exception,
+    MAX_FULL_FILE_STRUCTURE_HOTSPOTS,
     MultiWorkRoutingContext,
+    MULTI_REVIEW_DIFF_AND_HOTSPOTS,
+    MULTI_REVIEW_DIFF_ONLY,
+    MULTI_REVIEW_FINDING_TYPES,
+    MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH,
+    MULTI_REVIEW_MAINTAINABILITY_NOTE,
+    MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST,
     PLAN_SECTION_ORDER,
     REQUIRED_HELPER_AGENT_IDS,
+    ReviewTargetFile,
     SliceExecutionPlan,
     SLICE_BUDGET_ENFORCEMENT,
     SLICE_BUDGET_MAX_NET_LOC,
@@ -281,6 +293,14 @@ def _validate_structure_review_contract(repo_root: Path, errors: list[str]) -> N
         ),
         errors,
     )
+    _expect_substrings(
+        reviewer_path,
+        (
+            "full-file maintenance boundaries",
+            "legacy oversized files that keep growing",
+        ),
+        errors,
+    )
 
     if not reference_path.exists():
         errors.append(f"missing structure review reference: {reference_path}")
@@ -293,6 +313,12 @@ def _validate_structure_review_contract(repo_root: Path, errors: list[str]) -> N
                 "Responsibility mixing",
                 "`component`",
                 "`adapter`",
+                "Hotspot Review Mode",
+                "`diff+full-file-hotspots`",
+                "`maintainability_verdict`",
+                "`reason_codes`",
+                "`decomposition_boundary`",
+                "`is_blocking`",
             ),
             errors,
         )
@@ -942,6 +968,9 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "current worktree diff vs `HEAD`",
                 "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
                 "findings first and summary second",
+                "`diff+full-file-hotspots`",
+                "`hotspot_paths`",
+                "`maintainability`",
             ),
             errors,
         )
@@ -955,6 +984,9 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "current worktree diff vs `HEAD`",
                 "Before reviewer results return, do not read more files, run more searches",
                 "summary second",
+                "`diff+full-file-hotspots`",
+                "`hotspot_paths`",
+                "`maintainability`",
             ),
             errors,
         )
@@ -973,8 +1005,16 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "`type-specialist`",
                 "`react-state-reviewer`",
                 "`browser-explorer`",
+                "Hotspot Full-File Pass",
+                "`review_mode`",
+                "`hotspot_paths`",
+                "`maintainability_verdict`",
                 "Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
                 "findings first and summary second",
+                "`correctness`",
+                "`state`",
+                "`test gap`",
+                "`maintainability`",
             ),
             errors,
         )
@@ -1211,6 +1251,98 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
     )
     if should_spawn_advisory_helper(non_frontend_slice):
         errors.append("react-state-reviewer must not spawn for non-frontend slices")
+
+    if infer_structure_review_role("src/widgets/view/CausalGraphView.tsx") != "component_view":
+        errors.append("tsx view files must map to the component_view structure-review role")
+    if infer_structure_review_role("src/hooks/useLiveSelection.ts") != "react_hook_provider_view_model":
+        errors.append("hook-style files must map to the react_hook_provider_view_model role")
+    if infer_structure_review_role("src/domain/causal-graph/service/recompute_graph.ts") != (
+        "service_use_case_controller_repository_util_module"
+    ):
+        errors.append("default structure-review role fallback drifted")
+
+    if not is_structure_review_exception("src/generated/routes.generated.ts"):
+        errors.append("generated files must stay excluded from structure-review hotspot checks")
+    if not is_structure_review_exception("db/migration_snapshot.sql"):
+        errors.append("migration snapshot files must stay excluded from structure-review hotspot checks")
+
+    quiet_review_scope = derive_multi_review_scope(tuple())
+    if quiet_review_scope.review_mode != MULTI_REVIEW_DIFF_ONLY:
+        errors.append("multi-review scope without hotspots must remain diff-only")
+    if quiet_review_scope.hotspot_paths:
+        errors.append("multi-review scope without hotspots must not select hotspot paths")
+
+    split_scope = derive_multi_review_scope(
+        (
+            ReviewTargetFile(
+                path="src/widgets/view/CausalGraphView.tsx",
+                pre_loc=180,
+                post_loc=240,
+            ),
+        )
+    )
+    if split_scope.review_mode != MULTI_REVIEW_DIFF_AND_HOTSPOTS:
+        errors.append("newly oversized hotspot files must switch multi-review to diff+full-file-hotspots")
+    if split_scope.maintainability_verdict != MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST:
+        errors.append("newly oversized hotspot files must produce split-first maintainability verdicts")
+
+    additive_scope = derive_multi_review_scope(
+        (
+            ReviewTargetFile(
+                path="src/widgets/view/CausalGraphView.tsx",
+                pre_loc=240,
+                post_loc=260,
+            ),
+        )
+    )
+    if additive_scope.maintainability_verdict != MULTI_REVIEW_MAINTAINABILITY_BLOCK_ADDITIVE_GROWTH:
+        errors.append("legacy oversized additive growth must produce block-additive-growth verdicts")
+
+    note_scope = derive_multi_review_scope(
+        (
+            ReviewTargetFile(
+                path="src/widgets/view/CausalGraphView.tsx",
+                pre_loc=240,
+                post_loc=235,
+            ),
+        )
+    )
+    if note_scope.maintainability_verdict != MULTI_REVIEW_MAINTAINABILITY_NOTE:
+        errors.append("non-additive legacy oversized changes must stay advisory")
+
+    capped_scope = derive_multi_review_scope(
+        tuple(
+            ReviewTargetFile(
+                path=f"src/widgets/view/Hotspot{i}.tsx",
+                pre_loc=180,
+                post_loc=240 + i,
+            )
+            for i in range(MAX_FULL_FILE_STRUCTURE_HOTSPOTS + 1)
+        )
+    )
+    if len(capped_scope.hotspot_paths) != MAX_FULL_FILE_STRUCTURE_HOTSPOTS:
+        errors.append("multi-review hotspot scope must cap full-file review targets")
+    if "hotspot-cap-exceeded" not in capped_scope.maintainability_reason_codes:
+        errors.append("multi-review hotspot cap overflows must be reflected in maintainability reasons")
+
+    scoped_context = derive_multi_review_context(
+        AdvisorySliceContext(helper_id="structure-reviewer", can_change_current_decision=True),
+        (
+            ReviewTargetFile(
+                path="src/widgets/view/CausalGraphView.tsx",
+                pre_loc=180,
+                post_loc=240,
+            ),
+        ),
+    )
+    if scoped_context.review_mode != MULTI_REVIEW_DIFF_AND_HOTSPOTS:
+        errors.append("derived multi-review context must carry hotspot review_mode")
+    if not scoped_context.hotspot_paths:
+        errors.append("derived multi-review context must carry hotspot_paths")
+    if scoped_context.maintainability_verdict != MULTI_REVIEW_MAINTAINABILITY_SPLIT_FIRST:
+        errors.append("derived multi-review context must carry maintainability verdicts")
+    if MULTI_REVIEW_FINDING_TYPES != ("correctness", "state", "test gap", "maintainability"):
+        errors.append("multi-review finding type contract drifted")
 
     if derive_multi_work_helpers() != DEFAULT_MULTI_WORK_EXPLORATION_HELPERS:
         errors.append("multi-work default helper derivation drifted")
