@@ -59,70 +59,6 @@ class WorkflowContractTests(RepoTestCase):
             repo_root / "skills" / "manifest.json",
             json.dumps({"skills": []}, indent=2) + "\n",
         )
-        self._write_text(
-            repo_root / "agent-registry" / "helper" / "agent.toml",
-            "\n".join(
-                [
-                    'id = "helper"',
-                    'role = "reviewer"',
-                    'description = "Helper agent"',
-                    'source = "repo-agent"',
-                    "",
-                    "[projection]",
-                    "repo = true",
-                    "codex = true",
-                    "",
-                    "[repo]",
-                    'model = "sonnet"',
-                    "tools = []",
-                    "",
-                    "[codex]",
-                    'agent_key = "helper"',
-                    'config_file = "helper.toml"',
-                    'model = "gpt-5.4"',
-                    'reasoning_effort = "high"',
-                    'sandbox_mode = "read-only"',
-                    "",
-                ]
-            ),
-        )
-        self._write_text(
-            repo_root / "agent-registry" / "helper" / "instructions.md",
-            "\n".join(
-                [
-                    "# Any heading works",
-                    "",
-                    "This file is intentionally free-form now.",
-                    "",
-                ]
-            ),
-        )
-        self._write_text(
-            repo_root / "dist" / "codex" / "config.managed-agents.toml",
-            "\n".join(
-                [
-                    "[agents.helper]",
-                    'description = "Helper agent"',
-                    'config_file = "agents/helper.toml"',
-                    "",
-                ]
-            ),
-        )
-        self._write_text(
-            repo_root / "dist" / "codex" / "agents" / "helper.toml",
-            "\n".join(
-                [
-                    'model = "gpt-5.4"',
-                    'model_reasoning_effort = "high"',
-                    'sandbox_mode = "read-only"',
-                    "",
-                    'developer_instructions = """',
-                    "helper instructions",
-                    '"""',
-                    "",
-                ]
-            ),
-        )
 
     def test_validate_workflow_contract_command_passes_on_repo(self) -> None:
         completed = self.run_cmd("python3", "scripts/validate_workflow_contracts.py")
@@ -146,10 +82,11 @@ class WorkflowContractTests(RepoTestCase):
             policy["codex"]["default_reasoning_effort"],
             DEFAULT_CODEX_REASONING_EFFORT,
         )
-        self.assertEqual(
-            policy["codex"]["reasoning_effort_overrides"]["verification-worker"],
-            expected_reasoning_effort_for("verification-worker"),
-        )
+        for agent_id, effort in policy["codex"]["reasoning_effort_overrides"].items():
+            self.assertEqual(
+                effort,
+                expected_reasoning_effort_for(agent_id),
+            )
         self.assertEqual(
             policy["codex"]["default_reasoning_effort"],
             expected_reasoning_effort_for("missing-agent"),
@@ -159,17 +96,17 @@ class WorkflowContractTests(RepoTestCase):
             EXPECTED_CODEX_SANDBOX_BY_AGENT,
         )
 
-    def test_validate_repo_reports_missing_required_helper(self) -> None:
+    def test_validate_repo_reports_invalid_policy_toml(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = Path(tmpdir)
             self._seed_minimal_repo(repo_root)
-            (repo_root / "agent-registry" / "helper" / "agent.toml").unlink()
+            self._write_text(repo_root / "policy" / "workflow.toml", "[projection\n")
 
             errors = validate_repo(repo_root, run_sync_checks=False)
 
         self.assertTrue(
-            any("missing helper config" in error for error in errors),
-            msg=f"expected missing helper error, got: {errors}",
+            any("invalid TOML" in error for error in errors),
+            msg=f"expected invalid policy error, got: {errors}",
         )
 
     def test_validate_repo_reports_invalid_skill_frontmatter(self) -> None:
@@ -201,22 +138,6 @@ class WorkflowContractTests(RepoTestCase):
             msg=f"expected JSON error, got: {errors}",
         )
 
-    def test_validate_repo_reports_invalid_generated_profile_toml(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            repo_root = Path(tmpdir)
-            self._seed_minimal_repo(repo_root)
-            self._write_text(
-                repo_root / "dist" / "codex" / "agents" / "helper.toml",
-                'model = "gpt-5.4"\ninvalid = [\n',
-            )
-
-            errors = validate_repo(repo_root, run_sync_checks=False)
-
-        self.assertTrue(
-            any("invalid TOML" in error for error in errors),
-            msg=f"expected TOML error, got: {errors}",
-        )
-
     def test_validate_repo_allows_prose_and_heading_changes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             repo_root = Path(tmpdir)
@@ -233,17 +154,6 @@ class WorkflowContractTests(RepoTestCase):
                         "## Totally Different Heading",
                         "",
                         "Free-form guidance should not fail validation.",
-                        "",
-                    ]
-                ),
-            )
-            self._write_text(
-                repo_root / "agent-registry" / "helper" / "instructions.md",
-                "\n".join(
-                    [
-                        "## Another heading",
-                        "",
-                        "No fixed template is required for smoke validation.",
                         "",
                     ]
                 ),

@@ -9,7 +9,11 @@ from unittest.mock import patch
 from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
-from workflow_contract import REQUIRED_HELPER_AGENT_IDS
+from workflow_contract import (
+    EXPECTED_CODEX_SANDBOX_BY_AGENT,
+    REQUIRED_HELPER_AGENT_IDS,
+    expected_reasoning_effort_for,
+)
 
 
 class AgentSyncTests(RepoTestCase):
@@ -62,6 +66,24 @@ class AgentSyncTests(RepoTestCase):
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
+    def test_required_helper_registry_profiles_follow_runtime_policy(self) -> None:
+        for agent_id in REQUIRED_HELPER_AGENT_IDS:
+            payload = tomllib.loads(
+                (REPO_ROOT / "agent-registry" / agent_id / "agent.toml").read_text(encoding="utf-8")
+            )
+            codex = payload.get("codex")
+            self.assertIsInstance(codex, dict, msg=f"missing [codex] table for {agent_id}")
+            self.assertEqual(
+                codex.get("reasoning_effort"),
+                expected_reasoning_effort_for(agent_id),
+                msg=f"unexpected reasoning effort for {agent_id}",
+            )
+            self.assertEqual(
+                codex.get("sandbox_mode"),
+                EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only"),
+                msg=f"unexpected sandbox mode for {agent_id}",
+            )
+
     def test_slice_budget_policy_defaults(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
         slice_budget = policy.get("slice_budget")
@@ -69,27 +91,6 @@ class AgentSyncTests(RepoTestCase):
         self.assertEqual(slice_budget.get("max_repo_files"), 3)
         self.assertEqual(slice_budget.get("max_net_loc"), 150)
         self.assertEqual(slice_budget.get("enforcement"), "split-before-execution")
-
-    def test_browser_explorer_is_projected_with_danger_full_access_profile(self) -> None:
-        self.assertIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)
-
-        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
-        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
-        agents = payload.get("agents")
-        self.assertIsInstance(agents, dict)
-
-        browser_entry = agents.get("browser-explorer")
-        self.assertIsInstance(browser_entry, dict)
-        self.assertEqual(
-            browser_entry.get("config_file"),
-            "agents/browser-explorer.toml",
-        )
-
-        profile_path = REPO_ROOT / "dist" / "codex" / "agents" / "browser-explorer.toml"
-        self.assertTrue(profile_path.exists(), msg=f"missing browser-explorer profile {profile_path}")
-
-        profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
-        self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
 
     def test_builtin_worker_and_explorer_are_not_projected_to_managed_config(self) -> None:
         self.assertNotIn("worker", REQUIRED_HELPER_AGENT_IDS)
@@ -106,30 +107,6 @@ class AgentSyncTests(RepoTestCase):
         self.assertFalse((REPO_ROOT / "agents" / "writer.md").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "explorer-worker.toml").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml").exists())
-
-    def test_summary_agents_use_mini_low_profiles(self) -> None:
-        managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
-        payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
-        agents = payload.get("agents")
-        self.assertIsInstance(agents, dict)
-
-        expected_profiles = {
-            "web-researcher": "web-researcher.toml",
-            "verification-worker": "verification-worker.toml",
-        }
-
-        for agent_id, profile_name in expected_profiles.items():
-            entry = agents.get(agent_id)
-            self.assertIsInstance(entry, dict, msg=f"missing generated helper {agent_id}")
-            self.assertEqual(entry.get("config_file"), f"agents/{profile_name}")
-
-            profile_path = REPO_ROOT / "dist" / "codex" / "agents" / profile_name
-            self.assertTrue(profile_path.exists(), msg=f"missing {agent_id} profile {profile_path}")
-
-            profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
-            self.assertEqual(profile.get("model"), "gpt-5.4-mini")
-            self.assertEqual(profile.get("model_reasoning_effort"), "low")
-
     def test_repo_managed_profiles_do_not_use_xhigh(self) -> None:
         managed_paths = [
             REPO_ROOT / "policy" / "workflow.toml",

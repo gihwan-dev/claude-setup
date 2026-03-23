@@ -49,7 +49,7 @@ python3 scripts/install_assets.py --dry-run --target all
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-`validate_workflow_contracts.py`는 세부 문구/헤딩 규약을 강제하지 않는다. 이 명령은 policy, registry, skill frontmatter, generated surface, sync drift가 정상인지 확인하는 smoke check다.
+`validate_workflow_contracts.py`는 세부 문구/헤딩 규약을 강제하지 않는다. 이 명령은 policy parse, skill frontmatter/manifest parse, sync drift가 정상인지 확인하는 smoke check다. registry와 generated surface의 세부 정합성은 `sync_* --check`가 맡는다.
 
 설치 로직을 건드렸다면 실제 설정 파일도 파싱해 본다.
 
