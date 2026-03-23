@@ -1,18 +1,13 @@
 interface:
   display_name: "Multi Work"
-  short_description: "Multi-agent work entry that explores first and routes the task"
+  short_description: "Explicit multi-agent orchestration utility for helper fan-out and bounded work decomposition"
   default_prompt: >
     $multi-work first read `references/routing-contract.md` and run multi-agent exploration.
-    Use at least 2 helpers, and keep helper selection plus routing aligned with that
-    reference and `scripts/workflow_contract.py`. Before helper results return, do not
-    read more files, run more searches, or continue exploration beyond `wait` and
-    result collection. After helper fan-out, the main agent does not do parallel side
-    work; any follow-up exploration happens only after results return and stays minimal.
-    Route to `design-task` for plan mode or planning/design intent, to
-    `implement-task` for approved task-bundle execution, and use the direct execution lane
-    only for small bounded work. Even in the direct execution lane, do not skip
-    exploration, and preserve `split-replan`, `small slices + run-to-boundary`, and
-    writer guardrails. Do not auto-run review; leave an explicit `multi-review` next
-    step when needed.
+    Use at least 2 helpers, and keep helper selection plus decomposition guardrails
+    aligned with that reference and `scripts/workflow_contract.py`. Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection. After helper fan-out, the main agent does not do parallel side work; any follow-up exploration happens only after results return and stays minimal. Use multi-work decomposition only when the task has 2 or more
+    independent work units, each unit has a clear acceptance boundary, and shared-file
+    edits plus final validation stay with the main thread or integrator. If those
+    conditions are not met, keep the work local or stop with `split-replan`. Do not
+    auto-run review; leave an explicit `multi-review` next step when needed.
 policy:
   allow_implicit_invocation: false

@@ -18,7 +18,6 @@ from workflow_contract import (
     AdvisorySliceContext,
     BASELINE_MULTI_REVIEW_HELPERS,
     DEFAULT_MULTI_WORK_EXPLORATION_HELPERS,
-    decide_multi_work_route,
     detect_task_document_mode,
     derive_multi_review_context,
     derive_multi_review_scope,
@@ -32,7 +31,6 @@ from workflow_contract import (
     infer_structure_review_role,
     is_structure_review_exception,
     MAX_FULL_FILE_STRUCTURE_HOTSPOTS,
-    MultiWorkRoutingContext,
     MULTI_REVIEW_DIFF_AND_HOTSPOTS,
     MULTI_REVIEW_DIFF_ONLY,
     MULTI_REVIEW_FINDING_TYPES,
@@ -636,6 +634,13 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
         ),
         errors,
     )
+    _forbid_substrings(
+        design_skill,
+        (
+            "`multi-work`",
+        ),
+        errors,
+    )
     _expect_substrings(
         design_prompt,
         (
@@ -647,6 +652,13 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "do not replace helper research with direct main-thread",
             "report blocked instead of substituting direct research",
             "allow_implicit_invocation: false",
+        ),
+        errors,
+    )
+    _forbid_substrings(
+        design_prompt,
+        (
+            "`multi-work`",
         ),
         errors,
     )
@@ -732,6 +744,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "`target URL or Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
+            "`multi-work` is optional.",
+            "independent work units",
         ),
         errors,
     )
@@ -746,6 +760,8 @@ def _validate_ui_planning_packet_contract(repo_root: Path, errors: list[str]) ->
             "`target URL or Electron entry`",
             "`scenario checklist`",
             "`evidence checklist`",
+            "skills/multi-work/references/routing-contract.md",
+            "independent work units",
         ),
         errors,
     )
@@ -915,10 +931,18 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "/multi-work",
                 "multi-agent exploration",
                 "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
+                "independent work units",
+                "`multi-review`",
+            ),
+            errors,
+        )
+        _forbid_substrings(
+            multi_work_skill,
+            (
+                "default entry point",
                 "`design-task`",
                 "`implement-task`",
                 "direct execution",
-                "`multi-review`",
             ),
             errors,
         )
@@ -931,10 +955,17 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "scripts/workflow_contract.py",
                 "Before helper results return",
                 "result collection",
+                "independent work units",
+                "`multi-review`",
+            ),
+            errors,
+        )
+        _forbid_substrings(
+            multi_work_prompt,
+            (
                 "`design-task`",
                 "`implement-task`",
                 "direct execution lane",
-                "`multi-review`",
             ),
             errors,
         )
@@ -947,13 +978,21 @@ def _validate_multi_entry_skills_contract(repo_root: Path, errors: list[str]) ->
                 "`structure-reviewer`",
                 "`web-researcher`",
                 "`browser-explorer`",
-                "Routing Matrix",
+                "Orchestration Matrix",
+                "independent work units",
+                "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
+                "split-replan",
+                "keep the work local",
+            ),
+            errors,
+        )
+        _forbid_substrings(
+            multi_work_reference,
+            (
                 "`design-task`",
                 "`implement-task`",
                 "direct execution",
-                "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
-                "split-replan",
-                "small slices + run-to-boundary",
+                "top-level wrapper",
             ),
             errors,
         )
@@ -1352,18 +1391,6 @@ def _validate_policy_functions(repo_root: Path, errors: list[str]) -> None:
         "web-researcher",
     ):
         errors.append("multi-work external-research helper derivation drifted")
-    if decide_multi_work_route(MultiWorkRoutingContext(plan_mode=True)) != "design-task":
-        errors.append("multi-work must route plan mode to design-task")
-    if decide_multi_work_route(
-        MultiWorkRoutingContext(existing_task_bundle_available=True)
-    ) != "implement-task":
-        errors.append("multi-work must route approved task bundles to implement-task")
-    if decide_multi_work_route(
-        MultiWorkRoutingContext(work_is_large_or_ambiguous=True)
-    ) != "design-task":
-        errors.append("multi-work must route large or ambiguous work to design-task")
-    if decide_multi_work_route(MultiWorkRoutingContext()) != "direct-execution":
-        errors.append("multi-work default route must be direct-execution")
 
     quiet_review_helpers = derive_multi_review_helpers(
         AdvisorySliceContext(helper_id="code-quality-reviewer", can_change_current_decision=True)

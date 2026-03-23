@@ -49,8 +49,14 @@ interface:
     implementation or split or replan. If the writer returns `status: final`,
     integrate shared files and proceed to focused validation. If parallel
     writers are needed, use `isolation: worktree` and keep file dependencies
-    separate. Use `browser-explorer` only when browser reproduction or visual
-    evidence is required, and include `target URL or Electron entry`,
+    separate. If an approved slice is still large but decomposes cleanly into 2
+    or more independent work units, you may consult
+    `skills/multi-work/references/routing-contract.md` as an optional
+    orchestration utility. Use that pattern only when each unit has a clear
+    acceptance boundary, shared-file edits stay with the main thread or
+    integrator, and final validation stays main-thread. Use `browser-explorer`
+    only when browser reproduction or visual evidence is required, and include
+    `target URL or Electron entry`,
     `scenario checklist`, and `evidence checklist` in the handoff. Assume the
     main thread will recheck materially affected docs before exit, and include
     any needed README, docs, task-bundle, OpenAPI, schema, or runbook diff

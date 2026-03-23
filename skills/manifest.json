@@ -115,7 +115,7 @@
     },
     {
       "name": "multi-work",
-      "description": "Explicit multi-agent work entry that explores first and routes to planning, task-bundle execution, or direct execution.",
+      "description": "Explicit multi-agent orchestration utility that explores first, selects helpers, and decomposes independent work units when boundaries are clear.",
       "path": "skills/multi-work/SKILL.md"
     },
     {

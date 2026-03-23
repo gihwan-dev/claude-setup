@@ -474,15 +474,6 @@ class AdvisorySliceContext:
 
 
 @dataclass(frozen=True)
-class MultiWorkRoutingContext:
-    plan_mode: bool = False
-    user_requested_plan: bool = False
-    existing_task_bundle_available: bool = False
-    work_is_large_or_ambiguous: bool = False
-    continuity_or_bundle_required: bool = False
-
-
-@dataclass(frozen=True)
 class SliceExecutionPlan:
     repo_files_planned: int = 0
     net_loc_planned: int = 0
@@ -745,16 +736,6 @@ def derive_multi_work_helpers(
     if needs_browser_repro:
         helpers.append("browser-explorer")
     return tuple(helpers)
-
-
-def decide_multi_work_route(context: MultiWorkRoutingContext) -> str:
-    if context.plan_mode or context.user_requested_plan:
-        return "design-task"
-    if context.existing_task_bundle_available:
-        return "implement-task"
-    if context.work_is_large_or_ambiguous or context.continuity_or_bundle_required:
-        return "design-task"
-    return "direct-execution"
 
 
 def should_spawn_advisory_helper(slice_context: AdvisorySliceContext) -> bool:

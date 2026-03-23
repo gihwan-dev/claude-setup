@@ -13,7 +13,7 @@ Agent profiles should stay thin. They capture identity and judgment lens, while 
 ### Orchestration
 
 - Purpose: define when helpers are invoked, how they are combined, and which execution boundaries apply.
-- Contents: routing, handoff, review trigger, budget, termination
+- Contents: helper selection, fan-out boundaries, review trigger, budget, termination
 - Location: `policy/workflow.toml`, `scripts/workflow_contract.py`, `skills/multi-work`, `skills/multi-review`
 
 ### Task Contract

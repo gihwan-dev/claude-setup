@@ -48,6 +48,7 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 5c. If the writer returns `status: blocked`, the main thread either implements directly or switches to split or replan.
 5d. If the writer returns `status: final`, the main thread performs shared-file integration such as barrel exports or route registration, then proceeds to focused validation.
 5e. For parallel writers, use `isolation: worktree` with independent git worktrees, then have the main thread integrate the resulting diffs.
+5f. `multi-work` is optional. Consider it only when the approved slice is still large, can be expressed as 2 or more independent work units, each unit has a clear acceptance and merge boundary, and shared-file edits plus final validation remain with the main thread or integrator.
 6. Use `browser-explorer` only when browser reproduction or visual evidence is needed. The handoff must include `target URL or Electron entry`, `scenario checklist`, and `evidence checklist`.
 7. The main thread runs focused validation. The default is `one target-specific validation + one low-cost check`.
 8. If validation passes, commit the change and update `STATUS.md` with a manager-facing summary.
@@ -70,10 +71,12 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 - Do not let parallel writers edit the same file concurrently. If file-boundary conflicts are detected, switch back to sequential execution.
 - Integrator-only files listed in `MERGE_POLICY.md` may be edited only by the integrator role.
 - In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` automatically fall back to sequential `keep-local` execution.
+- Do not treat `multi-work` as a required lifecycle step. It is an optional orchestration pattern only, and `csv-fanout`, `writer`, or `split/replan` remain the default fit checks.
 
 ## References
 
 - Detailed execution rules, validation fallback, and STATUS contract: `references/execution-rules.md`
+- Optional orchestration pattern for large approved slices with independent work units: `skills/multi-work/references/routing-contract.md`
 
 ## Validation
 

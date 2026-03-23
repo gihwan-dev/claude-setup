@@ -10,7 +10,6 @@ from workflow_contract import (
     AdvisorySliceContext,
     BASELINE_MULTI_REVIEW_HELPERS,
     DEFAULT_MULTI_WORK_EXPLORATION_HELPERS,
-    decide_multi_work_route,
     decide_slice_execution_mode,
     derive_csv_fanout_docs,
     derive_multi_review_context,
@@ -24,7 +23,6 @@ from workflow_contract import (
     is_structure_review_exception,
     LONG_RUNNING_PUBLIC_SURFACE,
     MAX_FULL_FILE_STRUCTURE_HOTSPOTS,
-    MultiWorkRoutingContext,
     MULTI_REVIEW_DIFF_AND_HOTSPOTS,
     MULTI_REVIEW_DIFF_ONLY,
     MULTI_REVIEW_FINDING_TYPES,
@@ -629,21 +627,27 @@ class WorkflowContractTests(RepoTestCase):
             "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             skill_content,
         )
-        self.assertIn("`design-task`", skill_content)
-        self.assertIn("`implement-task`", skill_content)
-        self.assertIn("direct execution", skill_content)
+        self.assertIn("independent work units", skill_content)
+        self.assertNotIn("`design-task`", skill_content)
+        self.assertNotIn("`implement-task`", skill_content)
+        self.assertNotIn("default entry point", skill_content)
         self.assertIn("allow_implicit_invocation: false", prompt_content)
         self.assertIn("references/routing-contract.md", prompt_content)
         self.assertIn("scripts/workflow_contract.py", prompt_content)
         self.assertIn("Before helper results return", prompt_content)
         self.assertIn("result collection", prompt_content)
+        self.assertIn("independent work units", prompt_content)
+        self.assertNotIn("`design-task`", prompt_content)
+        self.assertNotIn("`implement-task`", prompt_content)
         self.assertIn("Helper Matrix", reference_content)
-        self.assertIn("Routing Matrix", reference_content)
+        self.assertIn("Orchestration Matrix", reference_content)
         self.assertIn(
             "Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.",
             reference_content,
         )
-        self.assertIn("small slices + run-to-boundary", reference_content)
+        self.assertIn("keep the work local", reference_content)
+        self.assertNotIn("`design-task`", reference_content)
+        self.assertNotIn("`implement-task`", reference_content)
 
     def test_multi_review_skill_contract_is_documented(self) -> None:
         skill_content = (REPO_ROOT / "skills" / "multi-review" / "SKILL.md").read_text(encoding="utf-8")
@@ -688,7 +692,7 @@ class WorkflowContractTests(RepoTestCase):
         )
         self.assertIn("`maintainability`", reference_content)
 
-    def test_multi_work_helper_derivation_and_route_defaults(self) -> None:
+    def test_multi_work_helper_derivation_defaults(self) -> None:
         self.assertEqual(DEFAULT_MULTI_WORK_EXPLORATION_HELPERS, derive_multi_work_helpers())
         self.assertEqual(
             ("explorer", "structure-reviewer", "web-researcher"),
@@ -697,22 +701,6 @@ class WorkflowContractTests(RepoTestCase):
         self.assertEqual(
             ("explorer", "structure-reviewer", "browser-explorer"),
             derive_multi_work_helpers(needs_browser_repro=True),
-        )
-        self.assertEqual(
-            "design-task",
-            decide_multi_work_route(MultiWorkRoutingContext(plan_mode=True)),
-        )
-        self.assertEqual(
-            "implement-task",
-            decide_multi_work_route(MultiWorkRoutingContext(existing_task_bundle_available=True)),
-        )
-        self.assertEqual(
-            "design-task",
-            decide_multi_work_route(MultiWorkRoutingContext(work_is_large_or_ambiguous=True)),
-        )
-        self.assertEqual(
-            "direct-execution",
-            decide_multi_work_route(MultiWorkRoutingContext()),
         )
 
     def test_multi_review_helper_derivation_uses_baseline_and_conditional_reviewers(self) -> None:
@@ -1157,6 +1145,19 @@ class WorkflowContractTests(RepoTestCase):
         self.assertIn("spawn_agents_on_csv", skill_content)
         self.assertIn("GLOBAL_CONTEXT.md", skill_content)
         self.assertIn("MERGE_POLICY.md", skill_content)
+
+    def test_only_implement_task_mentions_optional_multi_work_pattern(self) -> None:
+        design_content = (REPO_ROOT / "skills" / "design-task" / "SKILL.md").read_text(encoding="utf-8")
+        implement_content = (REPO_ROOT / "skills" / "implement-task" / "SKILL.md").read_text(encoding="utf-8")
+        implement_prompt = (
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml"
+        ).read_text(encoding="utf-8")
+
+        self.assertNotIn("`multi-work`", design_content)
+        self.assertIn("`multi-work` is optional.", implement_content)
+        self.assertIn("independent work units", implement_content)
+        self.assertIn("skills/multi-work/references/routing-contract.md", implement_prompt)
+        self.assertIn("independent work units", implement_prompt)
 
     def test_csv_fanout_continuity_reference_documented(self) -> None:
         reference_path = REPO_ROOT / "skills" / "design-task" / "references" / "plan-continuity-rules.md"

@@ -1,4 +1,4 @@
-# Multi Work Routing Contract
+# Multi Work Orchestration Contract
 
 ## Helper Matrix
 
@@ -10,31 +10,29 @@
 
 The minimum helper count is always 2.
 
-## Routing Matrix
+## Orchestration Matrix
 
-| Condition | Route |
-|-----------|-------|
-| plan mode | `design-task` |
-| User asks for planning or design | `design-task` |
-| Execute the next slice of an approved task bundle | `implement-task` |
-| New work is large or ambiguous | `design-task` |
-| Continuity judgment or bundle creation is needed | `design-task` |
-| Work is small and bounded | direct execution |
+| Condition | Orchestration mode |
+|-----------|--------------------|
+| Repo or code understanding is still weak | helper fan-out + main-thread synthesis |
+| External technical judgment or official docs are required | add `web-researcher` |
+| Browser reproduction or visual evidence is required | add `browser-explorer` |
+| Work can be split into 2 or more independent work units | bounded multi-work decomposition |
+| Shared-file edits or sequencing dependencies dominate | keep local or stop with `split-replan` |
+| Acceptance boundaries are still unclear after exploration | stop with `split-replan` |
 
-`multi-work` is the top-level wrapper.
-Actual task-bundle design and execution rules remain delegated to `design-task` and `implement-task`.
+`multi-work` is an explicit orchestration utility, not a task-lifecycle router.
 
-## Direct Execution Guardrail
+## Decomposition Guardrail
 
-- Even in direct execution, do not skip multi-agent exploration.
+- Do not skip multi-agent exploration.
 - Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
 - After helper fan-out, the main agent does not do parallel side work. Any follow-up exploration happens only after results return and stays minimal.
-- Reuse slice-budget decisions from `scripts/workflow_contract.py`.
-- Broad handoff means `split-replan`.
-- Only allowed slices proceed under `small slices + run-to-boundary`.
-- Use writer only when the existing writer conditions are satisfied.
-- Use parallel writers only when file boundaries are independent and shared-file integration stays with the main thread.
-- If multiple active task-bundle candidates exist, follow the candidate confirmation rules from `implement-task`.
+- Reuse helper and slice-budget decisions from `scripts/workflow_contract.py`.
+- Broad or poorly bounded work means `split-replan`.
+- Use decomposition only when each unit has independent acceptance criteria, a fixed target or output boundary, and sparse dependency on sibling units.
+- Shared-file integration and final validation stay with the main thread or integrator.
+- If those conditions are not met, keep the work local instead of forcing parallel execution.
 
 ## Review Boundary
 
