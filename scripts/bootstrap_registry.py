@@ -9,6 +9,9 @@ import sys
 import tomllib
 from pathlib import Path
 
+OFFICIAL_CODEX_BUILTIN_AGENT_IDS = {"default", "worker", "explorer"}
+
+
 @dataclass(frozen=True)
 class CodexBuiltinProfile:
     agent_key: str
@@ -265,6 +268,8 @@ def _load_codex_builtin_profiles(repo_root: Path) -> list[CodexBuiltinProfile]:
     for agent_key, info in sorted(agents.items()):
         if not isinstance(agent_key, str):
             raise ValueError("bootstrap preflight failed: [agents] keys must be strings")
+        if agent_key in OFFICIAL_CODEX_BUILTIN_AGENT_IDS:
+            continue
         if agent_key in documentation_only_builtins:
             continue
         if agent_key not in _required_helper_agent_ids:

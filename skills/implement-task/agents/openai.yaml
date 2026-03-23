@@ -42,13 +42,14 @@ interface:
     more fail. Let the integrator merge shared files such as barrel exports and
     route registration using `MERGE_POLICY.md`. If the current slice touches 2
     or more files, the file boundaries are clear, and shared-file edits are not
-    needed, consider delegating to `writer`. Writer handoff must include
-    `target_path`, `change_spec`, `context_files`, `validation_command`, and
-    `slice_budget`. If the writer returns `status: blocked`, switch to direct
-    implementation or split or replan. If the writer returns `status: final`,
+    needed, consider delegating to the built-in `worker` agent. Built-in
+    `worker` handoff must include `target_path`, `change_spec`,
+    `context_files`, `validation_command`, and `slice_budget`. If the built-in
+    `worker` returns `status: blocked`, switch to direct implementation or
+    split or replan. If the built-in `worker` returns `status: final`,
     integrate shared files and proceed to focused validation. If parallel
-    writers are needed, use `isolation: worktree` and keep file dependencies
-    separate. If an approved slice is still large but decomposes cleanly into 2
+    built-in `worker` subagents are needed, use `isolation: worktree` and keep
+    file dependencies separate. If an approved slice is still large but decomposes cleanly into 2
     or more independent work units, you may consult
     `skills/multi-work/references/routing-contract.md` as an optional
     orchestration utility. Use that pattern only when each unit has a clear

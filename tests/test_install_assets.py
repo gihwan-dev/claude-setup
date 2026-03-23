@@ -257,6 +257,61 @@ class InstallAssetsTests(RepoTestCase):
             self.assertEqual(updated.count("[agents.code-reviewer]"), 1)
             self.assertIn("[features]", updated)
 
+    def test_update_codex_config_removes_legacy_sections_for_previous_managed_agents(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            codex_home = root / ".codex"
+            codex_home.mkdir(parents=True)
+            managed_path = root / "config.managed-agents.toml"
+            managed_path.write_text(
+                "\n".join(
+                    [
+                        "[agents.code-reviewer]",
+                        'description = "repo-managed"',
+                        'config_file = "agents/code-reviewer.toml"',
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            (codex_home / "config.toml").write_text(
+                "\n".join(
+                    [
+                        'model = "gpt-5.4"',
+                        "",
+                        "[agents.explorer]",
+                        'config_file = "agents/explorer.toml"',
+                        "",
+                        "[agents.writer]",
+                        'config_file = "agents/writer.toml"',
+                        "",
+                        "# BEGIN MANAGED AGENTS (claude-setup)",
+                        "[agents.explorer]",
+                        'config_file = "agents/explorer.toml"',
+                        "",
+                        "[agents.writer]",
+                        'config_file = "agents/writer.toml"',
+                        "# END MANAGED AGENTS (claude-setup)",
+                        "",
+                        "[features]",
+                        "apps = true",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            updated = update_codex_config(codex_home, managed_path, dry_run=True)
+            parsed = tomllib.loads(updated)
+            agents = parsed.get("agents")
+            self.assertIsInstance(agents, dict)
+            self.assertNotIn("explorer", agents)
+            self.assertNotIn("writer", agents)
+            self.assertIn("code-reviewer", agents)
+            self.assertNotIn("[agents.explorer]", updated)
+            self.assertNotIn("[agents.writer]", updated)
+            self.assertIn("[features]", updated)
+
     def test_install_assets_dry_run_dest_runs_skill_prune_and_manifest_update(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             destination = Path(tmpdir) / "skills"

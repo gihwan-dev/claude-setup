@@ -45,11 +45,12 @@ interface:
     Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval
     Criteria`. Add `web-researcher`, `structure-reviewer`, and
     `architecture-reviewer` to UI-planning fan-out only when conditions justify
-    them. Read-only repo discovery belongs to `explorer`, external web research
-    belongs to `web-researcher`, and browser reproduction belongs to
-    `browser-explorer`; do not replace helper research with direct main-thread
-    web exploration. When a planning-role overlay is needed, use
-    `planning-role-cards.md` together with `explorer`. In `EXECUTION_PLAN.md`,
+    them. Read-only repo discovery belongs to the built-in `explorer`,
+    external web research belongs to `web-researcher`, and browser
+    reproduction belongs to `browser-explorer`; do not replace helper research
+    with direct main-thread web exploration. When a planning-role overlay is
+    needed, use `planning-role-cards.md` together with the built-in
+    `explorer`. In `EXECUTION_PLAN.md`,
     keep the order `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`,
     `SLICE-3+=real API/integration`. State that `SLICE-1` reads checklist,
     layout, token, screen-flow, interaction, accessibility, and microcopy, and

@@ -147,8 +147,8 @@ class WorkflowContractTests(RepoTestCase):
             DEFAULT_CODEX_REASONING_EFFORT,
         )
         self.assertEqual(
-            policy["codex"]["reasoning_effort_overrides"]["writer"],
-            expected_reasoning_effort_for("writer"),
+            policy["codex"]["reasoning_effort_overrides"]["verification-worker"],
+            expected_reasoning_effort_for("verification-worker"),
         )
         self.assertEqual(
             policy["codex"]["default_reasoning_effort"],

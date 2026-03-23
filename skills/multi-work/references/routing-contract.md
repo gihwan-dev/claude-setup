@@ -4,7 +4,7 @@
 
 | Situation | Required helpers |
 |-----------|------------------|
-| Basic repo or code exploration | `explorer`, `structure-reviewer` |
+| Basic repo or code exploration | built-in `explorer`, `structure-reviewer` |
 | External technical judgment or official docs needed | Baseline pair + `web-researcher` |
 | Browser reproduction or visual evidence needed | Matching pair + `browser-explorer` |
 

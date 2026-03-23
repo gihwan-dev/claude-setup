@@ -49,7 +49,7 @@ Recommended role split:
 
 Execution rules:
 
-- Prefer an `explorer`-style read-only agent when possible, then layer the role through the prompt.
+- Prefer the built-in `explorer` as the read-only base agent when possible, then layer the role through the prompt.
 - Require each sub-agent to return only these four sections:
   - `Core Conclusion`
   - `Evidence`

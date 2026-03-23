@@ -13,10 +13,6 @@ config_file = "agents/browser-explorer.toml"
 description = "Read-only reviewer focused on risky logic, missing validation, and local code quality."
 config_file = "agents/code-quality-reviewer.toml"
 
-[agents.explorer]
-description = "Read-only evidence collector focused on discovery, ownership tracing, and repository context."
-config_file = "agents/explorer-worker.toml"
-
 [agents.react-state-reviewer]
 description = "Read-only reviewer focused on React state modeling, derived state, and impossible state reduction."
 config_file = "agents/react-state-reviewer.toml"
@@ -40,7 +36,3 @@ config_file = "agents/verification-worker.toml"
 [agents.web-researcher]
 description = "Web research specialist focused on external evidence, current practices, and comparable solutions."
 config_file = "agents/web-researcher.toml"
-
-[agents.writer]
-description = "Delegated code writer focused on bounded implementation slices and readable, declarative code."
-config_file = "agents/writer.toml"

@@ -3,7 +3,6 @@ long_running = ["design-task", "implement-task"]
 
 [projection]
 required_helper_agent_ids = [
-  "explorer",
   "browser-explorer",
   "verification-worker",
   "architecture-reviewer",
@@ -13,7 +12,6 @@ required_helper_agent_ids = [
   "react-state-reviewer",
   "test-engineer",
   "web-researcher",
-  "writer",
 ]
 documentation_only_builtins = ["monitor"]
 
@@ -21,16 +19,13 @@ documentation_only_builtins = ["monitor"]
 default_reasoning_effort = "high"
 
 [codex.reasoning_effort_overrides]
-explorer = "low"
 web-researcher = "low"
 verification-worker = "low"
 code-quality-reviewer = "high"
 browser-explorer = "high"
-writer = "medium"
 
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"
-writer = "danger-full-access"
 
 [review_triggers]
 code_quality_min_changed_files = 3

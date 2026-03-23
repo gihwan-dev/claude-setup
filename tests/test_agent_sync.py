@@ -91,37 +91,29 @@ class AgentSyncTests(RepoTestCase):
         profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
         self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
 
-    def test_writer_agent_is_projected_with_danger_full_access_profile(self) -> None:
-        self.assertIn("writer", REQUIRED_HELPER_AGENT_IDS)
+    def test_builtin_worker_and_explorer_are_not_projected_to_managed_config(self) -> None:
+        self.assertNotIn("worker", REQUIRED_HELPER_AGENT_IDS)
+        self.assertNotIn("explorer", REQUIRED_HELPER_AGENT_IDS)
 
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
         payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
         agents = payload.get("agents")
         self.assertIsInstance(agents, dict)
 
-        writer_entry = agents.get("writer")
-        self.assertIsInstance(writer_entry, dict)
-        self.assertEqual(
-            writer_entry.get("config_file"),
-            "agents/writer.toml",
-        )
+        self.assertNotIn("worker", agents)
+        self.assertNotIn("explorer", agents)
+        self.assertFalse((REPO_ROOT / "agents" / "explorer.md").exists())
+        self.assertFalse((REPO_ROOT / "agents" / "writer.md").exists())
+        self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "explorer-worker.toml").exists())
+        self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml").exists())
 
-        profile_path = REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml"
-        self.assertTrue(profile_path.exists(), msg=f"missing writer profile {profile_path}")
-
-        profile = tomllib.loads(profile_path.read_text(encoding="utf-8"))
-        self.assertEqual(profile.get("model"), "gpt-5.4-mini")
-        self.assertEqual(profile.get("sandbox_mode"), "danger-full-access")
-        self.assertEqual(profile.get("model_reasoning_effort"), "medium")
-
-    def test_exploration_and_summary_agents_use_mini_low_profiles(self) -> None:
+    def test_summary_agents_use_mini_low_profiles(self) -> None:
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
         payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
         agents = payload.get("agents")
         self.assertIsInstance(agents, dict)
 
         expected_profiles = {
-            "explorer": "explorer-worker.toml",
             "web-researcher": "web-researcher.toml",
             "verification-worker": "verification-worker.toml",
         }
@@ -169,7 +161,7 @@ class AgentSyncTests(RepoTestCase):
                 msg=f"projected writable role is not allowed: {path}",
             )
 
-    def test_bootstrap_registry_roundtrip_keeps_required_helpers_and_ignores_optional_worker(self) -> None:
+    def test_bootstrap_registry_roundtrip_keeps_required_helpers_and_ignores_builtin_worker_and_explorer(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             repo_root = root / "repo"
@@ -186,6 +178,10 @@ class AgentSyncTests(RepoTestCase):
                         'description = "Builtin worker"',
                         'config_file = "worker.toml"',
                         "",
+                        "[agents.explorer]",
+                        'description = "Builtin explorer"',
+                        'config_file = "explorer.toml"',
+                        "",
                         "[agents.verification-worker]",
                         'description = "Builtin verification-worker"',
                         'config_file = "verification-worker.toml"',
@@ -201,6 +197,19 @@ class AgentSyncTests(RepoTestCase):
                         "",
                         'developer_instructions = """',
                         "worker instructions",
+                        '"""',
+                        "",
+                    ]
+                ),
+            )
+            self._write_text(
+                codex_home / "explorer.toml",
+                "\n".join(
+                    [
+                        'model = "gpt-5.4-mini"',
+                        "",
+                        'developer_instructions = """',
+                        "explorer instructions",
                         '"""',
                         "",
                     ]
@@ -231,6 +240,7 @@ class AgentSyncTests(RepoTestCase):
 
             self.assertEqual(exit_code, 0)
             self.assertFalse((registry_root / "worker").exists())
+            self.assertFalse((registry_root / "explorer").exists())
 
             helper_payload = tomllib.loads(
                 (registry_root / "verification-worker" / "agent.toml").read_text(encoding="utf-8")
@@ -265,6 +275,8 @@ class AgentSyncTests(RepoTestCase):
             self.assertEqual(generated_profile.get("sandbox_mode"), "read-only")
             self.assertFalse((repo_root / "agents" / "worker.md").exists())
             self.assertFalse((repo_root / "dist" / "codex" / "agents" / "worker.toml").exists())
+            self.assertFalse((repo_root / "agents" / "explorer.md").exists())
+            self.assertFalse((repo_root / "dist" / "codex" / "agents" / "explorer.toml").exists())
 
     def test_bootstrap_registry_missing_profile_fails_without_partial_mutation(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -301,29 +313,12 @@ class AgentSyncTests(RepoTestCase):
             codex_home = root / ".codex"
             self._seed_minimal_bootstrap_repo(repo_root)
             self._write_text(
-                repo_root / "agents" / "writer.md",
+                registry_root / "custom-reviewer" / "agent.toml",
                 "\n".join(
                     [
-                        "---",
-                        "name: writer",
-                        "role: writer",
-                        'description: "Delegated code writer"',
-                        "tools: Read, Write, Edit, Bash, Grep, Glob",
-                        "model: sonnet",
-                        "---",
-                        "",
-                        "writer instructions",
-                        "",
-                    ]
-                ),
-            )
-            self._write_text(
-                registry_root / "writer" / "agent.toml",
-                "\n".join(
-                    [
-                        'id = "writer"',
-                        'role = "writer"',
-                        'description = "Delegated code writer"',
+                        'id = "custom-reviewer"',
+                        'role = "reviewer"',
+                        'description = "Custom reviewer"',
                         'source = "repo-agent"',
                         "",
                         "[projection]",
@@ -332,21 +327,21 @@ class AgentSyncTests(RepoTestCase):
                         "",
                         "[repo]",
                         'model = "sonnet"',
-                        'tools = ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]',
+                        'tools = ["Read", "Grep", "Glob"]',
                         "",
                         "[codex]",
-                        'agent_key = "writer"',
-                        'config_file = "writer.toml"',
+                        'agent_key = "custom-reviewer"',
+                        'config_file = "custom-reviewer.toml"',
                         'model = "gpt-5.4-mini"',
                         'reasoning_effort = "medium"',
-                        'sandbox_mode = "danger-full-access"',
+                        'sandbox_mode = "read-only"',
                         "",
                     ]
                 ),
             )
             self._write_text(
-                registry_root / "writer" / "instructions.md",
-                "writer instructions\n",
+                registry_root / "custom-reviewer" / "instructions.md",
+                "custom reviewer instructions\n",
             )
             self._write_text(
                 codex_home / "config.toml",
@@ -363,8 +358,10 @@ class AgentSyncTests(RepoTestCase):
             with patch.dict(os.environ, {"CODEX_HOME": str(codex_home)}, clear=False):
                 bootstrap_registry.bootstrap_from_current(repo_root, registry_root)
 
-            payload = tomllib.loads((registry_root / "writer" / "agent.toml").read_text(encoding="utf-8"))
+            payload = tomllib.loads(
+                (registry_root / "custom-reviewer" / "agent.toml").read_text(encoding="utf-8")
+            )
             codex = payload.get("codex")
             self.assertIsInstance(codex, dict)
             self.assertEqual(codex.get("model"), "gpt-5.4-mini")
-            self.assertEqual(codex.get("reasoning_effort"), "medium")
+            self.assertEqual(codex.get("reasoning_effort"), "high")

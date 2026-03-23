@@ -29,7 +29,7 @@ refactor
   - managed block가 helper 등록의 SSOT가 되도록 생성/설치 경로 변경
 - Don't touch:
   - planning-role의 internal-only projection 원칙
-  - single-writer / slice / validation lifecycle 계약
+  - single-worker / slice / validation lifecycle 계약
 
 # Evidence
 

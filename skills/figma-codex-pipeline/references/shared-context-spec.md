@@ -4,7 +4,7 @@ A global context file written by the planner, which the executor and verifier wo
 
 ## Ownership
 
-- **Writer**: Main agent, created in Phase 1 and optionally updated in Phase 3
+- **Main agent**: Created in Phase 1 and optionally updated in Phase 3
 - **Reader**: Executor workers and verifier workers, read-only
 
 ## Schema

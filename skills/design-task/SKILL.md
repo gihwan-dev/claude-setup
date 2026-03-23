@@ -106,14 +106,14 @@ The main thread only synthesizes their results.
 
 ### Agent Usage
 
-For quality preflight on existing TS, JS, or React code, default to `explorer`.
-Use `explorer` for repo read-only discovery, `web-researcher` for external research, and `browser-explorer` for browser reproduction.
+For quality preflight on existing TS, JS, or React code, default to the built-in `explorer`.
+Use the built-in `explorer` for repo read-only discovery, `web-researcher` for external research, and `browser-explorer` for browser reproduction.
 When structural smells or `split-first` risk appears, add `structure-reviewer` and `test-engineer` so decomposition boundaries are clarified first.
 When public or shared boundary risk appears, fan out to `architecture-reviewer` first to lock the boundary decision.
 For AI or agent workflow planning, start with `web-researcher` and prioritize official vendor docs such as OpenAI and Anthropic.
 Keep planning fan-out limited to independent lenses instead of broad multi-agent sprawl.
 If helpers are unavailable, report blocked instead of replacing them with direct main-thread research.
-When a planning-role-card overlay is needed, use `explorer` together with `${SKILL_DIR}/references/planning-role-cards.md`.
+When a planning-role-card overlay is needed, use the built-in `explorer` together with `${SKILL_DIR}/references/planning-role-cards.md`.
 Use `architecture-reviewer` for boundary or module-impact checks, `type-specialist` for public type or contract impact, and `test-engineer` for deriving validation scenarios.
 
 ## Required Bundle Content

@@ -42,11 +42,11 @@ Implement the next execution slice from an approved task bundle.
 3e. In `csv-fanout`, let the integrator merge shared files such as barrel exports or route registration according to `MERGE_POLICY.md`.
 4. If `delivery_strategy=ui-first`, read `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/manifest.json` together. `SLICE-1` reads checklist/layout/token/screen-flow plus interaction/a11y/microcopy sections. `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture, degradation, and task-based approval criteria.
 5. Lock the current slice boundary, run structure preflight, then apply the code or doc diff. If the `split-first trigger` is on, do not append to the existing target file. Fix the decomposition boundary inside the same slice first, and fall back to an `exact split proposal` if the scope cannot be reduced.
-5a. Writer delegation rule: if the current slice touches 2 or more files, the file boundaries are clear, and shared-file edits are unnecessary, consider delegating to the `writer` agent. Parallel writers require no dependency between target files.
-5b. A writer handoff must include `target_path` (allowed edit files), `change_spec` (requested change), `context_files` (reference files), `validation_command`, and `slice_budget` (file and LOC cap).
-5c. If the writer returns `status: blocked`, the main thread either implements directly or switches to split or replan.
-5d. If the writer returns `status: final`, the main thread performs shared-file integration such as barrel exports or route registration, then proceeds to focused validation.
-5e. For parallel writers, use `isolation: worktree` with independent git worktrees, then have the main thread integrate the resulting diffs.
+5a. Built-in `worker` delegation rule: if the current slice touches 2 or more files, the file boundaries are clear, and shared-file edits are unnecessary, consider delegating to the built-in `worker` agent. Parallel built-in `worker` subagents require no dependency between target files.
+5b. A built-in `worker` handoff must include `target_path` (allowed edit files), `change_spec` (requested change), `context_files` (reference files), `validation_command`, and `slice_budget` (file and LOC cap).
+5c. If the built-in `worker` returns `status: blocked`, the main thread either implements directly or switches to split or replan.
+5d. If the built-in `worker` returns `status: final`, the main thread performs shared-file integration such as barrel exports or route registration, then proceeds to focused validation.
+5e. For parallel built-in `worker` subagents, use `isolation: worktree` with independent git worktrees, then have the main thread integrate the resulting diffs.
 5f. `multi-work` is optional. Consider it only when the approved slice is still large, can be expressed as 2 or more independent work units, each unit has a clear acceptance and merge boundary, and shared-file edits plus final validation remain with the main thread or integrator.
 6. Use `browser-explorer` only when browser reproduction or visual evidence is needed. The handoff must include `target URL or Electron entry`, `scenario checklist`, and `evidence checklist`.
 7. The main thread runs focused validation. The default is `one target-specific validation + one low-cost check`.
@@ -65,12 +65,12 @@ Implement the next execution slice from an approved task bundle.
 - If focused validation fails, do not commit and record the slice failure.
 - If docs or other SSOT files change, finish the required sync and `--check` runs before exit.
 - In `csv-fanout`, row workers may create or edit files only at `target_path`. They must not modify shared files directly.
-- `writer` does not edit files outside `target_path`. Shared files are integrated by the main thread.
-- `writer` does not perform git commit. Commit stays main-thread only.
-- Do not let parallel writers edit the same file concurrently. If file-boundary conflicts are detected, switch back to sequential execution.
+- Built-in `worker` subagents do not edit files outside `target_path`. Shared files are integrated by the main thread.
+- Built-in `worker` subagents do not perform git commit. Commit stays main-thread only.
+- Do not let parallel built-in `worker` subagents edit the same file concurrently. If file-boundary conflicts are detected, switch back to sequential execution.
 - Integrator-only files listed in `MERGE_POLICY.md` may be edited only by the integrator role.
 - In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` automatically fall back to sequential `keep-local` execution.
-- Do not treat `multi-work` as a required lifecycle step. It is an optional orchestration pattern only, and `csv-fanout`, `writer`, or `split/replan` remain the default fit checks.
+- Do not treat `multi-work` as a required lifecycle step. It is an optional orchestration pattern only, and `csv-fanout`, built-in `worker` delegation, or `split/replan` remain the default fit checks.
 
 ## References
 

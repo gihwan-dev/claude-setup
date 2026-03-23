@@ -19,7 +19,7 @@
 - task slug는 `multi-agent-structure-unification`으로 고정했다.
 - 이 작업은 3개 slice로 실행했다.
 - `frontend-structure-gatekeeper`는 React 전용 gate로 유지하고, 공통 구조 책임은 `module-structure-gatekeeper`로 분리했다.
-- 기존 Slice 2 handoff는 writer interrupt가 반복돼 `sync/install` 과 `validation/tests` 로 재분할했다.
+- 기존 Slice 2 handoff는 legacy writer, now built-in worker interrupt가 반복돼 `sync/install` 과 `validation/tests` 로 재분할했다.
 - dry-run validation은 실제 home 대신 repo의 `dist/codex` profile을 기준으로 helper 존재를 검증하도록 정리했다.
 - managed block cleanup 대상은 helper에 한정하지 않고 managed block에 포함되는 전체 agent id로 확장했다.
 - `update_codex_config`는 write 전에 최종 TOML 파싱으로 syntax를 검증한다.

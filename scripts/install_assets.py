@@ -540,7 +540,12 @@ def update_codex_config(
         existing = config_path.read_text(encoding="utf-8")
     else:
         existing = ""
-    current = _remove_managed_agent_sections(existing, managed_agent_ids)
+    previous_managed_body = _extract_existing_managed_body(existing)
+    previous_managed_agent_ids = _parse_managed_agent_ids(previous_managed_body or "")
+    current = _remove_managed_agent_sections(
+        existing,
+        managed_agent_ids | previous_managed_agent_ids,
+    )
 
     if MANAGED_BLOCK_PATTERN.search(current):
         updated = MANAGED_BLOCK_PATTERN.sub(lambda _: managed_block, current)

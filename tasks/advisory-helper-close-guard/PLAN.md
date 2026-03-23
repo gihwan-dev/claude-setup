@@ -20,7 +20,7 @@ refactor
 # Keep / Change / Don't touch
 
 - Keep:
-  - single-writer delegated flow
+  - single-worker delegated flow
   - `worker` blocking, `verification-worker` semi-blocking 역할 구분
   - existing helper ids와 projection 구조
 - Change:
@@ -54,7 +54,7 @@ refactor
 ## Chosen approach
 
 - quality preflight verdict는 `promote-architecture`로 고정한다.
-- 모든 advisory helper(`explorer`, reviewer, gatekeeper)에 `timeout_policy = "background-no-close"`와 `allowed_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]`를 적용한다.
+- 모든 advisory helper(built-in `explorer`, reviewer, gatekeeper)에 `timeout_policy = "background-no-close"`와 `allowed_close_reasons = ["explicit-cancel", "hard-deadline", "blocked"]`를 적용한다.
 - `worker`, `verification-worker`는 기존 blocking class를 유지하되 `timeout_policy = "observe-and-status-ping"`와 동일 `allowed_close_reasons`를 사용한다.
 - `scripts/workflow_contract.py`에 `decide_helper_close_action(snapshot)`, `should_spawn_advisory_helper(slice_context)`를 추가해 machine-checkable 규범으로 고정한다.
 - 작은/저위험 slice는 메인 스레드 수동 리뷰를 기본값으로 두고, advisory helper fan-out은 결과가 현재 slice 의사결정을 바꿀 수 있을 때만 허용한다.

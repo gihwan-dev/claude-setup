@@ -73,7 +73,7 @@ These agents keep a separate playbook outside the profile.
 - `agent-registry/structure-reviewer/references/decomposition-playbook.md`
 - `agent-registry/test-engineer/references/test-review-playbook.md`
 - `agent-registry/react-state-reviewer/references/state-anti-patterns.md`
-- `agent-registry/writer/references/writing-style.md`
+- `skills/implement-task/SKILL.md` for built-in `worker` delegation rules
 - `agent-registry/browser-explorer/references/observation-points.md`
 
 ## Research Basis
