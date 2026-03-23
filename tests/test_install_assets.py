@@ -19,7 +19,6 @@ from install_assets import (
     _remove_managed_agent_sections,
     install_path,
     expected_generated_skill_names,
-    prune_legacy_global_rule_files,
     prune_generated_skills,
     resolve_install_mode,
     run_sync,
@@ -103,10 +102,7 @@ class InstallAssetsTests(RepoTestCase):
             (REPO_ROOT / "skills" / "manifest.json").read_text(encoding="utf-8")
         )
         manifest_names = {entry["name"] for entry in manifest_payload["skills"]}
-        generated_names = expected_generated_skill_names(
-            REPO_ROOT / "skills",
-            REPO_ROOT / ".agents" / "skills",
-        )
+        generated_names = expected_generated_skill_names(REPO_ROOT / "skills")
         internal_asset_names = {
             path.name for path in _iter_internal_skill_asset_dirs(REPO_ROOT / "skills")
         }
@@ -151,65 +147,9 @@ class InstallAssetsTests(RepoTestCase):
                 0,
                 msg=f"install_assets dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
             )
-            self.assertIn("skill canonical source:", completed.stdout)
+            self.assertIn("skill source:", completed.stdout)
             self.assertNotIn(str(codex_home / "AGENTS.md"), completed.stdout)
-            legacy_overlay_root = REPO_ROOT / ".agents" / "skills"
-            if legacy_overlay_root.exists():
-                self.assertIn("legacy overlay detected:", completed.stdout)
-            else:
-                self.assertNotIn("legacy overlay detected:", completed.stdout)
             self.assertIn("internal skill asset:", completed.stdout)
-
-    def test_install_assets_dry_run_reports_legacy_global_rule_cleanup(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            claude_home = root / ".claude"
-            codex_home = root / ".codex"
-            (claude_home / "skills").mkdir(parents=True)
-            (codex_home / "agents").mkdir(parents=True)
-            (codex_home / "config.toml").write_text(
-                'model = "gpt-5.4"\n[features]\napps = true\n',
-                encoding="utf-8",
-            )
-            (claude_home / "CLAUDE.md").write_text(
-                "\n".join(
-                    [
-                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
-                        "<!-- Run: python3 scripts/sync_instructions.py -->",
-                        "",
-                    ]
-                ),
-                encoding="utf-8",
-            )
-            (codex_home / "AGENTS.md").write_text(
-                "\n".join(
-                    [
-                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
-                        "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
-                        "",
-                    ]
-                ),
-                encoding="utf-8",
-            )
-
-            completed = self.run_cmd(
-                "python3",
-                "scripts/install_assets.py",
-                "--dry-run",
-                "--target",
-                "all",
-                env={
-                    "CLAUDE_HOME": str(claude_home),
-                    "CODEX_HOME": str(codex_home),
-                },
-            )
-
-            self.assertEqual(
-                completed.returncode,
-                0,
-                msg=f"install_assets legacy cleanup dry-run failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
-            )
-            self.assertIn("repo-managed legacy global rule file", completed.stdout)
 
     def test_codex_managed_block_contains_required_helpers(self) -> None:
         # managed config를 실제 파일로 사용해 업데이트 결과에 필수 helper가 포함되는지 확인
@@ -242,43 +182,6 @@ class InstallAssetsTests(RepoTestCase):
         self.assertTrue(any("scripts/sync_agents.py --check" in call for call in flattened))
         self.assertTrue(any("scripts/sync_skills_index.py --check" in call for call in flattened))
         self.assertFalse(any("scripts/sync_instructions.py" in call for call in flattened))
-
-    def test_prune_legacy_global_rule_files_removes_only_repo_managed_files(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            root = Path(tmpdir)
-            repo_root = root / "repo"
-            home = root / ".codex"
-            repo_root.mkdir()
-            home.mkdir()
-
-            managed_copy = home / "AGENTS.md"
-            managed_copy.write_text(
-                "\n".join(
-                    [
-                        "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->",
-                        "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
-                        "",
-                    ]
-                ),
-                encoding="utf-8",
-            )
-
-            repo_managed_target = repo_root / "CLAUDE.md"
-            repo_managed_target.write_text("legacy target\n", encoding="utf-8")
-            (home / "CLAUDE.md").symlink_to(repo_managed_target)
-
-            unrelated = home / "INSTRUCTIONS.md"
-            unrelated.write_text("# personal notes\n", encoding="utf-8")
-
-            prune_legacy_global_rule_files(
-                home=home,
-                repo_root=repo_root,
-                dry_run=False,
-            )
-
-            self.assertFalse(managed_copy.exists())
-            self.assertFalse((home / "CLAUDE.md").exists())
-            self.assertTrue(unrelated.exists())
 
     def test_remove_managed_agent_sections_preserves_unmanaged_agents(self) -> None:
         sample = "\n".join(
@@ -359,12 +262,12 @@ class InstallAssetsTests(RepoTestCase):
             destination = Path(tmpdir) / "skills"
             destination.mkdir(parents=True)
 
-            stale_generated = destination / "milestone-runner"
+            stale_generated = destination / "obsolete-skill"
             stale_generated.mkdir()
             (destination / "my-manual-skill").mkdir()
             write_generated_skill_manifest(
                 destination,
-                {"design-task", "milestone-runner"},
+                {"design-task", "obsolete-skill"},
                 dry_run=False,
             )
 
@@ -450,17 +353,17 @@ class InstallAssetsTests(RepoTestCase):
             skills_dir = Path(tmpdir) / "skills"
             skills_dir.mkdir(parents=True)
 
-            stale_generated = skills_dir / "milestone-runner"
+            stale_generated = skills_dir / "obsolete-skill"
             stale_generated.mkdir()
             (skills_dir / "design-task").mkdir()
             (skills_dir / "implement-task").mkdir()
             manual_skill = skills_dir / "my-manual-skill"
             manual_skill.mkdir()
 
-            broken_symlink = skills_dir / "milestone"
-            broken_symlink.symlink_to(skills_dir / "missing-milestone-target")
+            broken_symlink = skills_dir / "old-skill"
+            broken_symlink.symlink_to(skills_dir / "missing-skill-target")
 
-            previous_generated = {"milestone-runner", "design-task", "milestone"}
+            previous_generated = {"obsolete-skill", "design-task", "old-skill"}
             expected_generated = {"design-task", "implement-task"}
             prune_generated_skills(
                 skills_dir=skills_dir,
@@ -480,43 +383,21 @@ class InstallAssetsTests(RepoTestCase):
             self.assertTrue((skills_dir / "design-task").exists())
             self.assertTrue((skills_dir / "implement-task").exists())
 
-    def test_skill_prune_removes_legacy_milestone_dir_without_manifest(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            skills_dir = Path(tmpdir) / "skills"
-            skills_dir.mkdir(parents=True)
-
-            legacy_copied_dir = skills_dir / "milestone-runner"
-            legacy_copied_dir.mkdir()
-            manual_skill = skills_dir / "my-manual-skill"
-            manual_skill.mkdir()
-
-            prune_generated_skills(
-                skills_dir=skills_dir,
-                expected_generated_names={"design-task", "implement-task"},
-                previous_generated_names=set(),
-                dry_run=False,
-            )
-
-            self.assertFalse(legacy_copied_dir.exists())
-            self.assertTrue(manual_skill.exists())
-
-    def test_install_skill_sources_applies_canonical_and_overlay(self) -> None:
+    def test_install_skill_sources_copies_canonical_skills_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             canonical = root / "skills"
-            overlay = root / ".agents" / "skills"
             destination = root / "dest"
 
             (canonical / "alpha").mkdir(parents=True)
             (canonical / "alpha" / "SKILL.md").write_text("---\nname: alpha\n---\n", encoding="utf-8")
             (canonical / "_shared").mkdir(parents=True)
             (canonical / "_shared" / "storybook-screenshot-guidelines.md").write_text("shared", encoding="utf-8")
-            (overlay / "beta").mkdir(parents=True)
-            (overlay / "beta" / "SKILL.md").write_text("---\nname: beta\n---\n", encoding="utf-8")
+            (canonical / "beta").mkdir(parents=True)
+            (canonical / "beta" / "SKILL.md").write_text("---\nname: beta\n---\n", encoding="utf-8")
 
             _install_skill_sources(
-                canonical_skills_src=canonical,
-                legacy_overlay_src=overlay,
+                skills_src=canonical,
                 destination=destination,
                 mode="copy",
                 dry_run=False,
@@ -555,20 +436,17 @@ class InstallAssetsTests(RepoTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             canonical = root / "skills"
-            overlay = root / ".agents" / "skills"
 
             (canonical / "alpha").mkdir(parents=True)
             (canonical / "alpha" / "SKILL.md").write_text("---\nname: alpha\n---\n", encoding="utf-8")
             (canonical / "_shared").mkdir(parents=True)
             (canonical / "_shared" / "README.md").write_text("shared", encoding="utf-8")
             (canonical / "notes").mkdir(parents=True)
-            (overlay / "beta").mkdir(parents=True)
-            (overlay / "beta" / "SKILL.md").write_text("---\nname: beta\n---\n", encoding="utf-8")
 
             installable_names = [path.name for path in _iter_installable_skill_dirs(canonical)]
-            expected_names = expected_generated_skill_names(canonical, overlay)
+            expected_names = expected_generated_skill_names(canonical)
 
             self.assertEqual(installable_names, ["alpha"])
-            self.assertEqual(expected_names, {"alpha", "beta"})
+            self.assertEqual(expected_names, {"alpha"})
             self.assertNotIn("_shared", expected_names)
             self.assertNotIn("notes", expected_names)

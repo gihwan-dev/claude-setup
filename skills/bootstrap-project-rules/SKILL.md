@@ -63,7 +63,7 @@ and boundaries.
 2. If no path is given, build the active bundle candidates.
 3. Auto-select only when there is exactly one candidate.
 4. If there are two or more candidates, stop and ask the user to confirm instead of auto-running.
-5. Do not apply this to legacy `PLAN.md` tasks.
+5. Apply this only to bundle-based tasks.
 
 ## Workflow
 

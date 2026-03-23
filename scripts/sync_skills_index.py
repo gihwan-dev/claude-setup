@@ -116,7 +116,7 @@ def _render_index(entries: list[SkillEntry]) -> str:
         "",
         "# Skills Index",
         "",
-        "The canonical skill source is `skills/`. `.agents/skills` is a legacy overlay for install compatibility and is not included in this index.",
+        "The canonical skill source is `skills/`.",
         "",
         "## Available Skills",
         "",
@@ -133,7 +133,6 @@ def _render_manifest(entries: list[SkillEntry]) -> str:
     payload = {
         "generated_by": "python3 scripts/sync_skills_index.py",
         "canonical_source_root": "skills",
-        "legacy_overlay_root": ".agents/skills",
         "skills": [
             {
                 "name": entry.name,

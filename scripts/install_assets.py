@@ -13,7 +13,6 @@ from pathlib import Path
 
 from workflow_contract import (
     GENERATED_SKILL_MANIFEST_NAME,
-    LEGACY_MILESTONE_SKILL_NAMES,
     REQUIRED_HELPER_AGENT_IDS,
 )
 
@@ -23,12 +22,6 @@ REPO_NOTICE_LINE_1 = "<!-- AUTO-GENERATED from agent-registry. Do not edit direc
 REPO_NOTICE_LINE_2 = "<!-- Run: python3 scripts/sync_agents.py -->"
 CODEX_NOTICE_LINE_1 = "# AUTO-GENERATED from agent-registry. Do not edit directly."
 CODEX_NOTICE_LINE_2 = "# Run: python3 scripts/sync_agents.py"
-LEGACY_RULE_NOTICE_LINE_1 = "<!-- AUTO-GENERATED from docs/policy. Do not edit directly. -->"
-LEGACY_RULE_NOTICE_LINE_2 = {
-    "<!-- Run: python3 scripts/sync_instructions.py -->",
-    "<!-- Installed to ~/.codex/AGENTS.md as global Codex policy. -->",
-}
-LEGACY_GLOBAL_RULE_FILENAMES = ("AGENTS.md", "CLAUDE.md", "INSTRUCTIONS.md")
 MANAGED_BLOCK_PATTERN = re.compile(
     rf"{re.escape(BEGIN_MANAGED)}\n(.*?)\n{re.escape(END_MANAGED)}\n?",
     re.DOTALL,
@@ -200,41 +193,30 @@ def _iter_internal_skill_asset_dirs(source_dir: Path) -> list[Path]:
     )
 
 
-def expected_generated_skill_names(*source_dirs: Path) -> set[str]:
+def expected_generated_skill_names(source_dir: Path) -> set[str]:
     names: set[str] = set()
-    for source_dir in source_dirs:
-        for source in _iter_installable_skill_dirs(source_dir):
-            names.add(source.name)
+    for source in _iter_installable_skill_dirs(source_dir):
+        names.add(source.name)
     return names
-
-
-def _legacy_overlay_message(source_dir: Path) -> str:
-    return f"legacy overlay detected: {source_dir} (canonical source remains skills/)"
 
 
 def _print_skill_source_summary(
     *,
-    canonical_skills_src: Path,
-    legacy_overlay_src: Path,
+    skills_src: Path,
     dry_run: bool,
 ) -> None:
     mode = "[dry-run] " if dry_run else ""
-    print(f"{mode}skill canonical source: {canonical_skills_src}")
-    if legacy_overlay_src.exists():
-        print(f"{mode}{_legacy_overlay_message(legacy_overlay_src)}")
+    print(f"{mode}skill source: {skills_src}")
 
 
 def _install_skill_sources(
     *,
-    canonical_skills_src: Path,
-    legacy_overlay_src: Path,
+    skills_src: Path,
     destination: Path,
     mode: str,
     dry_run: bool,
 ) -> None:
-    for source in _iter_installable_skill_dirs(canonical_skills_src):
-        install_path(source, destination / source.name, mode, dry_run)
-    for source in _iter_installable_skill_dirs(legacy_overlay_src):
+    for source in _iter_installable_skill_dirs(skills_src):
         install_path(source, destination / source.name, mode, dry_run)
 
 
@@ -301,14 +283,6 @@ def prune_generated_skills(
         if not path.exists() and not path.is_symlink():
             continue
         _prune_file(path, reason="stale generated skill", dry_run=dry_run)
-
-    for name in LEGACY_MILESTONE_SKILL_NAMES:
-        if name in expected_generated_names:
-            continue
-        path = skills_dir / name
-        if not path.exists() and not path.is_symlink():
-            continue
-        _prune_file(path, reason="legacy milestone generated skill", dry_run=dry_run)
 
     for path in sorted(skills_dir.iterdir() if skills_dir.exists() else []):
         if not path.is_symlink() or path.name in expected_generated_names:
@@ -505,60 +479,6 @@ def _prune_file(path: Path, *, reason: str, dry_run: bool) -> None:
     print(f"prune {path} ({reason})")
 
 
-def _resolve_without_error(path: Path) -> Path:
-    try:
-        return path.resolve(strict=False)
-    except OSError:
-        return path.absolute()
-
-
-def _is_within(root: Path, candidate: Path) -> bool:
-    try:
-        candidate.relative_to(root)
-        return True
-    except ValueError:
-        return False
-
-
-def _legacy_rule_symlink_points_to_repo(path: Path, repo_root: Path) -> bool:
-    if not path.is_symlink():
-        return False
-    return _is_within(
-        _resolve_without_error(repo_root),
-        _resolve_without_error(path),
-    )
-
-
-def _is_repo_managed_legacy_rule_file(path: Path) -> bool:
-    if path.name not in LEGACY_GLOBAL_RULE_FILENAMES:
-        return False
-    lines = _read_text(path).splitlines()
-    if not lines or lines[0].strip() != LEGACY_RULE_NOTICE_LINE_1:
-        return False
-    if len(lines) == 1:
-        return True
-    return lines[1].strip() in LEGACY_RULE_NOTICE_LINE_2
-
-
-def prune_legacy_global_rule_files(
-    *,
-    home: Path,
-    repo_root: Path,
-    dry_run: bool,
-) -> None:
-    for filename in LEGACY_GLOBAL_RULE_FILENAMES:
-        path = home / filename
-        if not path.exists() and not path.is_symlink():
-            continue
-        if _legacy_rule_symlink_points_to_repo(path, repo_root):
-            reason = "repo-managed legacy global rule symlink"
-        elif _is_repo_managed_legacy_rule_file(path):
-            reason = "repo-managed legacy global rule file"
-        else:
-            continue
-        _prune_file(path, reason=reason, dry_run=dry_run)
-
-
 def prune_claude_agents(
     *,
     agents_dir: Path,
@@ -658,20 +578,15 @@ def main() -> int:
     run_sync(repo_root, dry_run=args.dry_run)
 
     skills_src = repo_root / "skills"
-    legacy_overlay_skills_src = repo_root / ".agents" / "skills"
     repo_agents_src = repo_root / "agents"
     codex_agents_src = repo_root / "dist" / "codex" / "agents"
     codex_managed_src = repo_root / "dist" / "codex" / "config.managed-agents.toml"
-    expected_skill_names = expected_generated_skill_names(
-        skills_src,
-        legacy_overlay_skills_src,
-    )
+    expected_skill_names = expected_generated_skill_names(skills_src)
     expected_repo_agent_names = {path.name for path in repo_agents_src.glob("*.md")}
     expected_codex_agent_names = {path.name for path in codex_agents_src.glob("*.toml")}
 
     _print_skill_source_summary(
-        canonical_skills_src=skills_src,
-        legacy_overlay_src=legacy_overlay_skills_src,
+        skills_src=skills_src,
         dry_run=args.dry_run,
     )
 
@@ -679,8 +594,7 @@ def main() -> int:
         destination = Path(args.dest)
         previous_skill_names = read_generated_skill_manifest(destination)
         _install_skill_sources(
-            canonical_skills_src=skills_src,
-            legacy_overlay_src=legacy_overlay_skills_src,
+            skills_src=skills_src,
             destination=destination,
             mode=effective_mode,
             dry_run=args.dry_run,
@@ -718,8 +632,7 @@ def main() -> int:
         skills_dest = home / "skills"
         previous_skill_names = read_generated_skill_manifest(skills_dest)
         _install_skill_sources(
-            canonical_skills_src=skills_src,
-            legacy_overlay_src=legacy_overlay_skills_src,
+            skills_src=skills_src,
             destination=skills_dest,
             mode=effective_mode,
             dry_run=args.dry_run,
@@ -739,11 +652,6 @@ def main() -> int:
         write_generated_skill_manifest(
             skills_dest,
             expected_skill_names,
-            dry_run=args.dry_run,
-        )
-        prune_legacy_global_rule_files(
-            home=home,
-            repo_root=repo_root,
             dry_run=args.dry_run,
         )
 

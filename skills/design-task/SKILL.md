@@ -4,8 +4,8 @@ description: >
   Large or ambiguous non-trivial task planning skill. Invoke only when the user
   explicitly writes `design-task` or `$design-task`. Build or update a
   tasks/{task-path}/task.yaml bundle via a continuity gate, derive
-  `delivery_strategy` for UI-impact work, generate SPEC_VALIDATION.md, and keep
-  legacy PLAN.md tasks only as fallback compatibility.
+  `delivery_strategy` for UI-impact work, and generate SPEC_VALIDATION.md for
+  bundle-based planning.
 ---
 
 # Workflow: Design Task
@@ -22,7 +22,6 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - Perform read-only exploration only.
 - New task output is always a flat `tasks/<task-path>/` bundle.
 - Do not create `PLAN.md` for new tasks.
-- Keep legacy `PLAN.md` / `STATUS.md` tasks only for fallback compatibility.
 - Record the `quality preflight` result as either `keep-local` or `orchestrated-task`.
 - If the result is `keep-local`, return to the existing fast, deep-solo, or delegated lanes instead of starting long-running planning here.
 - Reusing an existing task is the exception. Creating a new task is the default.
@@ -62,19 +61,17 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - codebase read-only exploration results
 - user-specified documents or paths
 - existing `tasks/<task-path>/task.yaml`, `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, `STATUS.md`
-- existing legacy `tasks/<task-path>/PLAN.md`, `tasks/<task-path>/STATUS.md`
 
 ## Task Path Selection
 
 1. If the user specifies a path directly, use it without running the continuity gate.
 2. If the request contains continuation language such as `continue`, `update`, `replan`, or `continue the existing plan`, compare existing task candidates first.
 3. If a new bundle candidate exists, apply the continuity gate using `task.yaml`.
-4. Compare legacy `PLAN.md` only when no new bundle candidate exists.
-5. Reuse a task path only when there is exactly 1 candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
-6. If any of those differ, or the judgment is `goal differs`, create a new flat task path.
-7. Use the current goal normalized to hyphen-case as the base slug for a new path.
-8. If the base slug collides, add a suffix that shows the current planning focus first, such as `-task-identity`, `-plan-split`, `-api`, or `-ui`.
-9. Only if the focus suffix also collides, use `-v2` as the final fallback.
+4. Reuse a task path only when there is exactly 1 candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
+5. If any of those differ, or the judgment is `goal differs`, create a new flat task path.
+6. Use the current goal normalized to hyphen-case as the base slug for a new path.
+7. If the base slug collides, add a suffix that shows the current planning focus first, such as `-task-identity`, `-plan-split`, `-api`, or `-ui`.
+8. Only if the focus suffix also collides, use `-v2` as the final fallback.
 
 ## Workflow
 
@@ -100,7 +97,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 16. Always create `SPEC_VALIDATION.md` and record a `blocking` or `advisory` verdict. If `delivery_strategy=ui-first` still lacks UX docs, a finished reference pack, or defined 30-second checklist, glossary, interaction, accessibility, live-update, degradation, and task-based approval sections, record them in `Blocking issues`. If the repo lacks baseline implementation rules for greenfield or new-project work, record a `$bootstrap-project-rules` requirement in `Blocking issues`.
 17. Create `STATUS.md` from the initial template, setting `Current slice` to `Not started.` and `Next slice` to `SLICE-1`.
 18. Reflect `source_of_truth` and traceability IDs in the documents. Leave handoff notes in task `README.md` and `SPEC_VALIDATION.md` that `source_of_truth.implementation = IMPLEMENTATION_CONTRACT.md` may be added after post-design bootstrap.
-19. Update legacy `PLAN.md` only when reusing a legacy task. New tasks use bundle documents only.
+19. Keep bundle documents as the only planning output.
 
 ## Multi-Agent Usage
 

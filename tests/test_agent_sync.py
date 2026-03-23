@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import io
 import os
-import sys
 import tempfile
 import tomllib
 from pathlib import Path
@@ -11,12 +9,7 @@ from unittest.mock import patch
 from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
-from workflow_contract import (
-    REQUIRED_HELPER_AGENT_IDS,
-    SLICE_BUDGET_ENFORCEMENT,
-    SLICE_BUDGET_MAX_NET_LOC,
-    SLICE_BUDGET_MAX_REPO_FILES,
-)
+from workflow_contract import REQUIRED_HELPER_AGENT_IDS
 
 
 class AgentSyncTests(RepoTestCase):
@@ -73,9 +66,9 @@ class AgentSyncTests(RepoTestCase):
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
         slice_budget = policy.get("slice_budget")
         self.assertIsInstance(slice_budget, dict)
-        self.assertEqual(slice_budget.get("max_repo_files"), SLICE_BUDGET_MAX_REPO_FILES)
-        self.assertEqual(slice_budget.get("max_net_loc"), SLICE_BUDGET_MAX_NET_LOC)
-        self.assertEqual(slice_budget.get("enforcement"), SLICE_BUDGET_ENFORCEMENT)
+        self.assertEqual(slice_budget.get("max_repo_files"), 3)
+        self.assertEqual(slice_budget.get("max_net_loc"), 150)
+        self.assertEqual(slice_budget.get("enforcement"), "split-before-execution")
 
     def test_browser_explorer_is_projected_with_danger_full_access_profile(self) -> None:
         self.assertIn("browser-explorer", REQUIRED_HELPER_AGENT_IDS)
@@ -175,57 +168,6 @@ class AgentSyncTests(RepoTestCase):
                 {"implementer", "orchestrator"},
                 msg=f"projected writable role is not allowed: {path}",
             )
-
-    def test_deprecated_bootstrap_shim_delegates_to_bootstrap_registry(self) -> None:
-        sample_entries = [
-            sync_agents.AgentEntry(
-                agent_id="sample-helper",
-                role="reviewer",
-                description="sample",
-                source="registry",
-                repo_projection=False,
-                codex_projection=False,
-                repo_model=None,
-                repo_tools=[],
-                codex_agent_key=None,
-                codex_config_file=None,
-                codex_model=None,
-                codex_reasoning_effort=None,
-                codex_sandbox_mode=None,
-                instructions="sample\n",
-            )
-        ]
-
-        with (
-            patch.object(sys, "argv", ["sync_agents.py", "--bootstrap-from-current"]),
-            patch.object(bootstrap_registry, "bootstrap_from_current") as bootstrap_mock,
-            patch.object(sync_agents, "_read_agent_entries", return_value=sample_entries),
-            patch.object(sync_agents, "_validate_entries"),
-            patch.object(sync_agents, "_sync_from_registry", return_value=0) as sync_mock,
-            patch("sys.stderr", new_callable=io.StringIO) as fake_stderr,
-        ):
-            exit_code = sync_agents.main()
-
-        self.assertEqual(exit_code, 0)
-        bootstrap_mock.assert_called_once()
-        sync_mock.assert_called_once()
-        self.assertIn("deprecated", fake_stderr.getvalue())
-
-    def test_bootstrap_check_combo_is_rejected_without_mutation(self) -> None:
-        with (
-            patch.object(sys, "argv", ["sync_agents.py", "--bootstrap-from-current", "--check"]),
-            patch.object(bootstrap_registry, "bootstrap_from_current") as bootstrap_mock,
-            patch.object(sync_agents, "_read_agent_entries") as read_entries_mock,
-            patch.object(sync_agents, "_sync_from_registry") as sync_mock,
-            patch("sys.stderr", new_callable=io.StringIO) as fake_stderr,
-        ):
-            exit_code = sync_agents.main()
-
-        self.assertEqual(exit_code, 2)
-        bootstrap_mock.assert_not_called()
-        read_entries_mock.assert_not_called()
-        sync_mock.assert_not_called()
-        self.assertIn("cannot be combined", fake_stderr.getvalue())
 
     def test_bootstrap_registry_roundtrip_keeps_required_helpers_and_ignores_optional_worker(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

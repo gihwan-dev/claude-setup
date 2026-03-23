@@ -2,7 +2,7 @@
 
 Read this file only when deciding whether to reuse an existing task or create a new one.
 The default principle is the continuity gate. Reuse is the exception; creating a new task is the default.
-Compare new tasks through `task.yaml`, and compare legacy tasks through `PLAN.md` only as a fallback.
+Compare tasks through `task.yaml`.
 
 ## Comparison Matrix
 
@@ -32,13 +32,11 @@ That means `required_docs` comparison uses the normalized set with bootstrap sup
 
 1. If the user specifies a path directly, use that path.
 2. Even without explicit continuation language, apply the continuity gate if related tasks are visible.
-3. If a new bundle candidate exists, prefer `task.yaml`.
-4. Use legacy `PLAN.md` only as a fallback comparison target when there is no new bundle candidate.
-5. Choose `reuse-existing` only when there is exactly 1 new-bundle candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
-6. When updating an existing bundle through `reuse-existing`, preserve existing `IMPLEMENTATION_CONTRACT.md` and `source_of_truth.implementation` as bootstrap supplements.
-7. Record `bootstrap supplement preserved` in `Task continuity` when it applies.
-8. If any comparison signal differs, choose `create-new`.
-9. If there are 2 or more candidates, do not auto-select and record it under `Need user decision`.
+3. Choose `reuse-existing` only when there is exactly 1 bundle candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
+4. When updating an existing bundle through `reuse-existing`, preserve existing `IMPLEMENTATION_CONTRACT.md` and `source_of_truth.implementation` as bootstrap supplements.
+5. Record `bootstrap supplement preserved` in `Task continuity` when it applies.
+6. If any comparison signal differs, choose `create-new`.
+7. If there are 2 or more candidates, do not auto-select and record it under `Need user decision`.
 
 ## Row-level Continuity (csv-fanout)
 

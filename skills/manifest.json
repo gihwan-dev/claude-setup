@@ -1,7 +1,6 @@
 {
   "generated_by": "python3 scripts/sync_skills_index.py",
   "canonical_source_root": "skills",
-  "legacy_overlay_root": ".agents/skills",
   "skills": [
     {
       "name": "bootstrap-project-rules",
@@ -60,7 +59,7 @@
     },
     {
       "name": "design-task",
-      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes `design-task` or `$design-task`. Build or update a tasks/{task-path}/task.yaml bundle via a continuity gate, derive `delivery_strategy` for UI-impact work, generate SPEC_VALIDATION.md, and keep legacy PLAN.md tasks only as fallback compatibility.",
+      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes `design-task` or `$design-task`. Build or update a tasks/{task-path}/task.yaml bundle via a continuity gate, derive `delivery_strategy` for UI-impact work, and generate SPEC_VALIDATION.md for bundle-based planning.",
       "path": "skills/design-task/SKILL.md"
     },
     {
@@ -100,7 +99,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md` fallback. Invoke only when the user explicitly writes `implement-task` or `$implement-task`. Use the `slice implementation -> main focused validation -> commit -> STATUS.md update` flow for the next approved slice.",
+      "description": "Execute the next approved slice from `task.yaml` bundles. Invoke only when the user explicitly writes `implement-task` or `$implement-task`. Use the `slice implementation -> main focused validation -> commit -> STATUS.md update` flow for the next approved slice.",
       "path": "skills/implement-task/SKILL.md"
     },
     {

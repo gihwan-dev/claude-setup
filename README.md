@@ -26,5 +26,5 @@ dist/codex/config.managed-agents.toml         # Codex managed config block
 ## Working Here
 
 - 수정/검증/설치 절차는 [CONTRIBUTING.md](./CONTRIBUTING.md)를 기준으로 본다.
+- 검증은 SSOT sync + parse/drift smoke check를 우선한다. 세부 문구/헤딩 계약은 기본 검증 대상이 아니다.
 - 설치는 skill/agent 자산만 다룬다.
-- legacy global rule markdown은 더 이상 설치하지 않으며, repo-managed stale 파일만 정리한다.

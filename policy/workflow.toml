@@ -218,12 +218,6 @@ bundle_spec_validation_section_order = [
   "Blocking issues",
   "Proceed verdict",
 ]
-legacy_milestone_skill_names = [
-  "milestone",
-  "milestone-execute",
-  "milestone-runner",
-  "milestone-update",
-]
 generated_skill_manifest_name = ".claude-setup-generated-skills.json"
 
 [task_documents.bundle_traceability_ids]

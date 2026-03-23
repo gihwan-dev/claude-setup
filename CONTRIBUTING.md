@@ -10,14 +10,14 @@
 | agent 수정 | `agent-registry/<agent-id>/agent.toml`, `agent-registry/<agent-id>/instructions.md` | `agents/*.md`, `dist/codex/agents/*.toml`, `dist/codex/config.managed-agents.toml` |
 | skill 수정 | `skills/<skill-name>/...` | `skills/INDEX.md`, `skills/manifest.json`, 설치된 `~/.claude/skills`, `~/.codex/skills` |
 
-`skills/`가 canonical source다. `.agents/skills`는 기본 source가 아니라 설치 호환을 위한 legacy overlay로만 취급한다.
+`skills/`가 canonical source다.
 
 ## Runbook
 
 ### workflow/policy 수정
 
 1. `policy/workflow.toml` 또는 `docs/agent-profile-architecture.md`를 수정한다.
-2. policy 또는 agent와 연결된 검증을 갱신한다.
+2. policy 또는 agent와 연결된 생성/설치 surface가 계속 파싱 가능하고 drift가 없는지 확인한다.
 3. `python3 scripts/validate_workflow_contracts.py`
 4. `python3 -m unittest discover -s tests -p 'test_*.py'`
 
@@ -49,6 +49,8 @@ python3 scripts/install_assets.py --dry-run --target all
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
+`validate_workflow_contracts.py`는 세부 문구/헤딩 규약을 강제하지 않는다. 이 명령은 policy, registry, skill frontmatter, generated surface, sync drift가 정상인지 확인하는 smoke check다.
+
 설치 로직을 건드렸다면 실제 설정 파일도 파싱해 본다.
 
 ```bash
@@ -79,10 +81,8 @@ hooks가 활성화되어 있으면 수동 설치는 보통 불필요하다.
 - 기준 진입점: `python3 scripts/install_assets.py`
 - `--link`가 기본 권장 모드다.
 - linked git worktree에서는 설치 mode가 자동으로 `copy`로 강등된다.
-- 설치는 항상 canonical source인 `skills/`를 먼저 반영한다.
-- `.agents/skills`가 존재하면 legacy overlay로 추가 설치된다.
+- 설치는 canonical source인 `skills/`만 반영한다.
 - generated drift를 먼저 해소한 뒤 설치한다.
-- repo-managed legacy global rule markdown은 설치하지 않고 stale top-level rule files만 안전하게 prune한다.
 
 ## When Unsure
 

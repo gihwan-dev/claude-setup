@@ -8,8 +8,7 @@ interface:
     whether split-first is needed. If the split-first trigger is on, do not
     author plans that assume target-file append. Design every new task as a
     `task.yaml`-based bundle that includes `README.md`, `EXECUTION_PLAN.md`,
-    `SPEC_VALIDATION.md`, and `STATUS.md`, and keep legacy `PLAN.md` only as a
-    fallback. `task.yaml` must always include `success_criteria`,
+    `SPEC_VALIDATION.md`, and `STATUS.md`. `task.yaml` must always include `success_criteria`,
     `major_boundaries`, and `delivery_strategy`. Force `delivery_strategy=ui-first`
     when `work_type in {feature, bugfix, refactor, prototype}` and
     `impact_flags` contains `ui_surface_changed` or `workflow_changed`;

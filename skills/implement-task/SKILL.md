@@ -1,15 +1,15 @@
 ---
 name: implement-task
 description: >
-  Execute the next approved slice from `task.yaml` bundles or legacy `PLAN.md`
-  fallback. Invoke only when the user explicitly writes `implement-task` or
-  `$implement-task`. Use the `slice implementation -> main focused validation ->
-  commit -> STATUS.md update` flow for the next approved slice.
+  Execute the next approved slice from `task.yaml` bundles. Invoke only when
+  the user explicitly writes `implement-task` or `$implement-task`. Use the
+  `slice implementation -> main focused validation -> commit -> STATUS.md
+  update` flow for the next approved slice.
 ---
 
 # Implement Task
 
-Implement the next execution slice from an approved task bundle or legacy plan.
+Implement the next execution slice from an approved task bundle.
 
 ## Trigger
 
@@ -21,7 +21,6 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 - if `delivery_strategy=ui-first`, also read `task.yaml.source_of_truth.ux = UX_SPEC.md`, `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`
 - if `task.yaml.source_of_truth.implementation` exists, read `IMPLEMENTATION_CONTRACT.md`
 - if `execution_topology=csv-fanout`, read `GLOBAL_CONTEXT.md`, `work-items/*.csv`, `MERGE_POLICY.md`, and the `task.yaml.orchestration` block
-- legacy fallback only: `PLAN.md`, `STATUS.md`
 - if the bundle needs a blocking decision, read `SPEC_VALIDATION.md`
 
 ## Task Selection
@@ -33,7 +32,7 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 
 ## Core Flow
 
-1. Read `STATUS.md` first and determine bundle vs legacy. If `STATUS.md` is missing, create it with the fixed template sections. If `task.yaml` exists, prefer the bundle path, and allow `PLAN.md` fallback only for legacy tasks.
+1. Read `STATUS.md` first. If `STATUS.md` is missing, create it with the fixed template sections. `task.yaml` is required.
 2. If a path or slug is specified, use that task. Otherwise apply the candidate rule above as-is.
 3. For bundle work, keep `task.yaml.success_criteria`, `major_boundaries`, and `delivery_strategy` as the implementation contract, and check `SPEC_VALIDATION.md` for blocking issues. If `task.yaml.source_of_truth.implementation` exists, also read `IMPLEMENTATION_CONTRACT.md` as a primary input.
 3a. Check `task.yaml.execution_topology`. If it is `csv-fanout` or `hybrid`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the `orchestration` block.
@@ -56,7 +55,7 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 
 ## Guardrails
 
-- Do not implement mixed mode where `task.yaml` and `PLAN.md` coexist.
+- Do not implement outside bundle documents.
 - If `validation_gate: blocking` still has blocking issues, do not begin implementation.
 - If `$bootstrap-project-rules`, `IMPLEMENTATION_CONTRACT.md`, or project implementation rules are unresolved, do not begin implementation.
 - If `delivery_strategy=ui-first`, do not skip or merge the `SLICE-1 -> SLICE-2 -> SLICE-3+` order, and do not mix real API or integration diff into early UI slices.
@@ -80,7 +79,7 @@ Implement the next execution slice from an approved task bundle or legacy plan.
 
 ## Validation
 
-- In bundles, prefer validation commands from `EXECUTION_PLAN.md`. In legacy tasks, prefer `PLAN.md`.
+- Prefer validation commands from `EXECUTION_PLAN.md`.
 - Use repo-aware fallback only when the documented validation command is empty.
 - If you changed SSOT such as `skills` or `agent-registry`, run the matching sync plus `--check`.
 - If you changed `skills`, include `python3 scripts/sync_skills_index.py --check`.

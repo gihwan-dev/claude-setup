@@ -9,7 +9,6 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
 3. Auto-select only when there is exactly 1 candidate.
 4. If there are 2 or more candidates, always confirm with the user instead of auto-running.
 5. If there are 0 candidates, consult the most recently modified task but do not execute before user confirmation.
-6. If a new bundle candidate exists, prefer it over legacy candidates.
 
 ## Mode Rules
 
@@ -20,7 +19,7 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
   - commit fails, including failed retry with `--no-verify`
   - implementation stops with `blocked + exact split proposal`
   - a bundle still has unresolved blocking issues in `SPEC_VALIDATION.md`
-  - the stop or replan condition in `EXECUTION_PLAN.md` or legacy `PLAN.md` is hit
+  - the stop or replan condition in `EXECUTION_PLAN.md` is hit
   - public-boundary drift appears
   - a decision gap appears before the next slice can start
 
@@ -36,8 +35,7 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
 
 ## Validation Fallback
 
-- In bundles, prefer validation commands from `EXECUTION_PLAN.md`.
-- In legacy tasks, prefer validation commands from `PLAN.md`.
+- Prefer validation commands from `EXECUTION_PLAN.md`.
 - Use repo-aware fallback only when the documented validation command is empty.
 - Focused validation is owned by the main thread.
 - The default focused validation is `one target-specific validation + one low-cost check`.

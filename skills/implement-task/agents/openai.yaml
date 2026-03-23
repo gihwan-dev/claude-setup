@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved task-bundle slices with slice implementation, main focused validation, commit, and STATUS.md updates, while keeping legacy PLAN.md as fallback-only compatibility"
+  short_description: "Run approved task-bundle slices with slice implementation, main focused validation, commit, and STATUS.md updates"
   default_prompt: >
     $implement-task first reads the approved task path's
     `task.yaml + EXECUTION_PLAN.md + STATUS.md`. If `delivery_strategy=ui-first`,
@@ -32,8 +32,7 @@ interface:
     net diff of around `150 LOC`. Multiple active task folders are normal. If
     no path is specified, build the active candidate set first, auto-select only
     when there is exactly 1 candidate, and otherwise confirm with the user
-    instead of auto-running. Allow fallback only when no new task exists and
-    only legacy `PLAN.md` remains. If `task.yaml.execution_topology` is
+    instead of auto-running. If `task.yaml.execution_topology` is
     `csv-fanout`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the
     `orchestration` block, then inspect the current slice's `work-items/*.csv`.
     In Codex environments with `spawn_agents_on_csv`, run row workers in

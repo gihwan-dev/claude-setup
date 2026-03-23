@@ -432,38 +432,15 @@ def _write_registry_entry(
     (entry_dir / "instructions.md").write_text(
         _normalize_instructions(instructions), encoding="utf-8"
     )
-def _bootstrap_from_current(repo_root: Path, registry_root: Path) -> None:
-    from bootstrap_registry import bootstrap_from_current
-
-    print(
-        "warning: --bootstrap-from-current is deprecated; use python3 scripts/bootstrap_registry.py",
-        file=sys.stderr,
-    )
-    bootstrap_from_current(repo_root, registry_root)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Sync agent projections from registry")
     parser.add_argument("--check", action="store_true", help="Check drift only")
-    parser.add_argument(
-        "--bootstrap-from-current",
-        action="store_true",
-        help="One-shot import from current repo agents and CODEX_HOME profiles",
-    )
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parents[1]
     registry_root = repo_root / "agent-registry"
-
-    if args.bootstrap_from_current and args.check:
-        print(
-            "sync-agents: --bootstrap-from-current cannot be combined with --check",
-            file=sys.stderr,
-        )
-        return 2
-
-    if args.bootstrap_from_current:
-        _bootstrap_from_current(repo_root, registry_root)
 
     entries = _read_agent_entries(registry_root)
     if not entries:

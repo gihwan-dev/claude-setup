@@ -41,7 +41,6 @@ class RepoSurfaceTests(RepoTestCase):
         self.assertNotIn("_shared", names)
         self.assertNotIn("skills/_shared", actual_index)
         self.assertEqual(manifest_payload["canonical_source_root"], "skills")
-        self.assertEqual(manifest_payload["legacy_overlay_root"], ".agents/skills")
 
     def test_legacy_policy_pipeline_files_are_absent(self) -> None:
         removed_paths = (
@@ -61,6 +60,7 @@ class RepoSurfaceTests(RepoTestCase):
             "docs/policy",
             "scripts/sync_instructions.py",
             "dist/codex/AGENTS.md",
+            ".agents/skills",
             "INSTRUCTIONS.md",
             "AGENTS.md",
             "CLAUDE.md",
