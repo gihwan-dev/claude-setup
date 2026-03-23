@@ -8,8 +8,8 @@ Row-level parallel execution using Codex `spawn_agents_on_csv` pattern.
 
 - Decomposer (main-thread) splits work into CSV rows.
 - Row workers execute independently on `target_path`.
-- Integrator (main-thread) merges shared files per MERGE_POLICY.md.
-- Verifier validates row outputs against schema.
+- Integrator (`codex-row-worker`) merges shared files per `MERGE_POLICY.md`.
+- `verification-worker` summarizes row-validation output after schema checks complete.
 
 ## Constraints
 

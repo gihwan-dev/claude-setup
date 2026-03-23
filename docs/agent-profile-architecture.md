@@ -1,6 +1,7 @@
 # Agent Profile Architecture
 
 Agent profiles should stay thin. They capture identity and judgment lens, while operational contracts such as workflow, formatting, statuses, retries, and thresholds live in separate policy and reference layers.
+Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane read discipline; skill and policy layers carry the concrete orchestration contract.
 
 ## Four Layers
 
@@ -14,7 +15,7 @@ Agent profiles should stay thin. They capture identity and judgment lens, while 
 
 - Purpose: define when helpers are invoked, how they are combined, and which execution boundaries apply.
 - Contents: helper selection, fan-out boundaries, review trigger, budget, termination
-- Location: `policy/workflow.toml`, `scripts/workflow_contract.py`, `skills/multi-work`, `skills/multi-review`
+- Location: `AGENTS.md`, `policy/workflow.toml`, `scripts/workflow_contract.py`, `skills/multi-work`, `skills/multi-review`
 
 ### Task Contract
 

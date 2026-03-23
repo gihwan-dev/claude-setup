@@ -15,6 +15,8 @@ Compare tasks through `task.yaml`.
 | Required docs | same bundle shape after bootstrap-supplement normalization | create a new task when they still differ after normalization |
 | Major boundaries | same `task.yaml.major_boundaries` | create a new task when they differ |
 | Delivery strategy | same `task.yaml.delivery_strategy` | create a new task when they differ |
+| Agent orchestration strategy | same `task.yaml.agent_orchestration.strategy` | create a new task when it differs |
+| Main thread role | same `task.yaml.agent_orchestration.main_thread_role` | create a new task when it differs |
 | Execution topology | same `task.yaml.execution_topology` | create a new task when they differ |
 | Candidate count | exactly 1 | ambiguous case when there are 2 or more |
 
@@ -32,11 +34,12 @@ That means `required_docs` comparison uses the normalized set with bootstrap sup
 
 1. If the user specifies a path directly, use that path.
 2. Even without explicit continuation language, apply the continuity gate if related tasks are visible.
-3. Choose `reuse-existing` only when there is exactly 1 bundle candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
+3. Choose `reuse-existing` only when there is exactly 1 bundle candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy + agent_orchestration.strategy + agent_orchestration.main_thread_role` all match.
 4. When updating an existing bundle through `reuse-existing`, preserve existing `IMPLEMENTATION_CONTRACT.md` and `source_of_truth.implementation` as bootstrap supplements.
-5. Record `bootstrap supplement preserved` in `Task continuity` when it applies.
-6. If any comparison signal differs, choose `create-new`.
-7. If there are 2 or more candidates, do not auto-select and record it under `Need user decision`.
+5. Helper roster detail changes inside `agent_orchestration.planning_helpers` or `agent_orchestration.execution_roles` do not require a new task by themselves if strategy and main-thread role stay stable.
+6. Record `bootstrap supplement preserved` in `Task continuity` when it applies.
+7. If any comparison signal differs, choose `create-new`.
+8. If there are 2 or more candidates, do not auto-select and record it under `Need user decision`.
 
 ## Row-level Continuity (csv-fanout)
 
@@ -61,6 +64,7 @@ When updating a `csv-fanout` task, preserve row-level continuity for the existin
 - The goal is similar, but the success criteria differ.
 - The domain is the same, but the change boundary moved from API to UI.
 - The existing task is `delivery_strategy=standard`, but the new request needs `ui-first` decomposition.
+- The existing task keeps a pure orchestrator main thread, but the new request needs a different `agent_orchestration.strategy` or `main_thread_role`.
 - The existing task is a refactor, but the new request is a bugfix.
 - The existing bundle only needed `PRD + ACCEPTANCE`, but the new request needs `UX_SPEC + TECH_SPEC + ADRs`.
 

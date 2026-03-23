@@ -4,8 +4,8 @@ description: >
   Large or ambiguous non-trivial task planning skill. Invoke only when the user
   explicitly writes `design-task` or `$design-task`. Build or update a
   tasks/{task-path}/task.yaml bundle via a continuity gate, derive
-  `delivery_strategy` for UI-impact work, and generate SPEC_VALIDATION.md for
-  bundle-based planning.
+  `delivery_strategy`, and record `agent_orchestration` plus slice-level
+  orchestration for bundle-based planning.
 ---
 
 # Workflow: Design Task
@@ -37,10 +37,14 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - For existing TS, JS, or React code, include structure preflight in quality preflight: target file role, expected post-change LOC, and whether split-first is needed.
 - If the split-first trigger is on, forbid plans that assume target-file append and create the decomposition proposal first.
 - Every execution slice must include change boundary, expected file count, validation owner, focused validation plan, and stop or replan conditions.
+- Every new or updated task bundle must include `task.yaml.agent_orchestration`. Default to `strategy=manager` and `main_thread_role=synthesize-control-only`.
+- In manager mode, the main thread only synthesizes bundle docs and structured helper results. Code reads or writes, shared-file integration, and validation execution belong to the designated execution roles.
 - Every execution slice must also include a `split decision` plus a target-file append forbidden trigger.
+- Every execution slice must include orchestration fields: `Orchestration`, `Preflight helpers`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
 - The default slice guardrail is a small slice: `repo-tracked files 3 or fewer`, net diff around `150 LOC`. Anything larger must fall back to `split/replan before execution`.
 - Do not create giant mixed slices that bundle common refactoring, multi-screen replacement, wholesale test updates, and static scans together.
 - `execution_topology` is optional and defaults to `keep-local`. Allowed values: `keep-local`, `csv-fanout`, `hybrid`.
+- `agent_orchestration` is required for new or updated bundles. It must include `strategy`, `main_thread_role`, `planning_helpers`, `execution_roles`, `context_policy`, `fallback_policy`, and `review_policy`.
 - Choose `csv-fanout` only when all 5 conditions hold: (1) the repeat unit is clear, (2) each unit has independent acceptance criteria, (3) inter-unit dependencies are sparse, (4) the output schema is fixed, and (5) the merge boundary is clear.
 - If `csv-fanout` or `hybrid` is used, add the `orchestration` block to `task.yaml`.
 - If `csv-fanout` is used, add `GLOBAL_CONTEXT.md`, `work-items/*.csv`, and `MERGE_POLICY.md` to the bundle and include them in `required_docs`.
@@ -67,7 +71,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 1. If the user specifies a path directly, use it without running the continuity gate.
 2. If the request contains continuation language such as `continue`, `update`, `replan`, or `continue the existing plan`, compare existing task candidates first.
 3. If a new bundle candidate exists, apply the continuity gate using `task.yaml`.
-4. Reuse a task path only when there is exactly 1 candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy` all match.
+4. Reuse a task path only when there is exactly 1 candidate whose `goal + success_criteria + work_type + impact_flags + normalized required_docs + major_boundaries + delivery_strategy + agent_orchestration.strategy + agent_orchestration.main_thread_role` all match.
 5. If any of those differ, or the judgment is `goal differs`, create a new flat task path.
 6. Use the current goal normalized to hyphen-case as the base slug for a new path.
 7. If the base slug collides, add a suffix that shows the current planning focus first, such as `-task-identity`, `-plan-split`, `-api`, or `-ui`.
@@ -85,14 +89,16 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 8. Decide `work_type` as one of `feature`, `bugfix`, `refactor`, `migration`, `prototype`, or `ops`.
 9. Fix the core `impact_flags`, then decide `delivery_strategy` as `standard` or `ui-first`.
 9a. Decide `execution_topology`. Use `csv-fanout` when all 5 fan-out conditions hold, `hybrid` when only part of them hold, and otherwise `keep-local` (default).
-9b. If `csv-fanout` or `hybrid` is selected, add the `orchestration` block (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, `merge_policy`) to `task.yaml`.
-9c. If `csv-fanout` is selected, create `GLOBAL_CONTEXT.md`, the `work-items/` directory, and `MERGE_POLICY.md`, then add them to `required_docs`.
+9b. Add `agent_orchestration` to `task.yaml`. Default it to `strategy=manager`, `main_thread_role=synthesize-control-only`, helper-driven planning, bounded execution roles, bundle-doc plus structured-result context policy, `split-replan` fallback, and explicit `multi-review` review boundary.
+9c. If `csv-fanout` or `hybrid` is selected, add the `orchestration` block (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, `merge_policy`) to `task.yaml`.
+9d. If `csv-fanout` is selected, create `GLOBAL_CONTEXT.md`, the `work-items/` directory, and `MERGE_POLICY.md`, then add them to `required_docs`.
 10. Decide `required_docs` using `${SKILL_DIR}/references/task-bundle-rules.md`. If the path is `reuse-existing` and the bundle already contains a bootstrap supplement, preserve `IMPLEMENTATION_CONTRACT.md`.
 11. Write `task.yaml` as the machine entry point. If the path is `reuse-existing` and the bundle already has `source_of_truth.implementation`, preserve that optional pointer too.
 12. Write `README.md` as the human-facing landing document.
 13. If `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill `DESIGN_REFERENCES/`, then lock `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`. Do not create integration slices until `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` are in place.
-14. In `EXECUTION_PLAN.md`, preserve the level-1 sections `Execution slices`, `Verification`, and `Stop / Replan conditions`, then describe bounded slices, focused validation, and split decisions.
-14a. If `csv-fanout` is used, add a fan-out spec to each slice in `EXECUTION_PLAN.md`: CSV source, concurrency, batch mode, and row-worker scope.
+14. In `EXECUTION_PLAN.md`, preserve the level-1 sections `Execution slices`, `Verification`, and `Stop / Replan conditions`, then describe bounded slices, orchestration ownership, focused validation, and split decisions.
+14a. For every slice, record `Orchestration`, `Preflight helpers`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
+14b. If `csv-fanout` is used, add a fan-out spec to each slice in `EXECUTION_PLAN.md`: CSV source, concurrency, batch mode, and row-worker scope.
 15. If `delivery_strategy=ui-first`, fix `SLICE-1` as static or visual UI, `SLICE-2` as local state or mock work, and `SLICE-3+` as real API or integration. Explicitly forbid real API or integration work in `SLICE-1` and `SLICE-2`.
 16. Always create `SPEC_VALIDATION.md` and record a `blocking` or `advisory` verdict. If `delivery_strategy=ui-first` still lacks UX docs, a finished reference pack, or defined 30-second checklist, glossary, interaction, accessibility, live-update, degradation, and task-based approval sections, record them in `Blocking issues`. If the repo lacks baseline implementation rules for greenfield or new-project work, record a `$bootstrap-project-rules` requirement in `Blocking issues`.
 17. Create `STATUS.md` from the initial template, setting `Current slice` to `Not started.` and `Next slice` to `SLICE-1`.
@@ -103,6 +109,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 
 Read-only research, exploration, and browser reproduction always belong to helpers.
 The main thread only synthesizes their results.
+For manager-mode planning, record the resulting orchestration choice in `task.yaml.agent_orchestration` and keep `EXECUTION_PLAN.md` aligned with that ownership model.
 
 ### Agent Usage
 
@@ -141,8 +148,10 @@ Add specialized docs such as `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.
 
 - `SPEC_VALIDATION.md` keeps the order `Requirement coverage`, `UX/state gaps`, `Architecture/operability risks`, `Slice dependency risks`, `Blocking issues`, `Proceed verdict`.
 - `STATUS.md` keeps `Current slice`, `Done`, `Decisions made during implementation`, `Verification results`, `Known issues / residual risk`, `Next slice`.
-- `task.yaml` must contain `task`, `goal`, `success_criteria`, `major_boundaries`, `work_type`, `impact_flags`, `required_docs`, `source_of_truth`, `ids`, `delivery_strategy`, `validation_gate`, and `current_phase`.
+- `task.yaml` must contain `task`, `goal`, `success_criteria`, `major_boundaries`, `work_type`, `impact_flags`, `required_docs`, `source_of_truth`, `ids`, `delivery_strategy`, `agent_orchestration`, `validation_gate`, and `current_phase`.
+- `task.yaml` must contain `agent_orchestration`.
 - `execution_topology` is optional and may be `keep-local` (default), `csv-fanout`, or `hybrid`.
+- `agent_orchestration` must include `strategy`, `main_thread_role`, `planning_helpers`, `execution_roles`, `context_policy`, `fallback_policy`, and `review_policy`.
 - If `csv-fanout` or `hybrid` is used, the `orchestration` block is required and must include `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, and `merge_policy`.
 - Post-design bootstrap may add `IMPLEMENTATION_CONTRACT.md` to `required_docs` and `source_of_truth`.
 - `EXECUTION_PLAN.md` keeps the order `Execution slices`, `Verification`, `Stop / Replan conditions`.
@@ -154,10 +163,11 @@ Add specialized docs such as `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.
 - On the `reuse-existing` path, were existing bootstrap supplements preserved and recorded as preserved in `Task continuity`?
 - Are `work_type` and the core `impact_flags` fixed?
 - Is `delivery_strategy` fixed and included in the continuity comparison basis?
+- Does `agent_orchestration` exist, and does it lock `strategy=manager` plus `main_thread_role=synthesize-control-only` unless a documented exception applies?
 - Do `required_docs` match the real bundle structure?
 - Is the `SPEC_VALIDATION.md` verdict clearly `blocking` or `advisory`?
 - For greenfield or new-project work, is the `$bootstrap-project-rules` handoff requirement clear in `Blocking issues`?
-- Does each slice include change boundary, file budget, validation owner, and a stop or replan trigger?
+- Does each slice include orchestration ownership, change boundary, file budget, validation owner, and a stop or replan trigger?
 - Does each slice include a `split decision` and a target-file append forbidden trigger?
 - If `delivery_strategy=ui-first`, are the `SLICE-1 / 2 / 3+` order and the real API or integration prohibition explicit?
 - If `delivery_strategy=ui-first`, did `reference-pack` fill `DESIGN_REFERENCES/`, did `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` preserve exact order, and did the docs record `reuse + delta` when an existing style source exists?

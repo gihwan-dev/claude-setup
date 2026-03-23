@@ -35,6 +35,19 @@ ids:
   slice_prefix: SLICE
   risk_prefix: RISK
 delivery_strategy: standard
+agent_orchestration:
+  strategy: manager
+  main_thread_role: synthesize-control-only
+  planning_helpers:
+    - explorer
+    - structure-reviewer
+  execution_roles:
+    implementation: codex-row-worker
+    integration: codex-row-worker
+    validation: verification-worker
+  context_policy: bundle-docs-and-structured-results-only
+  fallback_policy: blocked-lane-means-split-replan
+  review_policy: explicit-multi-review
 validation_gate: blocking
 current_phase: design
 execution_topology: csv-fanout
@@ -46,7 +59,7 @@ orchestration:
   roles:
     decomposer: main-thread
     worker: codex-row-worker
-    integrator: main-thread
+    integrator: codex-row-worker
     verifier: codex-row-worker
   csv:
     source: work-items/SLICE-1-items.csv

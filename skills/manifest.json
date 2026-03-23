@@ -59,7 +59,7 @@
     },
     {
       "name": "design-task",
-      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes `design-task` or `$design-task`. Build or update a tasks/{task-path}/task.yaml bundle via a continuity gate, derive `delivery_strategy` for UI-impact work, and generate SPEC_VALIDATION.md for bundle-based planning.",
+      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes `design-task` or `$design-task`. Build or update a tasks/{task-path}/task.yaml bundle via a continuity gate, derive `delivery_strategy`, and record `agent_orchestration` plus slice-level orchestration for bundle-based planning.",
       "path": "skills/design-task/SKILL.md"
     },
     {
@@ -99,7 +99,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Execute the next approved slice from `task.yaml` bundles. Invoke only when the user explicitly writes `implement-task` or `$implement-task`. Use the `slice implementation -> main focused validation -> commit -> STATUS.md update` flow for the next approved slice.",
+      "description": "Execute the next approved slice from `task.yaml` bundles. Invoke only when the user explicitly writes `implement-task` or `$implement-task`. Use the `slice orchestration -> bounded execution lane -> verification summary -> commit -> STATUS.md update` flow for the next approved slice.",
       "path": "skills/implement-task/SKILL.md"
     },
     {
@@ -114,7 +114,7 @@
     },
     {
       "name": "multi-work",
-      "description": "Explicit multi-agent orchestration utility that explores first, selects helpers, and decomposes independent work units when boundaries are clear.",
+      "description": "Explicit manager-style orchestration utility that explores first, selects helpers, and records an `Orchestration Strategy` the main thread must follow.",
       "path": "skills/multi-work/SKILL.md"
     },
     {

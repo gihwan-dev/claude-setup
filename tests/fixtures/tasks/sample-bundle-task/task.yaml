@@ -42,5 +42,18 @@ ids:
   slice_prefix: SLICE
   risk_prefix: RISK
 delivery_strategy: ui-first
+agent_orchestration:
+  strategy: manager
+  main_thread_role: synthesize-control-only
+  planning_helpers:
+    - explorer
+    - structure-reviewer
+  execution_roles:
+    implementation: worker
+    integration: worker
+    validation: verification-worker
+  context_policy: bundle-docs-and-structured-results-only
+  fallback_policy: blocked-lane-means-split-replan
+  review_policy: explicit-multi-review
 validation_gate: blocking
 current_phase: design

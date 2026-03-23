@@ -102,6 +102,36 @@ GENERATED_SKILL_MANIFEST_NAME = _require_str(
     "generated_skill_manifest_name",
     path=WORKFLOW_POLICY_PATH,
 )
+BUNDLE_TASK_YAML_REQUIRED_KEYS = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_task_yaml_required_keys",
+    path=WORKFLOW_POLICY_PATH,
+)
+BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_agent_orchestration_required_keys",
+    path=WORKFLOW_POLICY_PATH,
+)
+BUNDLE_AGENT_ORCHESTRATION_STRATEGIES = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_agent_orchestration_strategies",
+    path=WORKFLOW_POLICY_PATH,
+)
+BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_agent_orchestration_main_thread_roles",
+    path=WORKFLOW_POLICY_PATH,
+)
+BUNDLE_EXECUTION_PLAN_SECTION_ORDER = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_execution_plan_section_order",
+    path=WORKFLOW_POLICY_PATH,
+)
+BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_execution_plan_slice_required_fields",
+    path=WORKFLOW_POLICY_PATH,
+)
 
 
 def expected_reasoning_effort_for(agent_id: str) -> str:
@@ -109,6 +139,12 @@ def expected_reasoning_effort_for(agent_id: str) -> str:
 
 
 __all__ = [
+    "BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES",
+    "BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS",
+    "BUNDLE_AGENT_ORCHESTRATION_STRATEGIES",
+    "BUNDLE_EXECUTION_PLAN_SECTION_ORDER",
+    "BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS",
+    "BUNDLE_TASK_YAML_REQUIRED_KEYS",
     "CODEX_REASONING_EFFORT_OVERRIDES",
     "DEFAULT_CODEX_REASONING_EFFORT",
     "DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS",

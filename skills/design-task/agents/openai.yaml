@@ -9,7 +9,11 @@ interface:
     author plans that assume target-file append. Design every new task as a
     `task.yaml`-based bundle that includes `README.md`, `EXECUTION_PLAN.md`,
     `SPEC_VALIDATION.md`, and `STATUS.md`. `task.yaml` must always include `success_criteria`,
-    `major_boundaries`, and `delivery_strategy`. Force `delivery_strategy=ui-first`
+    `major_boundaries`, `delivery_strategy`, and `agent_orchestration`. Default
+    `agent_orchestration` to `strategy=manager` and
+    `main_thread_role=synthesize-control-only`, and record `planning_helpers`,
+    `execution_roles`, `context_policy`, `fallback_policy`, and
+    `review_policy`. Force `delivery_strategy=ui-first`
     when `work_type in {feature, bugfix, refactor, prototype}` and
     `impact_flags` contains `ui_surface_changed` or `workflow_changed`;
     otherwise use `standard`. `execution_topology` is optional and defaults to
@@ -27,7 +31,9 @@ interface:
     existing bootstrap supplement instead of deleting it, and record it as
     preserved. Reuse an existing task only when there is exactly 1 candidate
     whose goal, success criteria, work type, impact flags, normalized required
-    docs, major boundaries, and delivery strategy all match. If
+    docs, major boundaries, delivery strategy, `agent_orchestration.strategy`,
+    and `agent_orchestration.main_thread_role` all match. Helper roster detail
+    changes alone do not force a new task. If
     `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill
     `DESIGN_REFERENCES/`, then let `figma-less-ui-design` write `UX_SPEC.md` and
     `UX_BEHAVIOR_ACCESSIBILITY.md`. Record `source_of_truth.ux = UX_SPEC.md`,
@@ -48,7 +54,10 @@ interface:
     them. Read-only repo discovery belongs to the built-in `explorer`,
     external web research belongs to `web-researcher`, and browser
     reproduction belongs to `browser-explorer`; do not replace helper research
-    with direct main-thread web exploration. When a planning-role overlay is
+    with direct main-thread web exploration. In manager mode, the main thread
+    should synthesize bundle docs and structured helper results only; execution
+    ownership belongs in `agent_orchestration` and slice-level orchestration
+    fields. When a planning-role overlay is
     needed, use `planning-role-cards.md` together with the built-in
     `explorer`. In `EXECUTION_PLAN.md`,
     keep the order `SLICE-1=static/visual UI`, `SLICE-2=local state/mock`,
@@ -69,8 +78,10 @@ interface:
     are unavailable, report blocked instead of substituting direct research.
     Preserve the `Execution slices`, `Verification`, and `Stop / Replan
     conditions` order in `EXECUTION_PLAN.md`, and make every slice include
-    change boundary, file budget, validation owner, focused validation, split
-    decision, and stop or replan conditions. Set the initial `STATUS.md` values
-    to `Current slice=Not started.` and `Next slice=SLICE-1`.
+    `Orchestration`, `Preflight helpers`, `Implementation owner`,
+    `Integration owner`, `Validation owner`, `Allowed main-thread actions`,
+    change boundary, file budget, focused validation, split decision, and stop
+    or replan conditions. Set the initial `STATUS.md` values to
+    `Current slice=Not started.` and `Next slice=SLICE-1`.
 policy:
   allow_implicit_invocation: false

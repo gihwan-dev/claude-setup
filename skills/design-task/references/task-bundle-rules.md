@@ -31,6 +31,7 @@ Required keys:
 - `source_of_truth`
 - `ids`
 - `delivery_strategy`
+- `agent_orchestration`
 - `validation_gate`
 - `current_phase`
 
@@ -43,9 +44,20 @@ Optional keys:
 `source_of_truth` points only to real file paths.
 `success_criteria` and `major_boundaries` are used directly in continuity-gate comparison.
 `delivery_strategy` is also used directly in continuity-gate comparison.
+`agent_orchestration` is required for new or updated bundles in this repo. It keeps the manager-style orchestration contract even when `execution_topology=keep-local`.
 After post-design bootstrap, `IMPLEMENTATION_CONTRACT.md` may be added to `required_docs`,
 and `source_of_truth.implementation` may appear as an optional pointer.
 When updating an existing bundle via `reuse-existing`, preserve any bootstrap supplement that already exists.
+
+`agent_orchestration` required keys:
+
+- `strategy` — currently `manager`
+- `main_thread_role` — currently `synthesize-control-only`
+- `planning_helpers` — ordered helper list used during planning
+- `execution_roles` — mapping of implementation/integration/validation responsibilities to helper or worker roles
+- `context_policy` — short statement describing what the main thread may read
+- `fallback_policy` — short statement describing what happens when an execution lane blocks
+- `review_policy` — short statement describing review ownership and whether review is explicit or automatic
 
 ## Work Types
 
@@ -295,9 +307,16 @@ Every slice inside `Execution slices` includes at least the fields below.
 
 - Change boundary
 - Expected files
+- Orchestration
+- Preflight helpers
+- Implementation owner
+- Integration owner
 - Validation owner
+- Allowed main-thread actions
 - Focused validation plan
 - Stop / Replan trigger
+
+For manager-mode bundles, `Allowed main-thread actions` should stay orchestration-only, such as bundle-doc synthesis, structured helper-result synthesis, handoff management, status updates, and commit coordination.
 
 Additional rules for `delivery_strategy=ui-first`:
 

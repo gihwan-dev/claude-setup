@@ -1,6 +1,6 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved task-bundle slices with slice implementation, main focused validation, commit, and STATUS.md updates"
+  short_description: "Run approved task-bundle slices with manager-lane orchestration, bounded execution, verification summaries, commit, and STATUS.md updates"
   default_prompt: >
     $implement-task first reads the approved task path's
     `task.yaml + EXECUTION_PLAN.md + STATUS.md`. If `delivery_strategy=ui-first`,
@@ -13,7 +13,10 @@ interface:
     `$bootstrap-project-rules` or project implementation rules are unresolved, or
     when `IMPLEMENTATION_CONTRACT.md` is required but unresolved. Keep
     `task.yaml.success_criteria`, `task.yaml.major_boundaries`, and
-    `task.yaml.delivery_strategy` as the implementation contract, and read
+    `task.yaml.delivery_strategy` as the implementation contract. If
+    `task.yaml.agent_orchestration` exists and `strategy=manager`, the main
+    thread stays orchestration-only and reads bundle docs plus structured
+    helper or worker output only. Read
     `EXECUTION_PLAN.md` with the section order `Execution slices`,
     `Verification`, `Stop / Replan conditions`. If
     `delivery_strategy=ui-first`, do not skip or merge the `SLICE-1 -> SLICE-2
@@ -45,19 +48,23 @@ interface:
     needed, consider delegating to the built-in `worker` agent. Built-in
     `worker` handoff must include `target_path`, `change_spec`,
     `context_files`, `validation_command`, and `slice_budget`. If the built-in
-    `worker` returns `status: blocked`, switch to direct implementation or
-    split or replan. If the built-in `worker` returns `status: final`,
-    integrate shared files and proceed to focused validation. If parallel
+    `worker` returns `status: blocked` in manager mode, do not switch to direct
+    main-thread implementation; stop with `blocked + split/replan` or re-route
+    only through another bounded lane the bundle explicitly allows. If the
+    built-in `worker` returns `status: final`, keep shared-file integration in
+    the designated integration owner lane and send validation output to
+    `verification-worker` for summarization. If parallel
     built-in `worker` subagents are needed, use `isolation: worktree` and keep
     file dependencies separate. If an approved slice is still large but decomposes cleanly into 2
     or more independent work units, you may consult
     `skills/multi-work/references/routing-contract.md` as an optional
     orchestration utility. Use that pattern only when each unit has a clear
-    acceptance boundary, shared-file edits stay with the main thread or
-    integrator, and final validation stays main-thread. Use `browser-explorer`
+    acceptance boundary, shared-file edits stay with the designated integration
+    lane, and final validation stays in the designated validation lane. Use `browser-explorer`
     only when browser reproduction or visual evidence is required, and include
     `target URL or Electron entry`,
-    `scenario checklist`, and `evidence checklist` in the handoff. Assume the
+    `scenario checklist`, and `evidence checklist` in the handoff. In manager
+    mode, direct main-thread validation fallback is forbidden. Assume the
     main thread will recheck materially affected docs before exit, and include
     any needed README, docs, task-bundle, OpenAPI, schema, or runbook diff
     before validation. If `skills` changed, run `python3 scripts/sync_skills_index.py`
@@ -66,8 +73,8 @@ interface:
     `python3 scripts/sync_agents.py --check`, and record the results in
     STATUS/verification. If the slice would exceed budget once doc diff is
     included, replan instead of force-expanding the current slice. Preserve the
-    `slice implementation -> main focused validation -> commit` order, and keep
-    the initial STATUS baseline of `Current slice=Not started.` /
-    `Next slice=SLICE-1`.
+    `slice orchestration -> bounded execution lane -> verification summary ->
+    commit` order, and keep the initial STATUS baseline of
+    `Current slice=Not started.` / `Next slice=SLICE-1`.
 policy:
   allow_implicit_invocation: false

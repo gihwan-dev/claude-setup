@@ -114,13 +114,37 @@ bundle_task_yaml_required_keys = [
   "source_of_truth",
   "ids",
   "delivery_strategy",
+  "agent_orchestration",
   "validation_gate",
   "current_phase",
 ]
+bundle_agent_orchestration_required_keys = [
+  "strategy",
+  "main_thread_role",
+  "planning_helpers",
+  "execution_roles",
+  "context_policy",
+  "fallback_policy",
+  "review_policy",
+]
+bundle_agent_orchestration_strategies = ["manager"]
+bundle_agent_orchestration_main_thread_roles = ["synthesize-control-only"]
 bundle_execution_plan_section_order = [
   "Execution slices",
   "Verification",
   "Stop / Replan conditions",
+]
+bundle_execution_plan_slice_required_fields = [
+  "Change boundary",
+  "Expected files",
+  "Orchestration",
+  "Preflight helpers",
+  "Implementation owner",
+  "Integration owner",
+  "Validation owner",
+  "Allowed main-thread actions",
+  "Focused validation plan",
+  "Stop / Replan trigger",
 ]
 bundle_work_types = [
   "feature",

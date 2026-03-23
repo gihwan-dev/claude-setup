@@ -47,7 +47,6 @@ class RepoSurfaceTests(RepoTestCase):
             REPO_ROOT / "docs" / "policy",
             REPO_ROOT / "scripts" / "sync_instructions.py",
             REPO_ROOT / "scripts" / "sync-instructions.sh",
-            REPO_ROOT / "AGENTS.md",
             REPO_ROOT / "INSTRUCTIONS.md",
             REPO_ROOT / "CLAUDE.md",
             REPO_ROOT / "dist" / "codex" / "AGENTS.md",
@@ -62,7 +61,6 @@ class RepoSurfaceTests(RepoTestCase):
             "dist/codex/AGENTS.md",
             ".agents/skills",
             "INSTRUCTIONS.md",
-            "AGENTS.md",
             "CLAUDE.md",
         )
         roots = (

@@ -33,11 +33,20 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
 - Before exit, the main thread rechecks materially affected docs such as README, `docs/**`, task-bundle docs, `openapi.yaml`, `schema.json`, architecture or change docs, and workflow or SSOT runbook docs.
 - Apply required doc diffs or generated projection sync during implementation before focused validation.
 
+## Manager-Lane Rules
+
+- If `task.yaml.agent_orchestration.strategy=manager`, the main thread is orchestration-only.
+- In manager mode, the main thread reads bundle docs plus structured helper or worker results, not broad repository scans after fan-out.
+- Direct main-thread implementation fallback is forbidden.
+- Direct main-thread validation fallback is forbidden. Use the designated validation lane, then summarize output with `verification-worker`.
+- Shared-file integration belongs to the designated integration owner lane, not the main thread.
+- If an execution lane blocks or the merge boundary becomes unclear, stop with `blocked + split/replan`.
+
 ## Validation Fallback
 
 - Prefer validation commands from `EXECUTION_PLAN.md`.
 - Use repo-aware fallback only when the documented validation command is empty.
-- Focused validation is owned by the main thread.
+- Focused validation is owned by the main thread only for legacy bundles without `agent_orchestration`. Manager-mode bundles route validation through the designated lane.
 - The default focused validation is `one target-specific validation + one low-cost check`.
 - Use full-repo validation only when shared or public boundaries changed.
 - In JS or TS repos, choose the package manager from `package.json` and lockfiles, and run only scripts that actually exist.
