@@ -23,6 +23,7 @@ Refactor `skills/` against the source-of-truth structure. The default mode is a 
 - Remove unnecessary fallback explanations, duplicate checklists, repeated explanations, and long non-goal sections.
 - Do not create extraneous docs such as `README.md`, `CHANGELOG.md`, or `INSTALLATION_GUIDE.md`.
 - In a single batch, edit at most three source-of-truth skills.
+- If a candidate is already short and structurally clear, leave it unchanged and report only the audit result.
 
 ## Required References
 
@@ -38,12 +39,6 @@ Refactor `skills/` against the source-of-truth structure. The default mode is a 
 6. If `agents/openai.yaml` is missing and explicit invocation would help, add it.
 7. Run `python3 scripts/sync_skills_index.py` and `python3 scripts/sync_skills_index.py --check` to sync generated outputs.
 8. When needed, run `python3 scripts/install_assets.py --dry-run --target all` and any relevant tests, then summarize outcomes and residual risks.
-
-## Targeting
-
-- No explicit input: audit everything, then edit the top one to three candidates.
-- If a `skill name` or `path` is given: edit only that target.
-- If a candidate is already short and structurally clear, leave it unchanged and report only the audit result.
 
 ## Validation
 

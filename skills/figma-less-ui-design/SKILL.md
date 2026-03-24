@@ -59,74 +59,29 @@ Lock down MVP or prototype product UI clearly enough to implement without Figma,
 
 ## Output Contract
 
-Use the exact heading order below in `UX_SPEC.md`.
+### `UX_SPEC.md` — use the exact heading order below
 
-## Goal/Audience/Platform
+| Section | Key content |
+|---------|------------|
+| Goal/Audience/Platform | goal, audience, platform, success impression (one line each) |
+| 30-Second Understanding Checklist | core questions a user answers within 30 seconds + expected criteria |
+| Visual Direction + Anti-goals | 2-4 visual directions, 2-4 anti-goals |
+| Reference Pack (adopt/avoid) | saved file paths, source URLs, adopt/avoid reasons from `manifest.json` |
+| Glossary + Object Model | key terms, major object relationships for aligned implementation/copy/schema |
+| Layout/App-shell Contract | app shell, navigation, pane hierarchy, screen ownership |
+| Token + Primitive Contract | token source paths, primitive/component sources, styling constraints |
+| Screen + Flow Coverage | screen IDs, flow IDs, primary journeys, screen ownership |
+| Implementation Prompt/Handoff | SLICE-1 reads checklist/layout/token/screen-flow; SLICE-2 reads behavior/a11y/state sections |
 
-Record goal, audience, platform, and success impression as one line each.
+### `UX_BEHAVIOR_ACCESSIBILITY.md` — use the exact heading order below
 
-## 30-Second Understanding Checklist
-
-Record the core questions a user should answer within 30 seconds, plus the expected answer criteria.
-
-## Visual Direction + Anti-goals
-
-Record 2 to 4 visual directions and 2 to 4 anti-goals.
-
-## Reference Pack (adopt/avoid)
-
-Summarize saved file paths, source URLs, and adopt or avoid reasons from `DESIGN_REFERENCES/manifest.json`.
-
-## Glossary + Object Model
-
-Record key term definitions and major object relationships so implementation, copy, filters, and schema language all stay aligned.
-
-## Layout/App-shell Contract
-
-Record app shell, navigation, pane or layout hierarchy, and screen ownership.
-
-## Token + Primitive Contract
-
-Record candidate token source paths, primitive or component sources, and styling constraints.
-
-## Screen + Flow Coverage
-
-Record screen IDs, flow IDs, primary journeys, and screen ownership.
-
-## Implementation Prompt/Handoff
-
-Explicitly state that `SLICE-1` reads `30-Second Understanding Checklist`, `Layout/App-shell Contract`, `Token + Primitive Contract`, and `Screen + Flow Coverage`, while `SLICE-2` reads the behavior, accessibility, live-update, and state sections of `UX_BEHAVIOR_ACCESSIBILITY.md`.
-
-Use the exact heading order below in `UX_BEHAVIOR_ACCESSIBILITY.md`.
-
-## Interaction Model
-
-Record selection, pane sync, drawer or pin behavior, filter persistence, resize rules, and pointer or keyboard parity.
-
-## Keyboard + Focus Contract
-
-Record focus order, focus return, focus visibility, overlay or drawer focus traps, and keyboard shortcuts.
-
-## Accessibility Contract
-
-Record non-color status cues, focus-ring behavior, contrast, target size, reduced motion, and hover or focus parity.
-
-## Live Update Semantics
-
-Record rules for auto-follow, paused mode, reconnect or stale badges, partial parse failure, and running-to-done transitions.
-
-## State Matrix + Fixture Strategy
-
-Record the state matrix, fixture strategy, edge states, and mock plan.
-
-## Large-run Degradation Rules
-
-Record thresholds and rules for lanes, events, edge cases, collapse, aggregation, fade, and virtualization.
-
-## Microcopy + Information Expression Rules
-
-Record status naming, time formatting, ID truncation, and unknown or redacted fallback copy.
-
-## Task-based Approval Criteria
-
-Record 30-second tasks, keyboard-only tasks, overlay focus retention, and per-fixture success criteria.
+| Section | Key content |
+|---------|------------|
+| Interaction Model | selection, pane sync, drawer/pin, filter persistence, resize, pointer/keyboard parity |
+| Keyboard + Focus Contract | focus order/return/visibility, overlay focus traps, keyboard shortcuts |
+| Accessibility Contract | non-color cues, focus-ring, contrast, target size, reduced motion, hover/focus parity |
+| Live Update Semantics | auto-follow, paused mode, reconnect/stale badges, parse failure, running-to-done |
+| State Matrix + Fixture Strategy | state matrix, fixture strategy, edge states, mock plan |
+| Large-run Degradation Rules | thresholds for lanes, events, collapse, aggregation, fade, virtualization |
+| Microcopy + Information Expression Rules | status naming, time formatting, ID truncation, unknown/redacted fallback |
+| Task-based Approval Criteria | 30-second tasks, keyboard-only tasks, overlay focus retention, per-fixture criteria |

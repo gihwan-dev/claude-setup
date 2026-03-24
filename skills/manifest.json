@@ -8,11 +8,6 @@
       "path": "skills/bootstrap-project-rules/SKILL.md"
     },
     {
-      "name": "change-architecture-doc",
-      "description": "Analyze git changes and generate/update architecture documentation with Mermaid diagrams. Analyze git changes in the current branch/worktree and create or update an architecture-centered change note. Prefer an existing documentation folder inside the project (`docs`, `packages/docs`, `guides`, `documentation`, `doc`); if none fits, create a markdown file at the project root. Use this when you need to document system boundaries, module interactions, data/event flow, and impact scope with Mermaid diagrams rather than implementation detail.",
-      "path": "skills/change-architecture-doc/SKILL.md"
-    },
-    {
       "name": "clean-code-inspector",
       "description": "AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%). Specialized TS/JS code quality inspection that combines AST/static-analysis metrics with an evidence-based qualitative overlay to generate `clean-code-inspect-result.json` and `.md`. Triggers: \"code review\", \"quality inspection\", \"clean code\", \"inspection\", \"code analysis\", etc.",
       "path": "skills/clean-code-inspector/SKILL.md"
@@ -28,11 +23,6 @@
       "path": "skills/commit/SKILL.md"
     },
     {
-      "name": "commter",
-      "description": "Add or improve JSDoc and inline comments for changed TS/JS code based on git diff. Use when the user wants comment coverage improved for changed code, with maintainer-facing intent, constraints, side effects, and tradeoffs documented while stale or obvious comments are removed.",
-      "path": "skills/commter/SKILL.md"
-    },
-    {
       "name": "complexity-refactor",
       "description": "Refactor high cyclomatic complexity functions into human-readable, maintainable code. A skill for restructuring functions with high cyclomatic complexity so they match a human-friendly logical flow. Use for requests like \"clean up this complex function\", \"this function is hard to read\", \"reduce cyclomatic complexity\", or \"please refactor this\". The goal is logical reconstruction rather than simple extraction, with readability and ease of modification prioritized over raw performance.",
       "path": "skills/complexity-refactor/SKILL.md"
@@ -41,16 +31,6 @@
       "name": "component-screenshot",
       "description": "Capture component screenshots from Storybook stories. Use when you need to capture component screenshots from Story files, such as \"/screenshot\" or \"capture a screenshot\".",
       "path": "skills/component-screenshot/SKILL.md"
-    },
-    {
-      "name": "daily-diary",
-      "description": "Auto-generate daily diary from AI agent activity logs and Obsidian vault changes. At the end of a day, turn AI agent activity history and Obsidian vault changes into a reusable diary entry. Use this when the user asks for a daily diary, today's diary, yesterday's diary, or a diary for a specific date.",
-      "path": "skills/daily-diary/SKILL.md"
-    },
-    {
-      "name": "deep-think",
-      "description": "Adaptive multi-persona deep reasoning with tiered complexity (2-5 agents) and convergence-based synthesis. Deep Think v2 — Adaptive multi-persona reasoning with evidence-based depth. Uses tiered complexity (2-5 agents), targeted critique→reflect cycles, convergence shortcuts, and 3-pass PENCIL-inspired synthesis. Detects execution environment to choose between Agent Teams (normal mode) and Task Orchestration (plan mode). Use when the user prefixes with `deep think`, uses an equivalent phrase meaning \"think deeply\", or requests thorough analysis. Best for complex architecture, debugging, algorithmic, or multi-domain problems. NOT for simple lookups. Track A requires Agent Teams feature (Claude Code: CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1). Track B works on any platform.",
-      "path": "skills/deep-think/SKILL.md"
     },
     {
       "name": "design-check",
@@ -121,16 +101,6 @@
       "name": "pm-spec-from-code",
       "description": "Convert implemented code into a PM-style spec focused on user-visible behavior and rules. Use when the user wants a concise feature spec derived from code, with behaviors, rules, constraints, exceptions, and non-goals captured in product language rather than implementation detail.",
       "path": "skills/pm-spec-from-code/SKILL.md"
-    },
-    {
-      "name": "prompt-builder",
-      "description": "Transform rough task requests into high-quality structured prompts for AI agents. Use when the user wants a request clarified into an execution-ready prompt with goals, completion criteria, required context, non-goals, constraints, and edge cases clearly organized.",
-      "path": "skills/prompt-builder/SKILL.md"
-    },
-    {
-      "name": "react-refactoring",
-      "description": "Critically evaluate React/TypeScript refactoring requests before changing code. When given a React component path and a list of concerns, validate whether those concerns are real first, then execute only after a plan and explicit approval. Use `references/analysis-modes.md` for detailed analysis modes and prompts, and `references/evaluation-criteria.md` for evaluation criteria.",
-      "path": "skills/react-refactoring/SKILL.md"
     },
     {
       "name": "refactor-repo-skills",

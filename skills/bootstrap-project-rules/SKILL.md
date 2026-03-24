@@ -43,6 +43,10 @@ and boundaries.
 - If `SPEC_VALIDATION.md` still has blockers beyond bootstrap-specific blocking issues, do not resolve them on your own.
 - If a core architecture decision is still unresolved, you may leave `IMPLEMENTATION_CONTRACT.md` as a partial draft, but do not claim the bootstrap blocker is resolved.
 - Keep UX ownership in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`; bootstrap must not redefine visual direction or behavior contracts.
+- Use `docs/ai/ENGINEERING_RULES.md` as the single source of truth for the repo baseline.
+- Use `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md` as the single source of truth for the task supplement.
+- Keep `README.md` focused on human-readable purpose, run instructions, and doc map; AI docs should be linked only.
+- Update the root README only inside the managed section. If the managed section does not exist, append it to the end. Preserve all user-authored text outside the managed section.
 
 ## Required References
 
@@ -87,33 +91,17 @@ and boundaries.
 12. If other blockers remain, keep the `Proceed verdict` as-is and state that implementation still cannot start after bootstrap.
 13. Do not start implementation or install packages. Leave only the `implement-task` handoff.
 
-## Document Update Rules
-
-- Use `docs/ai/ENGINEERING_RULES.md` as the single source of truth for the repo baseline.
-- Use `tasks/<task-path>/IMPLEMENTATION_CONTRACT.md` as the single source of truth for the task supplement.
-- Do not include a root global memory markdown file in bootstrap outputs.
-- Keep `README.md` focused on human-readable purpose, run instructions, and doc map; AI docs should be linked only.
-- Update the root README only inside the managed section.
-- If the managed section does not exist, append it to the end of the file.
-- Preserve all user-authored text outside the managed section.
-- Keep UX direction, anti-goals, and reference-pack ownership in `UX_SPEC.md`, and keep interaction/a11y/live/approval ownership in `UX_BEHAVIOR_ACCESSIBILITY.md`.
-
 ## Handoff Rules
 
 - After bootstrap succeeds, the next step is `implement-task`.
-- If a task now has `source_of_truth.implementation`, later implementation steps must read it as a required upstream input.
-- If unresolved architecture decisions, missing validation commands, or conflicting sources of truth remain, keep the bootstrap blocker and do not hand off to `implement-task`.
+- If unresolved architecture decisions, missing validation commands, or conflicting sources of truth remain, keep the bootstrap blocker and do not hand off.
 - Do not auto-approve `Deferred` items during implementation slices. Re-decide them only when the documented trigger is met.
-- `SLICE-1` and `SLICE-2` implementers should read `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` first; the bootstrap docs only reinforce implementation guardrails.
 
 ## Output Quality Checklist
 
 - Does `docs/ai/ENGINEERING_RULES.md` follow the fixed section order?
 - Does `IMPLEMENTATION_CONTRACT.md` separate task-bundle inputs from task-specific decisions?
-- Are `Locked now`, `Deferred`, and `Banned/Avoid` all filled in?
-- Does every `Deferred` item include a re-decision trigger?
+- Are `Locked now`, `Deferred`, and `Banned/Avoid` all filled in, with re-decision triggers for each `Deferred` item?
 - Were `task.yaml.required_docs` and `source_of_truth.implementation` updated?
-- Was only the managed section updated in the root `README.md`?
 - Were the bootstrap-related blocking issues resolved, or was the reason they remain unresolved recorded?
 - Did the work leave only documentation contracts, without implementation or package installation?
-- Did you lock the styling stack, component source, Storybook/screenshot tooling, and token source path while keeping UX ownership in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`?

@@ -36,24 +36,25 @@ Implement the next execution slice from an approved task bundle.
 1. Read `STATUS.md` first. If `STATUS.md` is missing, create it with the fixed template sections. `task.yaml` is required.
 2. If a path or slug is specified, use that task. Otherwise apply the candidate rule above as-is.
 3. For bundle work, keep `task.yaml.success_criteria`, `major_boundaries`, and `delivery_strategy` as the implementation contract, and check `SPEC_VALIDATION.md` for blocking issues. If `task.yaml.source_of_truth.implementation` exists, also read `IMPLEMENTATION_CONTRACT.md` as a primary input.
-3aa. If `task.yaml.agent_orchestration` exists and `strategy=manager`, lock the manager lane before code work starts. In that lane, the main thread may read bundle docs plus structured helper or worker output only.
-3a. Check `task.yaml.execution_topology`. If it is `csv-fanout` or `hybrid`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the `orchestration` block.
-3b. If it is `csv-fanout`, inspect the `work-items/*.csv` file for the current slice.
-3c. In Codex environments with `spawn_agents_on_csv`, run row workers in parallel per CSV row. Without Codex, fall back to sequential `keep-local` fallback execution.
-3d. After row workers finish, collect the output CSV. Retry failed rows once. Abort when 50 percent or more of rows fail.
-3e. In `csv-fanout`, let the integrator merge shared files such as barrel exports or route registration according to `MERGE_POLICY.md`.
-4. If `delivery_strategy=ui-first`, read `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/manifest.json` together. `SLICE-1` reads checklist/layout/token/screen-flow plus interaction/a11y/microcopy sections. `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture, degradation, and task-based approval criteria.
-5. Lock the current slice boundary, run structure preflight, then choose the bounded execution lane described by `agent_orchestration` and the slice-level orchestration fields. If the `split-first trigger` is on, do not append to the existing target file. Fix the decomposition boundary inside the same slice first, and fall back to an `exact split proposal` if the scope cannot be reduced.
-5a. Built-in `worker` delegation rule: if the current slice touches 2 or more files, the file boundaries are clear, and shared-file edits are unnecessary, consider delegating to the built-in `worker` agent. Parallel built-in `worker` subagents require no dependency between target files.
-5b. A built-in `worker` handoff must include `target_path` (allowed edit files), `change_spec` (requested change), `context_files` (reference files), `validation_command`, and `slice_budget` (file and LOC cap).
-5c. If `agent_orchestration.strategy=manager`, do not fall back to direct main-thread implementation when a worker lane blocks. Stop with `blocked + split/replan`, or re-route only through another bounded lane the bundle explicitly allows.
-5d. If the built-in `worker` returns `status: final`, keep shared-file integration inside the designated integration owner lane instead of silently moving it back to the main thread.
-5e. For parallel built-in `worker` subagents, use `isolation: worktree` with independent git worktrees, then have the designated integration owner merge the resulting diffs.
-5f. `multi-work` is optional. Consider it only when the approved slice is still large, can be expressed as 2 or more independent work units, each unit has a clear acceptance and merge boundary, and shared-file edits plus final validation remain with the designated integration or verification lane.
-6. Use `browser-explorer` only when browser reproduction or visual evidence is needed. The handoff must include `target URL or Electron entry`, `scenario checklist`, and `evidence checklist`.
-7. In manager mode, send validation execution to the designated lane and use `verification-worker` to summarize the results. Direct main-thread validation fallback is forbidden. Legacy bundles without `agent_orchestration` may use the old main-thread focused-validation path.
-8. If validation passes, commit the change and update `STATUS.md` with a manager-facing summary.
-9. Default single-slice mode stops after 1 slice. Run-to-boundary mode repeats the same loop until a stop or replan condition is hit.
+4. If `task.yaml.agent_orchestration` exists and `strategy=manager`, lock the manager lane before code work starts. In that lane, the main thread may read bundle docs plus structured helper or worker output only.
+5. Check `task.yaml.execution_topology`. If `csv-fanout` or `hybrid`:
+   - Read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the `orchestration` block.
+   - If `csv-fanout`, inspect the `work-items/*.csv` file for the current slice.
+   - In Codex environments with `spawn_agents_on_csv`, run row workers in parallel per CSV row. Without Codex, fall back to sequential `keep-local` fallback execution.
+   - After row workers finish, collect the output CSV. Retry failed rows once. Abort when 50 percent or more of rows fail.
+   - Let the integrator merge shared files such as barrel exports or route registration according to `MERGE_POLICY.md`.
+6. If `delivery_strategy=ui-first`, read `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/manifest.json` together. `SLICE-1` reads checklist/layout/token/screen-flow plus interaction/a11y/microcopy sections. `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture, degradation, and task-based approval criteria.
+7. Lock the current slice boundary, run structure preflight, then choose the bounded execution lane described by `agent_orchestration` and the slice-level orchestration fields. If the `split-first trigger` is on, do not append to the existing target file. Fix the decomposition boundary inside the same slice first, and fall back to an `exact split proposal` if the scope cannot be reduced.
+   - Built-in `worker` delegation: if the slice touches 2+ files with clear boundaries and no shared-file edits, consider delegating. Parallel workers require no dependency between target files.
+   - A `worker` handoff must include `target_path`, `change_spec`, `context_files`, `validation_command`, and `slice_budget`.
+   - In manager mode, do not fall back to direct main-thread implementation when a worker lane blocks. Stop with `blocked + split/replan`, or re-route only through another bounded lane the bundle explicitly allows.
+   - If a `worker` returns `status: final`, keep shared-file integration inside the designated integration owner lane.
+   - For parallel workers, use `isolation: worktree` with independent git worktrees, then have the designated integration owner merge the resulting diffs.
+   - `multi-work` is optional. Consider it only when the approved slice has 2+ independent work units with clear acceptance and merge boundaries.
+8. Use `browser-explorer` only when browser reproduction or visual evidence is needed. The handoff must include `target URL or Electron entry`, `scenario checklist`, and `evidence checklist`.
+9. In manager mode, send validation execution to the designated lane and use `verification-worker` to summarize the results. Direct main-thread validation fallback is forbidden. Legacy bundles without `agent_orchestration` may use the old main-thread focused-validation path.
+10. If validation passes, commit the change and update `STATUS.md` with a manager-facing summary.
+11. Default single-slice mode stops after 1 slice. Run-to-boundary mode repeats the same loop until a stop or replan condition is hit.
 
 ## Guardrails
 
