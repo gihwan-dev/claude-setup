@@ -1,8 +1,11 @@
 ---
 name: test
 description: >
-  Write reliable test code (unit/browser/integration) focusing on failure detection over coverage metrics.
-  Test-writing skill for requests such as "write tests", "browser test", "unit test", and "table test".
+  Write reliable test code (unit/browser/integration) focusing on failure detection
+  over coverage metrics. Use for "write tests", "browser test", "unit test", "table test",
+  or "테스트 작성해줘". Do not use for running existing tests, debugging test failures,
+  or generating mocks without test logic.
+allowed-tools: Bash, Read, Grep, Glob, Write
 ---
 
 # Role

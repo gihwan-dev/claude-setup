@@ -1,8 +1,10 @@
 ---
 name: commit
 description: >
-  Generate conventional commit messages with logical diff splitting.
-  Use when the user asks to commit changes, save work, or create a conventional commit.
+  Generate conventional commit messages with logical diff splitting. Use when the
+  user asks to commit changes, save work, "커밋해줘", or create a conventional commit.
+  Do not use for amending, rebasing, or cherry-picking operations.
+allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # Commit

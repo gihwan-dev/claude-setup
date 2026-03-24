@@ -1,12 +1,13 @@
 ---
 name: frontend-ui-state-decomposer
 description: >
-  Turn vague frontend feature requirements into an explicit UI state model, event transition map,
-  component boundary plan, and pre-implementation test checklist.
-  Use when designing a page, component, form, modal, table, onboarding flow, checkout flow, or dashboard interaction,
-  especially when requirements are feature-oriented but the UI state model is not explicit,
-  or when the user wants to identify edge cases before coding.
-  Do not use for backend-only tasks, pure debugging, or when the UI state model is already fully specified and implementation-ready.
+  Turn vague frontend feature requirements into an explicit UI state model, event
+  transition map, component boundary plan, and pre-implementation test checklist.
+  Use when designing a page, component, form, modal, or dashboard interaction where
+  the UI state model is not explicit. Do not use for backend-only tasks, pure
+  debugging, or when the UI state model is already fully specified.
+context: fork
+allowed-tools: Read, Grep, Glob
 ---
 
 # Frontend UI State Decomposer

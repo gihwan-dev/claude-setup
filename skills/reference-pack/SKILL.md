@@ -1,9 +1,11 @@
 ---
 name: reference-pack
 description: >
-  Advisory skill for task-local UI reference collection and curation. Use inside `design-task`
-  whenever `delivery_strategy=ui-first` to search, shortlist, save, and document references under
-  `tasks/<task-path>/DESIGN_REFERENCES/`, then feed those saved references into `UX_SPEC.md`.
+  Advisory skill for task-local UI reference collection and curation. Use inside
+  design-task whenever delivery_strategy=ui-first to search, shortlist, save, and
+  document references under DESIGN_REFERENCES/. Do not invoke standalone outside
+  of a design-task context.
+allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
 # Workflow: Reference Pack

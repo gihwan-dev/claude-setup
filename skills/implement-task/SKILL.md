@@ -1,10 +1,11 @@
 ---
 name: implement-task
 description: >
-  Execute the next approved slice from `task.yaml` bundles. Invoke only when
-  the user explicitly writes `implement-task` or `$implement-task`. Use the
-  `slice orchestration -> bounded execution lane -> verification summary ->
-  commit -> STATUS.md update` flow for the next approved slice.
+  Execute the next approved slice from task.yaml bundles. Invoke only when the user
+  explicitly writes "implement-task" or "$implement-task". Follows the slice
+  orchestration → bounded execution → verification → commit flow. Do not use without
+  an approved task bundle or when the user has not explicitly requested it.
+allowed-tools: Bash, Read, Grep, Glob, Edit, Write, Agent
 ---
 
 # Implement Task

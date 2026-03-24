@@ -2,10 +2,11 @@
 name: complexity-refactor
 description: >
   Refactor high cyclomatic complexity functions into human-readable, maintainable code.
-  A skill for restructuring functions with high cyclomatic complexity so they match a human-friendly logical flow.
-  Use for requests like "clean up this complex function", "this function is hard to read", "reduce cyclomatic complexity",
-  or "please refactor this". The goal is logical reconstruction rather than simple extraction, with readability and ease
-  of modification prioritized over raw performance.
+  Use for "clean up this complex function", "this function is hard to read", "reduce
+  cyclomatic complexity", or "please refactor this". Prioritizes logical reconstruction
+  and readability over simple extraction or raw performance. Do not use for cosmetic
+  formatting, renaming, or moving code between files.
+allowed-tools: Read, Grep, Glob, Edit
 ---
 
 # Complexity Refactor

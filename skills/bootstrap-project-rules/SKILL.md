@@ -1,12 +1,12 @@
 ---
 name: bootstrap-project-rules
 description: >
-  Post-design bootstrap workflow for greenfield or newly shaped work. Use after `design-task`
-  and before `implement-task` when the task bundle is ready but the repo still needs implementation
-  rules: repo baseline `docs/ai/ENGINEERING_RULES.md`, task supplement
-  `tasks/{task-path}/IMPLEMENTATION_CONTRACT.md`, and optional managed links in root `README.md`.
-  Lock only the core stack and architectural rules now; keep optional libraries as deferred decisions
-  with explicit triggers.
+  Post-design bootstrap workflow for greenfield or newly shaped work. Use after
+  design-task and before implement-task when the task bundle is ready but the repo
+  still needs implementation rules. Creates ENGINEERING_RULES.md and
+  IMPLEMENTATION_CONTRACT.md. Do not use before design-task completes or when
+  implementation rules already exist.
+allowed-tools: Read, Grep, Glob, Edit, Write
 ---
 
 # Workflow: Bootstrap Project Rules

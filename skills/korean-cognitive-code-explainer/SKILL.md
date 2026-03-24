@@ -1,14 +1,13 @@
 ---
 name: korean-cognitive-code-explainer
 description: >
-  Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams.
-  Explain code, functions, and components in Korean with lower cognitive load.
-  Break complexity down using programmer-oriented cognitive principles such as
-  working-memory limits, chunking, and schema formation, and add Korean aliases
-  for functions or variables when helpful. Use Mermaid diagrams actively when a
-  visual explanation such as a flowchart, sequence, or state transition helps.
-  Use this when the user asks for a Korean explanation of code, a simpler explanation,
-  a visual walkthrough, or help translating function names into Korean.
+  Explain code in Korean using cognitive load theory (chunking, schema formation)
+  with Mermaid diagrams. Use when the user asks for a Korean code explanation,
+  "코드 설명해줘", a simpler explanation, a visual walkthrough, or help translating
+  function names into Korean. Do not use for English explanations, code review,
+  or refactoring tasks.
+context: fork
+allowed-tools: Read, Grep, Glob
 ---
 
 # Korean Cognitive Code Explainer

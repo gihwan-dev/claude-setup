@@ -1,10 +1,12 @@
 ---
 name: frontend-first-principles
 description: >
-  First-principles decision support for frontend feature planning and UI flow changes before implementation.
-  Use when planning a frontend feature or UI flow, when requirements are vague or overloaded with assumptions,
-  when validating whether a proposed frontend approach is actually right, or when tradeoff analysis is needed before coding.
-  Do not use for trivial code edits, known-root-cause bugs, or syntax/type/mechanical refactor-only tasks.
+  First-principles decision support for frontend feature planning and UI flow changes
+  before implementation. Use when planning a frontend feature or UI flow, when
+  requirements are vague, or when tradeoff analysis is needed before coding. Do not
+  use for trivial code edits, known-root-cause bugs, or mechanical refactor-only tasks.
+context: fork
+allowed-tools: Read, Grep, Glob
 ---
 
 # Frontend First Principles

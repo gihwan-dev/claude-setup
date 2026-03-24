@@ -1,9 +1,12 @@
 ---
 name: pm-spec-from-code
 description: >
-  Convert implemented code into a PM-style spec focused on user-visible behavior and rules.
-  Use when the user wants a concise feature spec derived from code, with behaviors, rules, constraints,
-  exceptions, and non-goals captured in product language rather than implementation detail.
+  Convert implemented code into a PM-style spec focused on user-visible behavior
+  and rules. Use when the user wants a feature spec derived from code, with behaviors,
+  rules, constraints, exceptions, and non-goals in product language. Do not use for
+  API documentation, code comments, or architecture documentation.
+context: fork
+allowed-tools: Read, Grep, Glob
 ---
 
 # PM Spec from Code

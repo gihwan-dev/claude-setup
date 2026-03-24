@@ -1,8 +1,13 @@
 ---
 name: multi-work
 description: >
-  Explicit manager-style orchestration utility that explores first, selects
-  helpers, and records an `Orchestration Strategy` the main thread must follow.
+  Manager-style multi-agent orchestration utility. Use when the user writes
+  "/multi-work", "$multi-work", or when a task requires multi-agent exploration
+  before deciding the execution strategy. Explores first with 2+ helpers, then
+  records an Orchestration Strategy the main thread must follow. Do not use for
+  simple single-file tasks, when the scope is already clear, or for tasks that
+  do not benefit from parallel exploration.
+allowed-tools: Read, Grep, Glob, Agent
 ---
 
 # Multi Work

@@ -1,9 +1,12 @@
 ---
 name: design-check
 description: >
-  Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill.
-  Use when you need automated design verification and a Figma vs implementation
-  comparison report, such as "/design-check" or "run design verification".
+  Automated design verification comparing Figma designs vs implemented components
+  with pixel-diff reports. Requires: component-screenshot skill. Use for "/design-check",
+  "run design verification", or Figma vs implementation comparison. Do not use when
+  Figma URL is unavailable or Storybook is not configured.
+context: fork
+allowed-tools: Bash, Read, Glob, Agent
 ---
 
 # Design Check

@@ -1,10 +1,11 @@
 ---
 name: figma-to-code
 description: >
-  Generate React component code from a Figma URL and target file path. This
-  skill collects design data, reads local project patterns and token rules, and
-  produces React code. Use `references/` for detailed token mapping and
-  error/output contracts.
+  Generate React component code from a Figma URL and target file path. Collects
+  design data, reads local project patterns and token rules, and produces React code.
+  Use for single-component Figma-to-code conversion. Do not use for page-level work
+  (use figma-codex-pipeline instead) or when no Figma URL is provided.
+allowed-tools: Read, Grep, Glob, Write
 ---
 
 # Figma to Code

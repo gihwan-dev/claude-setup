@@ -1,8 +1,14 @@
 ---
 name: multi-review
 description: >
-  Explicit multi-agent review entry for the current diff or a user-specified
-  target.
+  Multi-agent code review for the current diff or a user-specified target.
+  Use when the user asks to review code, requests a code review, says "review
+  this", "check my changes", "multi-review", or "/multi-review". Runs 3 baseline
+  reviewers in parallel, then adds conditional reviewers for frontend, architecture,
+  or type contract changes. Do not use for single-file quick checks, linting, or
+  when the user wants a quick opinion rather than a structured review.
+context: fork
+allowed-tools: Read, Grep, Glob, Agent
 ---
 
 # Multi Review

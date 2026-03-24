@@ -1,9 +1,10 @@
 ---
 name: component-screenshot
 description: >
-  Capture component screenshots from Storybook stories.
-  Use when you need to capture component screenshots from Story files, such as
-  "/screenshot" or "capture a screenshot".
+  Capture component screenshots from Storybook stories. Use when you need to capture
+  component screenshots, such as "/screenshot" or "capture a screenshot". Do not use
+  when Storybook is not configured or for full-page screenshots outside Storybook.
+allowed-tools: Bash, Read, Glob
 ---
 
 

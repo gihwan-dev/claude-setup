@@ -1,9 +1,11 @@
 ---
 name: figma-design-pipeline
 description: >
-  End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills.
-  Use when you want a full Figma implementation and verification pipeline that
-  runs figma-to-code first and then design-check, such as "/figma-pipeline".
+  End-to-end Figma-to-code pipeline: converts Figma design to React code then
+  verifies against the original design. Requires: figma-to-code, design-check skills.
+  Use for "/figma-pipeline" or full single-component Figma implementation with
+  verification. Do not use for page-level work (use figma-codex-pipeline instead).
+allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
 

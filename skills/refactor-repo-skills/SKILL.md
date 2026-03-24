@@ -1,10 +1,11 @@
 ---
 name: refactor-repo-skills
 description: >
-  Repository-specific execution skill for refactoring verbose local skills. Audit `skills/*/SKILL.md`,
-  score verbosity and structure smells, then rewrite only the top 1-3 candidates or a user-specified
-  skill/path so the source of truth stays concise. Keep scope to `skills/` and generated skill index
-  sync only; do not edit `agent-registry` or non-skill repo infrastructure.
+  Refactor verbose local skills by auditing SKILL.md files, scoring verbosity and
+  structure smells, then rewriting the top 1-3 candidates. Scope is skills/ and
+  generated index sync only. Do not use for agent-registry, non-skill infrastructure,
+  or when skills are already concise and well-structured.
+allowed-tools: Bash, Read, Grep, Glob, Edit, Write
 ---
 
 # Refactor Repo Skills

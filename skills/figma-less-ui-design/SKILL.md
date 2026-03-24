@@ -1,11 +1,12 @@
 ---
 name: figma-less-ui-design
 description: >
-  Advisory skill for no-Figma MVP/prototype product UI planning. Use when `design-task`
-  has `delivery_strategy=ui-first` and the team needs concrete UX planning docs from repo
-  context plus saved task-local references. Produce `UX_SPEC.md` (`UI Planning Packet`) and
-  `UX_BEHAVIOR_ACCESSIBILITY.md`, and fall back to `reuse + delta` when an existing design
-  system, shipped UI, or Figma already exists.
+  Advisory skill for no-Figma MVP/prototype UI planning. Use when design-task has
+  delivery_strategy=ui-first and the team needs UX planning docs without Figma.
+  Produces UX_SPEC.md and UX_BEHAVIOR_ACCESSIBILITY.md. Falls back to reuse+delta
+  when an existing design system or Figma exists. Do not invoke standalone outside
+  of a design-task context.
+allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
 # Workflow: Figma-less UI Design

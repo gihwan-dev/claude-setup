@@ -1,10 +1,11 @@
 ---
 name: code-cleaner
 description: >
-  Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis.
-  Cleanup skill for removing unnecessary code after AI-generated changes. It analyzes changed TS/JS files from
-  git diff and automatically removes unused code. Triggers include unused-code cleanup, removing unnecessary code,
-  dead code cleanup, code cleanup, and post-AI cleanup requests.
+  Remove unused code (dead exports, functions, types, console.log) from changed
+  TS/JS files via git diff analysis. Use for "unused-code cleanup", "dead code",
+  "code cleanup", or post-AI cleanup requests. Do not use on non-TS/JS files,
+  for full-codebase analysis without git changes, or for logic refactoring.
+allowed-tools: Bash, Read, Grep, Glob, Edit
 ---
 
 # Unused Code Cleaner

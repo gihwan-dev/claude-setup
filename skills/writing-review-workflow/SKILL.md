@@ -1,9 +1,12 @@
 ---
 name: writing-review-workflow
 description: >
-  Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger
-  final version. Use when the user wants structure, reader experience, and accuracy or overstatement
-  reviewed separately before the main agent produces the final rewrite.
+  Review an existing draft with three parallel read-only reviewers, then rewrite it
+  into a stronger final version. Use when the user wants structure, reader experience,
+  and accuracy reviewed separately before producing the final rewrite. Do not use for
+  new writing from scratch (use writing-best-practices instead) or for code review.
+context: fork
+allowed-tools: Read, Grep, Glob, Agent, Edit, Write
 ---
 
 # Writing Review Workflow

@@ -1,11 +1,13 @@
 ---
 name: frontend-root-cause-analysis
 description: >
-  Evidence-based root cause analysis for frontend bugs using Five Whys and Socratic questioning.
-  Use when debugging frontend issues with flaky UI behavior, async timing, stale state, hydration mismatch,
-  focus problems, race conditions, event ordering, rendering glitches, or performance regressions, especially
-  when the user wants root cause analysis instead of a quick patch. Do not use when the fix is already obvious,
-  when the task is a simple type/syntax/lint error, or when planning a new feature.
+  Evidence-based root cause analysis for frontend bugs using Five Whys and Socratic
+  questioning. Use when debugging flaky UI, async timing, stale state, hydration
+  mismatch, race conditions, or performance regressions — especially when root cause
+  analysis is needed instead of a quick patch. Do not use when the fix is obvious,
+  for simple type/syntax/lint errors, or when planning a new feature.
+context: fork
+allowed-tools: Read, Grep, Glob, Bash
 ---
 
 # Frontend Root Cause Analysis

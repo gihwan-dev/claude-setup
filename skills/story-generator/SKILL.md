@@ -1,9 +1,10 @@
 ---
 name: story-generator
 description: >
-  Auto-generate Storybook story files for component screenshot comparison.
-  Use when you need to auto-generate Story files for screenshot comparison, such
-  as "/story-gen" or "generate a Story".
+  Auto-generate Storybook story files for component screenshot comparison. Use for
+  "/story-gen", "generate a Story", or when Story files are needed before screenshot
+  capture. Do not use when Story files already exist or Storybook is not configured.
+allowed-tools: Read, Grep, Glob, Write
 ---
 
 # Story Generator

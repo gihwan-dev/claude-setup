@@ -1,10 +1,13 @@
 ---
 name: clean-code-inspector
 description: >
-  AST-based TS/JS code quality analysis combining quantitative metrics (85%) and qualitative rubric overlay (15%).
-  Specialized TS/JS code quality inspection that combines AST/static-analysis metrics with an evidence-based
-  qualitative overlay to generate `clean-code-inspect-result.json` and `.md`.
-  Triggers: "code review", "quality inspection", "clean code", "inspection", "code analysis", etc.
+  AST-based TS/JS code quality inspection combining quantitative metrics (85%) and
+  qualitative rubric overlay (15%). Generates `clean-code-inspect-result.json` and `.md`.
+  Use when the user asks for "code review", "quality inspection", "clean code", "inspection",
+  or "code analysis" on TS/JS files. Do not use for non-TS/JS files, runtime debugging,
+  or when the user wants a quick opinion rather than a scored report.
+context: fork
+allowed-tools: Bash, Read, Grep, Glob, Agent
 ---
 
 # Clean Code Inspector v2.1 (AST-Based Quantitative Metrics + Qualitative Overlay)

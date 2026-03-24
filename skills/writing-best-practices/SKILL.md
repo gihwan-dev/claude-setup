@@ -1,9 +1,11 @@
 ---
 name: writing-best-practices
 description: >
-  Write or rewrite prose so it reads naturally, clearly, and quickly.
-  Use when the user wants a draft polished or new prose written from a topic, while preserving the
-  requested tone and format and removing stiffness, translation tone, filler, and cliches.
+  Write or rewrite prose so it reads naturally, clearly, and quickly. Use when the
+  user wants a draft polished, new prose written, or text improved by removing stiffness,
+  translation tone, filler, and cliches. Do not use for code comments, commit messages,
+  or structured technical documentation.
+allowed-tools: Read, Edit, Write
 ---
 
 # Writing Best Practices

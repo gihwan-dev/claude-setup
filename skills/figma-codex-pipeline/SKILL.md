@@ -1,10 +1,11 @@
 ---
 name: figma-codex-pipeline
 description: >
-  Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. This
-  4-phase pipeline decomposes a Figma page into semantic units, generates code
-  for each component in parallel, then integrates and verifies the result. Use
-  `figma-to-code` for a single component and this skill for page-level work.
+  Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. Decomposes
+  a Figma page into semantic units, generates code for each component in parallel,
+  then integrates and verifies the result. Use for page-level Figma work with
+  multiple components. Do not use for single-component work (use figma-to-code instead).
+allowed-tools: Bash, Read, Grep, Glob, Write, Agent
 ---
 
 # Figma Codex Pipeline

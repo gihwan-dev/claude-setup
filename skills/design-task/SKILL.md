@@ -2,10 +2,10 @@
 name: design-task
 description: >
   Large or ambiguous non-trivial task planning skill. Invoke only when the user
-  explicitly writes `design-task` or `$design-task`. Build or update a
-  tasks/{task-path}/task.yaml bundle via a continuity gate, derive
-  `delivery_strategy`, and record `agent_orchestration` plus slice-level
-  orchestration for bundle-based planning.
+  explicitly writes "design-task" or "$design-task". Builds a task.yaml bundle via
+  continuity gate, derives delivery_strategy, and records agent_orchestration. Do not
+  use for simple tasks, quick fixes, or when the user has not explicitly requested it.
+allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
 # Workflow: Design Task
