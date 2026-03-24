@@ -1,6 +1,7 @@
 # Agent Profile Architecture
 
-Agent profiles should stay thin. They capture identity and judgment lens, while operational contracts such as workflow, formatting, statuses, retries, and thresholds live in separate policy and reference layers.
+Agent profiles stay operationally thin: they carry no workflows, output formats, thresholds, retries, or tool sequencing. That operational content lives in separate policy and reference layers.
+Profiles should, however, be substantively rich in persona depth. A 3-line Identity that paints a vivid thinking style is thin (no operational content). A 1-line Identity that also specifies an output format is thick (operational content leaked in).
 Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane read discipline; skill and policy layers carry the concrete orchestration contract.
 
 ## Four Layers
@@ -66,6 +67,10 @@ Every helper agent shares the same section order.
 
 ## Collaboration Posture
 ```
+
+## Depth Guidance
+
+Each section should contain 2-4 lines that give the agent a recognizable thinking style, judgment lens, and collaboration personality. A label like "architecture reviewer" tells the topic; a sentence like "reads dependency graphs the way a city planner reads zoning maps" tells the reasoning approach. Use metaphors, concrete judgment criteria, and explicit scope boundaries to make each agent immediately distinguishable from its neighbors.
 
 ## Heavy Agent Playbooks
 
