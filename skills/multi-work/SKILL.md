@@ -12,53 +12,55 @@ allowed-tools: Read, Grep, Glob, Agent
 
 # Multi Work
 
-This is an explicit multi-agent orchestration utility.
-Always start with multi-agent exploration, then decide whether the main thread should stay a pure orchestrator, stop with `split-replan`, or decompose independent work units.
-
-## Trigger
-
-- `/multi-work`
-- `$multi-work`
-- `multi-work`
-
-## Hard Rules
-
-- Always begin with multi-agent exploration. Use at least 2 helpers.
-- If multi-agent fan-out is unavailable in the runtime, report blocked instead of collapsing to single-agent work.
-- Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
-- After helper fan-out, the main agent does not do parallel side work. Any follow-up exploration happens only after results return and stays minimal.
-- The main agent synthesizes helper output instead of re-reading the repository. Treat helper output as the primary evidence surface after fan-out.
-- In planning or collaborator modes, the output must contain an `Orchestration Strategy` section.
-- Use decomposition only when the work can be framed as 2 or more independent work units with clear acceptance and merge boundaries.
-- Shared-file edits, final integration, and final validation stay with designated execution lanes, not with ad hoc main-thread fallback.
-- The `Orchestration Strategy` must state helper combination, execution owner, allowed main-thread actions, fallback policy, and review boundary.
-- Keep helper selection, decomposition thresholds, and execution guardrails aligned with `policy/workflow.toml`, `scripts/workflow_contract.py`, and this skill's orchestration contract.
-- Do not auto-run review. Keep multi-agent review as a separate explicit `multi-review` step.
-- When helper results indicate low confidence or blocked status, follow the escalation response matrix in the routing contract instead of proceeding optimistically.
+An orchestration utility that dispatches helpers first, then synthesizes their
+findings into a strategy the main thread follows. The core idea: the main thread
+should never build its own understanding of the codebase when helpers can do it
+in parallel with fresh context windows.
 
 ## Workflow
 
-0. **Scope Gate**: If the request is ambiguous or acceptance criteria are unclear, ask the user a scoping question before helper fan-out. Skip this step when the request is concrete.
+0. **Scope Gate** — If the request is ambiguous or acceptance criteria are unclear, ask the user a scoping question before dispatching helpers. Skip when the request is concrete.
 1. Read `${SKILL_DIR}/references/routing-contract.md` and choose the helper combination that matches the request type.
-2. Always execute multi-agent exploration first.
-3. After helper fan-out, do only `wait` and result collection until results return. Pause additional file reads and searches in the main agent.
-4. After helper results return, synthesize their structured output into an `Orchestration Strategy`.
-5. If the runtime is in planning or collaborator mode, make `Orchestration Strategy` an explicit output section. It must include `Helper plan`, `Execution owner`, `Allowed main-thread actions`, `Fallback`, and `Review boundary`.
-6. Decide whether the work should stay local, stop for `split-replan`, or decompose into independent work units.
-7. Decompose only when each work unit has a clear owner, a clear output boundary, and limited dependency on sibling units.
-8. Keep shared-file integration and final validation with the designated integration or verification lane instead of pushing them into ad hoc main-thread work.
-9. If review is needed after execution, leave an explicit `multi-review` next step instead of auto-running it.
+2. Dispatch at least 2 helpers. If the runtime does not support multi-agent fan-out, report blocked instead of falling back to single-agent work (single-agent work defeats the purpose of context isolation).
+3. **Wait** — Do not read files, run searches, or explore the repo while helpers are running. The main thread exploring in parallel builds a second context that conflicts with helper evidence, leading to inconsistent synthesis.
+4. Synthesize helper output into an **Orchestration Strategy**. Treat helper output as the primary evidence surface; re-reading the repository after fan-out is a failure mode because it replaces structured evidence with unfiltered noise.
+5. When helpers report low confidence or blocked status, follow the escalation response matrix in the routing contract instead of proceeding optimistically.
+6. Decide the execution mode:
+   - **Keep local** — when shared-file edits or sequencing dependencies dominate.
+   - **`split-replan`** — when acceptance boundaries are still unclear after exploration, or the work is too broad to bound.
+   - **Decompose** — only when 2+ independent work units each have a clear owner, a clear output boundary, and limited sibling dependency. Shared-file integration and final validation stay with designated execution lanes, not ad hoc main-thread fallback.
+7. If review is needed after execution, leave an explicit `multi-review` next step. Auto-running review conflates orchestration and evaluation, making it harder to trace which step introduced issues.
+
+## Orchestration Strategy Output
+
+In planning or collaborator modes, the output must include an `Orchestration Strategy` section. This section is the handoff contract between exploration and execution.
+
+Required fields:
+- **Helper plan** — which helpers were used and why
+- **Execution owner** — who executes (keep-local, worker lanes, csv-fanout)
+- **Allowed main-thread actions** — what the main thread may do beyond synthesis
+- **Fallback** — what happens when a lane blocks
+- **Review boundary** — who reviews, when, and whether `multi-review` is the next step
+
+### Example
+
+```
+## Orchestration Strategy
+
+- Helper plan: explorer + structure-reviewer (basic code exploration),
+  web-researcher added for external API docs
+- Execution owner: keep-local (2 files share state, not decomposable)
+- Allowed main-thread actions: synthesize helper output, write Orchestration
+  Strategy, update STATUS.md
+- Fallback: if web-researcher returns low confidence on API docs,
+  split-replan and ask user for doc links
+- Review boundary: after implementation, explicit multi-review
+```
 
 ## Required References
 
-- helper matrix, orchestration matrix, and decomposition guardrails: `${SKILL_DIR}/references/routing-contract.md`
+- Helper matrix, escalation matrix, timeout policy, conflict resolution, orchestration matrix, decomposition guardrails: `${SKILL_DIR}/references/routing-contract.md`
 
-## Validation
+## Alignment
 
-- Confirm the helper set contains at least 2 agents.
-- Confirm the main agent does not continue file reads or searches between helper fan-out and result collection.
-- Confirm helper output is synthesized into an `Orchestration Strategy` instead of triggering broad repository rereads.
-- Confirm planning or collaborator mode output includes `Orchestration Strategy` with helper combination, execution owner, allowed main-thread actions, fallback, and review boundary.
-- Confirm decomposition is used only for independent work units with clear merge boundaries.
-- Confirm shared-file integration and final validation remain assigned to designated execution lanes instead of broad main-thread fallback.
-- Confirm execution closeout does not auto-run review.
+Keep helper selection, decomposition thresholds, and execution guardrails aligned with `policy/workflow.toml` and `scripts/workflow_contract.py`.

@@ -1,13 +1,19 @@
 interface:
   display_name: "Multi Work"
-  short_description: "Explicit manager-style orchestration utility for helper fan-out, orchestration strategy synthesis, and bounded work decomposition"
+  short_description: "Manager-style orchestration utility for helper fan-out, orchestration strategy synthesis, and bounded work decomposition"
   default_prompt: >
-    $multi-work first read `references/routing-contract.md` and run multi-agent exploration.
-    Use at least 2 helpers, and keep helper selection plus decomposition guardrails
-    aligned with that reference and `scripts/workflow_contract.py`. Before helper results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection. After helper fan-out, the main agent does not do parallel side work; any follow-up exploration happens only after results return and stays minimal. Synthesize helper output into an explicit `Orchestration Strategy` instead of broad repository rereads. In planning or collaborator modes, the output must include an `Orchestration Strategy` section with `Helper plan`, `Execution owner`, `Allowed main-thread actions`, `Fallback`, and `Review boundary`. Use multi-work decomposition only when the task has 2 or more
-    independent work units, each unit has a clear acceptance boundary, and shared-file
-    edits plus final validation stay with designated execution lanes. If those
-    conditions are not met, keep the work local or stop with `split-replan`. Do not
-    auto-run review; leave an explicit `multi-review` next step when needed.
+    $multi-work — Read `references/routing-contract.md` and dispatch at least 2
+    helpers for multi-agent exploration. If the request is ambiguous, ask a
+    scoping question first. While helpers run, do not read files or search the
+    repo — the main thread exploring in parallel builds a conflicting context.
+    After results return, synthesize helper output into an explicit
+    `Orchestration Strategy` with `Helper plan`, `Execution owner`, `Allowed
+    main-thread actions`, `Fallback`, and `Review boundary`. When helpers report
+    low confidence or blocked status, follow the escalation response matrix in
+    the routing contract. Decompose only when 2+ independent work units each
+    have clear acceptance and merge boundaries; shared-file integration and
+    final validation stay with designated execution lanes. If those conditions
+    are not met, keep local or stop with `split-replan`. Do not auto-run
+    review; leave an explicit `multi-review` next step when needed.
 policy:
   allow_implicit_invocation: false
