@@ -30,6 +30,11 @@ browser-explorer = "medium"
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"
 
+[orchestration_budget]
+max_helpers_per_fanout = 4
+max_total_fanouts_per_session = 3
+prefer_low_cost_for = ["web-researcher", "verification-worker"]
+
 [review_triggers]
 code_quality_min_changed_files = 3
 architecture_min_changed_files = 7

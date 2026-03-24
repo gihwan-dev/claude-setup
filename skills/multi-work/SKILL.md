@@ -34,9 +34,11 @@ Always start with multi-agent exploration, then decide whether the main thread s
 - The `Orchestration Strategy` must state helper combination, execution owner, allowed main-thread actions, fallback policy, and review boundary.
 - Keep helper selection, decomposition thresholds, and execution guardrails aligned with `policy/workflow.toml`, `scripts/workflow_contract.py`, and this skill's orchestration contract.
 - Do not auto-run review. Keep multi-agent review as a separate explicit `multi-review` step.
+- When helper results indicate low confidence or blocked status, follow the escalation response matrix in the routing contract instead of proceeding optimistically.
 
 ## Workflow
 
+0. **Scope Gate**: If the request is ambiguous or acceptance criteria are unclear, ask the user a scoping question before helper fan-out. Skip this step when the request is concrete.
 1. Read `${SKILL_DIR}/references/routing-contract.md` and choose the helper combination that matches the request type.
 2. Always execute multi-agent exploration first.
 3. After helper fan-out, do only `wait` and result collection until results return. Pause additional file reads and searches in the main agent.

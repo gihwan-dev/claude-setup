@@ -7,6 +7,9 @@
 | Basic repo or code exploration | built-in `explorer`, `structure-reviewer` |
 | External technical judgment or official docs needed | Baseline pair + `web-researcher` |
 | Browser reproduction or visual evidence needed | Matching pair + `browser-explorer` |
+| Type or interface contract changes are central | Baseline pair + `type-specialist` |
+| React state model judgment is needed | Baseline pair + `react-state-reviewer` |
+| Test strategy judgment is needed | Baseline pair + `test-engineer` |
 
 The minimum helper count is always 2.
 
@@ -21,6 +24,28 @@ Each helper should return a compact structured payload the main thread can synth
 - `confidence` — `high`, `medium`, or `low`.
 
 If a helper cannot produce this shape, it should report `blocked` instead of substituting a long free-form narrative.
+
+## Escalation Response Matrix
+
+| Helper Signal | Main Thread Action |
+|---|---|
+| confidence: high | Synthesize and proceed to next step |
+| confidence: medium | Synthesize, but evaluate whether an additional targeted fan-out is needed |
+| confidence: low | `split-replan`, or re-dispatch with additional context files |
+| blocked | Immediate `split-replan`; record the reason in the Orchestration Strategy |
+| conflicting evidence across helpers | Surface the conflict explicitly and request user judgment |
+
+## Timeout Policy
+
+- If a helper does not return within a reasonable time, treat it as stale and synthesize from the remaining results.
+- A single stale or failed helper must not block the entire fan-out.
+- Record the absent helper and its expected contribution in the Orchestration Strategy so downstream steps can compensate.
+
+## Conflict Resolution
+
+- When helpers return conflicting evidence, prefer the one with higher confidence.
+- At equal confidence, surface the conflict in the Orchestration Strategy and request user judgment.
+- When structural judgment (`structure-reviewer`) conflicts with domain judgment (`type-specialist`, `react-state-reviewer`), default to structural judgment but record the rationale.
 
 ## Orchestration Matrix
 
