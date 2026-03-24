@@ -8,7 +8,7 @@ description: >
   or type contract changes. Do not use for single-file quick checks, linting, or
   when the user wants a quick opinion rather than a structured review.
 context: fork
-allowed-tools: Read, Grep, Glob, Agent
+allowed-tools: Bash, Read, Grep, Glob, Agent
 ---
 
 # Multi Review

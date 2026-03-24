@@ -5,8 +5,7 @@ description: >
   with pixel-diff reports. Requires: component-screenshot skill. Use for "/design-check",
   "run design verification", or Figma vs implementation comparison. Do not use when
   Figma URL is unavailable or Storybook is not configured.
-context: fork
-allowed-tools: Bash, Read, Glob, Agent
+allowed-tools: Bash, Read, Grep, Glob, Agent
 ---
 
 # Design Check

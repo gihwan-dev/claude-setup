@@ -6,7 +6,6 @@ description: >
   Use when the user asks for "code review", "quality inspection", "clean code", "inspection",
   or "code analysis" on TS/JS files. Do not use for non-TS/JS files, runtime debugging,
   or when the user wants a quick opinion rather than a scored report.
-context: fork
 allowed-tools: Bash, Read, Grep, Glob, Agent
 ---
 

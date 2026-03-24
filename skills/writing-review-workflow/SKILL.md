@@ -5,8 +5,7 @@ description: >
   into a stronger final version. Use when the user wants structure, reader experience,
   and accuracy reviewed separately before producing the final rewrite. Do not use for
   new writing from scratch (use writing-best-practices instead) or for code review.
-context: fork
-allowed-tools: Read, Grep, Glob, Agent, Edit, Write
+allowed-tools: Read, Agent, Edit, Write
 ---
 
 # Writing Review Workflow
