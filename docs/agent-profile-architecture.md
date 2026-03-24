@@ -81,6 +81,7 @@ These agents keep a separate playbook outside the profile.
 - `agent-registry/react-state-reviewer/references/state-anti-patterns.md`
 - `skills/implement-task/SKILL.md` for built-in `worker` delegation rules
 - `agent-registry/browser-explorer/references/observation-points.md`
+- `agent-registry/browser-explorer/references/agent-browser-playbook.md`
 
 ## Research Basis
 
