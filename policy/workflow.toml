@@ -19,10 +19,13 @@ documentation_only_builtins = ["monitor"]
 default_reasoning_effort = "high"
 
 [codex.reasoning_effort_overrides]
-web-researcher = "low"
-verification-worker = "low"
-code-quality-reviewer = "high"
-browser-explorer = "high"
+web-researcher = "medium"
+verification-worker = "medium"
+structure-reviewer = "medium"
+code-quality-reviewer = "medium"
+test-engineer = "medium"
+type-specialist = "medium"
+browser-explorer = "medium"
 
 [codex.sandbox_overrides]
 browser-explorer = "danger-full-access"

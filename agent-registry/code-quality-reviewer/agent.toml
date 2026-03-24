@@ -15,5 +15,5 @@ tools = ["Read", "Grep", "Glob"]
 agent_key = "code-quality-reviewer"
 config_file = "code-quality-reviewer.toml"
 model = "gpt-5.4"
-reasoning_effort = "high"
+reasoning_effort = "medium"
 sandbox_mode = "read-only"
