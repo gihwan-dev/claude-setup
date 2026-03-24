@@ -33,6 +33,11 @@
       "path": "skills/component-screenshot/SKILL.md"
     },
     {
+      "name": "create-mr",
+      "description": "Create a merge request (or pull request) with change-type analysis and project MR/PR template adherence. Use when the user asks to create an MR/PR, says \"MR 만들어줘\", \"create-mr\", \"$create-mr\", or \"PR 생성해줘\". Do not use for amending existing MRs, reviewing code, or committing changes.",
+      "path": "skills/create-mr/SKILL.md"
+    },
+    {
       "name": "design-check",
       "description": "Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill. Use for \"/design-check\", \"run design verification\", or Figma vs implementation comparison. Do not use when Figma URL is unavailable or Storybook is not configured.",
       "path": "skills/design-check/SKILL.md"
