@@ -16,7 +16,7 @@ Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane r
 
 - Purpose: define when helpers are invoked, how they are combined, and which execution boundaries apply.
 - Contents: helper selection, fan-out boundaries, review trigger, budget, termination
-- Location: `AGENTS.md`, `policy/workflow.toml`, `scripts/workflow_contract.py`, `skills/multi-work`, `skills/multi-review`
+- Location: `AGENTS.md`, `policy/workflow.toml`, repo-maintenance helpers such as `scripts/workflow_contract.py`, installable runtime helpers under `skills/_shared/scripts`, `skills/multi-work`, `skills/multi-review`
 
 ### Task Contract
 
@@ -51,6 +51,8 @@ Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane r
 - `validation command`
 
 Profiles must not contain operational language such as input contracts, output formats, workflows, status values, retry counts, or threshold rules.
+
+Repo-maintenance helpers in `scripts/` are not installable runtime dependencies for global skills. Reusable runtime logic that a skill must execute from arbitrary repositories belongs in that skill's own `scripts/` directory or under `skills/_shared/`.
 
 ## Common Template
 

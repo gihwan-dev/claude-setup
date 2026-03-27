@@ -63,4 +63,4 @@ Required fields:
 
 ## Alignment
 
-Keep helper selection, decomposition thresholds, and execution guardrails aligned with `policy/workflow.toml` and `scripts/workflow_contract.py`.
+Keep helper selection, decomposition thresholds, and execution guardrails aligned with `${SKILL_DIR}/references/routing-contract.md`. When you are working inside this repository, repo-maintenance policy files such as `policy/workflow.toml` can provide extra maintainer context, but installed skill runs must not depend on repo-root helpers.

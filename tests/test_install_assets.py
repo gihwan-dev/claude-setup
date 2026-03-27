@@ -471,6 +471,30 @@ class InstallAssetsTests(RepoTestCase):
 
             self.assertTrue((destination / "_shared" / "storybook-screenshot-guidelines.md").exists())
 
+    def test_multi_review_installs_shared_hotspot_classifier(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            destination = Path(tmpdir) / "skills"
+
+            _install_skill_sources(
+                skills_src=REPO_ROOT / "skills",
+                destination=destination,
+                mode="copy",
+                dry_run=False,
+            )
+            _install_internal_skill_assets(
+                canonical_skills_src=REPO_ROOT / "skills",
+                destination=destination,
+                mode="copy",
+                dry_run=False,
+            )
+
+            classifier_path = destination / "_shared" / "scripts" / "review_hotspots.py"
+            multi_review_text = (destination / "multi-review" / "SKILL.md").read_text(encoding="utf-8")
+
+            self.assertTrue(classifier_path.exists(), msg=f"missing installed classifier: {classifier_path}")
+            self.assertIn("../_shared/scripts/review_hotspots.py", multi_review_text)
+            self.assertNotIn("scripts/workflow_contract.py", multi_review_text)
+
     def test_install_path_copy_replaces_broken_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
