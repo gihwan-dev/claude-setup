@@ -83,6 +83,11 @@
       "path": "skills/frontend-ui-state-decomposer/SKILL.md"
     },
     {
+      "name": "gitlab-issue-worker",
+      "description": "GitLab 이슈 기반 코드 작업 워크플로우. glab CLI로 이슈를 조회·분석하고 코드 변경을 수행한다. 이슈 번호가 없으면 목록을 보여주고 선택받는다. 모호한 이슈는 사용자에게 구체적 질문으로 범위를 좁힌다. Use when the user says \"이슈 작업해줘\", \"이슈 처리해줘\", \"#123 작업\", \"gitlab issue\", or mentions a GitLab issue number. Do not use when the project has no GitLab remote or glab is not installed.",
+      "path": "skills/gitlab-issue-worker/SKILL.md"
+    },
+    {
       "name": "implement-task",
       "description": "Execute the next approved slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Follows the slice orchestration → bounded execution → verification → commit flow. Do not use without an approved task bundle or when the user has not explicitly requested it.",
       "path": "skills/implement-task/SKILL.md"
