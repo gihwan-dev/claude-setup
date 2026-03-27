@@ -23,15 +23,6 @@ Run these 3 reviewers in parallel every time.
 | React/TSX/frontend slice | `react-state-reviewer` |
 | visual regression / browser repro needed | `browser-explorer` |
 
-## Hotspot Full-File Pass
-
-- Before reviewer fan-out, classify touched files with `scripts/workflow_contract.py`.
-- If no hotspots are selected, keep `review_mode = diff-only` for every reviewer.
-- If hotspot files are selected, keep the baseline reviewers unchanged and expand only `structure-reviewer`.
-- Pass `review_mode`, `review_mode = diff+full-file-hotspots`, and `hotspot_paths` to `structure-reviewer`.
-- `hotspot_paths` is capped to the top 3 files by severity. If more files qualify, keep the cap and surface the overflow in maintainability reasons.
-- Other reviewers continue reviewing the diff only.
-
 ## Synthesis Contract
 
 - Before reviewer results return, do not read more files, run more searches, or continue exploration beyond `wait` and result collection.
@@ -39,7 +30,5 @@ Run these 3 reviewers in parallel every time.
 - Results are findings first and summary second.
 - Order findings by severity.
 - Attach file or line evidence when possible.
-- Tag findings as `correctness`, `state`, `test gap`, or `maintainability`.
-- When hotspot files were reviewed, emit a separate `maintainability_verdict` line before the short summary.
 - Add open questions and residual risk briefly after the findings.
 - This skill performs review only and does not make edits.
