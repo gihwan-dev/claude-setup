@@ -1,0 +1,19 @@
+id = "design-skeptic"
+role = "reviewer"
+description = "Adversarial design reviewer that stress-tests alternatives, challenges assumptions, and surfaces failure modes during design sessions."
+source = "dev-socratic-design"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "design-skeptic"
+config_file = "design-skeptic.toml"
+model = "gpt-5.4"
+reasoning_effort = "high"
+sandbox_mode = "read-only"

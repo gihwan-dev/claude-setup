@@ -2,23 +2,7 @@ interface:
   display_name: "Multi Review"
   short_description: "Multi-agent review entry for the current diff or a selected target"
   default_prompt: >
-    $multi-review first read `references/reviewer-matrix.md` and execute a
-    multi-agent review. Keep baseline reviewer selection and conditional reviewer
-    expansion aligned with that reference. The default target is the current
-    worktree diff vs `HEAD`, but a user-specified path, commit, or range takes
-    precedence. Before reviewer fan-out, collect `git diff --numstat` for the
-    chosen target and run `../_shared/scripts/review_hotspots.py` from the
-    installed skill bundle. Use its JSON output as the sole source of
-    `review_mode`, `hotspot_paths`, `overflow_hotspot_paths`, and
-    `maintainability_reasons`; if hotspots are selected, pass
-    `review_mode = diff+full-file-hotspots` and `hotspot_paths` to
-    `structure-reviewer` while keeping other reviewers diff-only.
-    Before reviewer results return, do not read more files, run more searches,
-    or continue exploration beyond `wait` and result collection. After reviewer
-    fan-out, the main agent does not do parallel side work; any follow-up
-    exploration happens only after results return and stays minimal. Keep the
-    review read-only, keep `maintainability` separate from `correctness`,
-    `state`, and `test gap`, and synthesize results as findings first and
-    summary second, ordered by severity.
+    $multi-review — execute a multi-agent code review per SKILL.md.
+    Default target: current worktree diff vs HEAD.
 policy:
   allow_implicit_invocation: false

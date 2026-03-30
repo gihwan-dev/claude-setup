@@ -13,9 +13,25 @@ config_file = "agents/browser-explorer.toml"
 description = "Read-only reviewer focused on risky logic, missing validation, and local code quality."
 config_file = "agents/code-quality-reviewer.toml"
 
+[agents.design-evaluator]
+description = "Rubric-based design quality evaluator that scores design sessions against defined criteria and identifies gaps to resolve."
+config_file = "agents/design-evaluator.toml"
+
+[agents.design-skeptic]
+description = "Adversarial design reviewer that stress-tests alternatives, challenges assumptions, and surfaces failure modes during design sessions."
+config_file = "agents/design-skeptic.toml"
+
+[agents.docs-researcher]
+description = "Read-only research agent that finds and summarizes relevant documentation, code patterns, and domain context for design sessions."
+config_file = "agents/docs-researcher.toml"
+
 [agents.react-state-reviewer]
 description = "Read-only reviewer focused on React state modeling, derived state, and impossible state reduction."
 config_file = "agents/react-state-reviewer.toml"
+
+[agents.socratic-partner]
+description = "Deep design dialogue partner for Socratic questioning sessions. Responds with structured 5-part answers and never agrees without evidence."
+config_file = "agents/socratic-partner.toml"
 
 [agents.structure-reviewer]
 description = "Read-only reviewer focused on module boundaries, decomposition, and structural complexity."

@@ -2,18 +2,7 @@ interface:
   display_name: "Multi Work"
   short_description: "Manager-style orchestration utility for helper fan-out, orchestration strategy synthesis, and bounded work decomposition"
   default_prompt: >
-    $multi-work — Read `references/routing-contract.md` and dispatch at least 2
-    helpers for multi-agent exploration. If the request is ambiguous, ask a
-    scoping question first. While helpers run, do not read files or search the
-    repo — the main thread exploring in parallel builds a conflicting context.
-    After results return, synthesize helper output into an explicit
-    `Orchestration Strategy` with `Helper plan`, `Execution owner`, `Allowed
-    main-thread actions`, `Fallback`, and `Review boundary`. When helpers report
-    low confidence or blocked status, follow the escalation response matrix in
-    the routing contract. Decompose only when 2+ independent work units each
-    have clear acceptance and merge boundaries; shared-file integration and
-    final validation stay with designated execution lanes. If those conditions
-    are not met, keep local or stop with `split-replan`. Do not auto-run
-    review; leave an explicit `multi-review` next step when needed.
+    $multi-work — execute manager-style multi-agent orchestration per SKILL.md.
+    Read routing-contract.md, dispatch helpers, synthesize an Orchestration Strategy.
 policy:
   allow_implicit_invocation: false

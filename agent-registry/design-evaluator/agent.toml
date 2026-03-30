@@ -1,0 +1,19 @@
+id = "design-evaluator"
+role = "reviewer"
+description = "Rubric-based design quality evaluator that scores design sessions against defined criteria and identifies gaps to resolve."
+source = "dev-socratic-design"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "design-evaluator"
+config_file = "design-evaluator.toml"
+model = "gpt-5.4"
+reasoning_effort = "high"
+sandbox_mode = "read-only"

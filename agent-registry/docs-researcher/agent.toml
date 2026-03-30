@@ -1,0 +1,19 @@
+id = "docs-researcher"
+role = "researcher"
+description = "Read-only research agent that finds and summarizes relevant documentation, code patterns, and domain context for design sessions."
+source = "dev-socratic-design"
+
+[projection]
+repo = true
+codex = true
+
+[repo]
+model = "sonnet"
+tools = ["Read", "Grep", "Glob"]
+
+[codex]
+agent_key = "docs-researcher"
+config_file = "docs-researcher.toml"
+model = "gpt-5.4"
+reasoning_effort = "medium"
+sandbox_mode = "read-only"

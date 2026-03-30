@@ -17,19 +17,30 @@ findings into a strategy the main thread follows. The core idea: the main thread
 should never build its own understanding of the codebase when helpers can do it
 in parallel with fresh context windows.
 
+## Dispatch Prompt Contract
+
+Each helper's dispatch prompt contains exactly these items and nothing else:
+
+1. **Exploration target** — the files, directories, or question to investigate.
+2. **Scope boundary** — what is in scope and what is out of scope for this helper.
+3. **Return shape** — the Helper Return Contract from `routing-contract.md` (summary, evidence, target_paths, recommended_next_step, confidence).
+
+Do not include references to this SKILL.md, `routing-contract.md`, orchestration rules, Orchestration Strategy, split-replan, execution modes, or any other file in the skill directory. Helpers have their own profile via `developer_instructions`; the dispatch prompt adds only the target, scope, and expected output shape.
+
 ## Workflow
 
 0. **Scope Gate** — If the request is ambiguous or acceptance criteria are unclear, ask the user a scoping question before dispatching helpers. Skip when the request is concrete.
 1. Read `${SKILL_DIR}/references/routing-contract.md` and choose the helper combination that matches the request type.
-2. Dispatch at least 2 helpers. If the runtime does not support multi-agent fan-out, report blocked instead of falling back to single-agent work (single-agent work defeats the purpose of context isolation).
-3. **Wait** — Do not read files, run searches, or explore the repo while helpers are running. The main thread exploring in parallel builds a second context that conflicts with helper evidence, leading to inconsistent synthesis.
-4. Synthesize helper output into an **Orchestration Strategy**. Treat helper output as the primary evidence surface; re-reading the repository after fan-out is a failure mode because it replaces structured evidence with unfiltered noise.
-5. When helpers report low confidence or blocked status, follow the escalation response matrix in the routing contract instead of proceeding optimistically.
-6. Decide the execution mode:
+2. Compose each helper's dispatch prompt per the Dispatch Prompt Contract above.
+3. Dispatch at least 2 helpers. If the runtime does not support multi-agent fan-out, report blocked instead of falling back to single-agent work.
+4. **Wait** — Do not read files, run searches, or explore the repo while helpers are running.
+5. Synthesize helper output into an **Orchestration Strategy**. Treat helper output as the primary evidence surface; re-reading the repository after fan-out is a failure mode.
+6. When helpers report low confidence or blocked status, follow the escalation response matrix in the routing contract.
+7. Decide the execution mode:
    - **Keep local** — when shared-file edits or sequencing dependencies dominate.
    - **`split-replan`** — when acceptance boundaries are still unclear after exploration, or the work is too broad to bound.
    - **Decompose** — only when 2+ independent work units each have a clear owner, a clear output boundary, and limited sibling dependency. Shared-file integration and final validation stay with designated execution lanes, not ad hoc main-thread fallback.
-7. If review is needed after execution, leave an explicit `multi-review` next step. Auto-running review conflates orchestration and evaluation, making it harder to trace which step introduced issues.
+8. If review is needed after execution, leave an explicit `multi-review` next step.
 
 ## Orchestration Strategy Output
 

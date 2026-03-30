@@ -1,6 +1,6 @@
 # Multi Work Routing Contract
 
-This reference is read by the main thread at workflow step 1 to choose helpers and apply orchestration rules.
+This reference is for the main orchestrating thread only. Helpers must not read or receive this file. They return their exploration findings without knowledge of orchestration rules, escalation policies, or the Orchestration Strategy format.
 
 ## Helper Matrix
 
