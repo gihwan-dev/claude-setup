@@ -22,7 +22,7 @@ Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane r
 
 - Purpose: define the concrete inputs, constraints, and validation flow for a specific task.
 - Contents: handoff schema, validation contract, shared file policy, browser evidence checklist
-- Location: `skills/implement-task`, `skills/design-task`, related `references/`
+- Location: `skills/implement-task`, `skills/design-task`, `skills/parallel-workflow`, related `references/`
 
 ### Schema/Eval
 

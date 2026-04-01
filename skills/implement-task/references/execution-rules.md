@@ -56,47 +56,13 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
   - `skills`: `python3 scripts/sync_skills_index.py` + `python3 scripts/sync_skills_index.py --check`
   - `agent-registry`: `python3 scripts/sync_agents.py` + `python3 scripts/sync_agents.py --check`
 
-## CSV Fan-out Execution Rules
+## Parallel Workflow Handoff Rules
 
-### Environment Detection
-
-- Codex environment: determine this from `spawn_agents_on_csv` availability.
-- Claude Code environment: fall back to sequential `keep-local` execution.
-
-### Row Worker Constraints
-
-- Each row worker may create or edit files only at the CSV `target_path`.
-- Follow layout and import rules from `GLOBAL_CONTEXT.md`.
-- Row workers do not reference output from other rows. (No cross-row reference.)
-- Shared files such as barrel exports, route registration, and `package.json` are off-limits.
-
-### Integrator Role
-
-- After all row workers finish, the integrator merges shared files.
-- Update barrel exports, route registration, and similar files using the integrator-only file list from `MERGE_POLICY.md`.
-- If row outputs touch the same shared-file section, apply them in `row_id` order.
-
-### Failure Recovery
-
-- Retry a failed row once automatically.
-- If it still fails, record that row as `failed` and continue the rest.
-- If 50 percent or more of all rows fail, stop slice execution.
-
-### Row-level Continuity
-
-- Previously successful `row_id` -> skip.
-- `row_id` whose acceptance criteria or `target_path` changed -> re-execute.
-- Newly added `row_id` -> append.
-- Deleted `row_id` -> superseded (preserve the result).
-
-### STATUS.md Extension (`csv-fanout`)
-
-Record the following extra fields in `STATUS.md` for a `csv-fanout` slice.
-
-- total row count
-- counts for success / failure / skip / superseded
-- retry count
-- integrator result (shared-file merge success or failure)
+- `implement-task` does not execute runtime CSV workflows directly.
+- If the current slice declares `Execution skill: parallel-workflow`, stop here
+  and hand off to `$parallel-workflow`.
+- Static `task.yaml.orchestration` data may still be read to understand the
+  intended topology. Runtime artifacts belong to `$parallel-workflow`.
 
 ## STATUS Contract
 

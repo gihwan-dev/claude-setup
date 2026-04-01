@@ -38,7 +38,7 @@ Required keys:
 Optional keys:
 
 - `execution_topology` — one of `keep-local` (default), `csv-fanout`, or `hybrid`
-- `orchestration` — required for `csv-fanout` or `hybrid`; a mapping that includes `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, and `merge_policy`
+- `orchestration` — required for `csv-fanout` or `hybrid`; a static mapping that includes `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `artifact_root`, and `change_group_policy`
 
 `required_docs` lists the real bundle documents and directories excluding `task.yaml` itself.
 `source_of_truth` points only to real file paths.
@@ -85,8 +85,8 @@ Derived rules:
 ## Execution Topologies
 
 - `keep-local` — default. Sequential slice execution. Same as existing behavior.
-- `csv-fanout` — split repeated work units inside a slice into CSV rows and execute them in parallel. Based on Codex `spawn_agents_on_csv`.
-- `hybrid` — parallelize exploration and decomposition, but centralize code integration.
+- `csv-fanout` — the slice is intended for repeated parallel execution units. Runtime CSVs are created later by `parallel-workflow`.
+- `hybrid` — parallelize part of execution, but keep central integration or validation ownership.
 
 The 5 conditions for `csv-fanout`:
 
@@ -97,7 +97,8 @@ The 5 conditions for `csv-fanout`:
 5. The merge boundary is clear (the integrator edits shared files only).
 
 `delivery_strategy` and `execution_topology` are orthogonal axes. Every combination is allowed.
-In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` automatically fall back to sequential `keep-local` execution.
+Design-time bundles record only static orchestration intent. Runtime artifacts are not added to `required_docs`.
+In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` execution still need an explicit fallback path, but design-time bundles keep the same topology choice.
 
 ## UI Planning Packet (`UX_SPEC.md`)
 
@@ -143,34 +144,14 @@ Additional rules:
 - `Keyboard + Focus Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, and `Task-based Approval Criteria` justify entering `SLICE-2`.
 - Record `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`.
 
-## GLOBAL_CONTEXT.md
+## Parallel Runtime Artifacts
 
-Create this when `execution_topology` is `csv-fanout` or `hybrid`.
+If `execution_topology` is `csv-fanout` or `hybrid`, record only the static
+runtime handoff in `task.yaml.orchestration`.
 
-- Token budget — maximum context tokens each row worker receives.
-- Layout/Import rules — directory and import-path rules for generated files.
-- Shared-file touch rules — read-only rules plus the list of files row workers may not modify.
-
-## WORK_ITEMS.csv
-
-When `execution_topology` is `csv-fanout`, create at least 1 file in `work-items/`.
-
-Required columns:
-
-- `row_id` — unique row identifier (for example `ROW-001`)
-- `target_path` — file path created or edited by the row worker
-- `acceptance_criteria` — completion condition for that row
-
-Additional columns may be added freely based on the task.
-
-## MERGE_POLICY.md
-
-Create this when `execution_topology` is `csv-fanout` or `hybrid`.
-
-- Integrator-only shared files — files only the integrator may modify (for example barrel exports, route registration).
-- Row worker scope limit — each row worker may create or edit files only at `target_path`.
-- Merge strategy — how the integrator collects row output and updates shared files in a single pass.
-- Conflict handling — resolution rules when 2 rows affect the same shared-file section.
+- `artifact_root` must be defined for `csv-fanout` or `hybrid` topologies
+- `change_group_policy` should explain how shared-file rows collapse to a single lane
+- Runtime artifacts are created only by `$parallel-workflow` and are not added to `required_docs`
 
 ## Impact Flags
 

@@ -1,80 +1,14 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved task-bundle slices with manager-lane orchestration, bounded execution, verification summaries, commit, and STATUS.md updates"
+  short_description: "Run approved non-parallel slices with manager-lane execution, verification, commit, and STATUS updates"
   default_prompt: >
-    $implement-task first reads the approved task path's
-    `task.yaml + EXECUTION_PLAN.md + STATUS.md`. If `delivery_strategy=ui-first`,
-    also read `task.yaml.source_of_truth.ux = UX_SPEC.md`,
-    `task.yaml.source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and
-    `task.yaml.source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`.
-    If `task.yaml.source_of_truth.implementation` exists, read
-    `IMPLEMENTATION_CONTRACT.md` too. Do not start implementation when
-    `SPEC_VALIDATION.md` still has blocking issues, when
-    `$bootstrap-project-rules` or project implementation rules are unresolved, or
-    when `IMPLEMENTATION_CONTRACT.md` is required but unresolved. Keep
-    `task.yaml.success_criteria`, `task.yaml.major_boundaries`, and
-    `task.yaml.delivery_strategy` as the implementation contract. If
-    `task.yaml.agent_orchestration` exists and `strategy=manager`, the main
-    thread stays orchestration-only and reads bundle docs plus structured
-    helper or worker output only. Read
-    `EXECUTION_PLAN.md` with the section order `Execution slices`,
-    `Verification`, `Stop / Replan conditions`. If
-    `delivery_strategy=ui-first`, do not skip or merge the `SLICE-1 -> SLICE-2
-    -> SLICE-3+` order, and do not add real API, backend, data contract, or
-    integration diff inside `SLICE-1` or `SLICE-2`. `SLICE-1` reads
-    checklist/layout/token/screen-flow plus interaction/a11y/microcopy.
-    `SLICE-2` reads keyboard/focus, live semantics, state matrix/fixture,
-    degradation, and task-based approval criteria. In each slice, lock
-    structure preflight first: target file role, expected post-change LOC, and
-    whether a split is needed. If the split-first trigger is on, do not append
-    to the target file. If a new module cannot be extracted inside the same
-    slice, stop with `blocked + exact split proposal`. The hybrid-mode default
-    is `small slices + run-to-boundary`. Broad `setup` / `skeleton` / `wrapper`
-    / `docs` handoff or slice-budget overflow must split or replan before
-    execution. The small-slice budget is `repo-tracked files 3 or fewer` and a
-    net diff of around `150 LOC`. Multiple active task folders are normal. If
-    no path is specified, build the active candidate set first, auto-select only
-    when there is exactly 1 candidate, and otherwise confirm with the user
-    instead of auto-running. If `task.yaml.execution_topology` is
-    `csv-fanout`, also read `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and the
-    `orchestration` block, then inspect the current slice's `work-items/*.csv`.
-    In Codex environments with `spawn_agents_on_csv`, run row workers in
-    parallel; otherwise fall back to sequential `keep-local`. Row workers may
-    edit only `target_path` and may not modify shared files. Collect output CSV
-    after workers finish, retry failed rows once, and stop if 50 percent or
-    more fail. Let the integrator merge shared files such as barrel exports and
-    route registration using `MERGE_POLICY.md`. If the current slice touches 2
-    or more files, the file boundaries are clear, and shared-file edits are not
-    needed, consider delegating to the built-in `worker` agent. Built-in
-    `worker` handoff must include `target_path`, `change_spec`,
-    `context_files`, `validation_command`, and `slice_budget`. If the built-in
-    `worker` returns `status: blocked` in manager mode, do not switch to direct
-    main-thread implementation; stop with `blocked + split/replan` or re-route
-    only through another bounded lane the bundle explicitly allows. If the
-    built-in `worker` returns `status: final`, keep shared-file integration in
-    the designated integration owner lane and send validation output to
-    `verification-worker` for summarization. If parallel
-    built-in `worker` subagents are needed, use `isolation: worktree` and keep
-    file dependencies separate. If an approved slice is still large but decomposes cleanly into 2
-    or more independent work units, you may consult
-    `skills/multi-work/references/routing-contract.md` as an optional
-    orchestration utility. Use that pattern only when each unit has a clear
-    acceptance boundary, shared-file edits stay with the designated integration
-    lane, and final validation stays in the designated validation lane. Use `browser-explorer`
-    only when browser reproduction or visual evidence is required, and include
-    `target URL or Electron entry`,
-    `scenario checklist`, and `evidence checklist` in the handoff. In manager
-    mode, direct main-thread validation fallback is forbidden. Assume the
-    main thread will recheck materially affected docs before exit, and include
-    any needed README, docs, task-bundle, OpenAPI, schema, or runbook diff
-    before validation. If `skills` changed, run `python3 scripts/sync_skills_index.py`
-    and `python3 scripts/sync_skills_index.py --check`. If `agent-registry`
-    changed, run `python3 scripts/sync_agents.py` and
-    `python3 scripts/sync_agents.py --check`, and record the results in
-    STATUS/verification. If the slice would exceed budget once doc diff is
-    included, replan instead of force-expanding the current slice. Preserve the
-    `slice orchestration -> bounded execution lane -> verification summary ->
-    commit` order, and keep the initial STATUS baseline of
-    `Current slice=Not started.` / `Next slice=SLICE-1`.
+    $implement-task should read the approved bundle and current slice, keep
+    `task.yaml.success_criteria`, `major_boundaries`, and `delivery_strategy`
+    as the implementation contract, and stay inside manager-lane rules. If the
+    current slice says `Execution skill: parallel-workflow`, stop direct
+    execution and hand off to `$parallel-workflow`. Otherwise run bounded
+    execution, focused validation, required sync checks, commit, and `STATUS.md`
+    updates without falling back to direct main-thread implementation when the
+    bundle forbids it.
 policy:
   allow_implicit_invocation: false

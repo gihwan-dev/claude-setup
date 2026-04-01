@@ -1,8 +1,11 @@
 interface:
   display_name: "Multi Work"
-  short_description: "Manager-style orchestration utility for helper fan-out, orchestration strategy synthesis, and bounded work decomposition"
+  short_description: "Routing-only helper fan-out skill that emits a Routing Strategy and stops before planning or execution"
   default_prompt: >
-    $multi-work — execute manager-style multi-agent orchestration per SKILL.md.
-    Read routing-contract.md, dispatch helpers, synthesize an Orchestration Strategy.
+    $multi-work should read `routing-contract.md`, choose a routing mode,
+    lock `worker_agent_name` when routing is homogeneous, dispatch at least 2
+    helpers, and return only a `Routing Strategy` with `Helper plan`,
+    `Routing mode`, `Agent allocation`, `Shard basis`, `Fail-closed rule`, and
+    `Handoff readiness`.
 policy:
   allow_implicit_invocation: false

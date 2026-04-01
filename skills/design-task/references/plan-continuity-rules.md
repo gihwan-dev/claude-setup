@@ -41,15 +41,13 @@ That means `required_docs` comparison uses the normalized set with bootstrap sup
 7. If any comparison signal differs, choose `create-new`.
 8. If there are 2 or more candidates, do not auto-select and record it under `Need user decision`.
 
-## Row-level Continuity (csv-fanout)
+## Runtime Artifact Exclusion
 
-When updating a `csv-fanout` task, preserve row-level continuity for the existing work-items CSV.
+Do not treat runtime execution artifacts as task identity signals.
 
-- Existing `row_id` remains valid with no change -> skip (do not re-run completed rows).
-- Existing `row_id` has changed acceptance criteria or `target_path` -> re-execute.
-- New `row_id` was added -> append (run it in addition to existing results).
-- Existing `row_id` was removed -> superseded (preserve the result, do not re-run).
-- `execution_topology` itself changed (for example `keep-local -> csv-fanout`) -> creating a new task is the default.
+- Ignore runtime artifacts created by `$parallel-workflow` during continuity comparison.
+- `execution_topology` itself still counts as a task identity signal. For
+  example, `keep-local -> csv-fanout` defaults to creating a new task.
 
 ## Examples
 

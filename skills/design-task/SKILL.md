@@ -3,8 +3,9 @@ name: design-task
 description: >
   Large or ambiguous non-trivial task planning skill. Invoke only when the user
   explicitly writes "design-task" or "$design-task". Builds a task.yaml bundle via
-  continuity gate, derives delivery_strategy, and records agent_orchestration. Do not
-  use for simple tasks, quick fixes, or when the user has not explicitly requested it.
+  continuity gate, derives delivery_strategy, records static orchestration, and
+  prepares execution handoffs. Do not use for runtime CSV execution, simple
+  tasks, or quick fixes.
 allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
@@ -23,7 +24,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - New task output is always a flat `tasks/<task-path>/` bundle.
 - Do not create `PLAN.md` for new tasks.
 - Record the `quality preflight` result as either `keep-local` or `orchestrated-task`.
-- If the result is `keep-local`, return to the existing fast, deep-solo, or delegated lanes instead of starting long-running planning here.
+- If the result is `keep-local`, return to the existing fast, deep-solo, or delegated lanes.
 - Reusing an existing task is the exception. Creating a new task is the default.
 - If there are 2 or more candidates, do not auto-reuse. Record that user confirmation is required in `Task continuity`.
 - In the continuity gate, normalize post-design bootstrap supplements (`IMPLEMENTATION_CONTRACT.md`, `source_of_truth.implementation`) and do not treat them as task-identity differences.
@@ -32,23 +33,24 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - If `work_type` is one of `feature`, `prototype`, `refactor`, or `bugfix`, and `impact_flags` includes `ui_surface_changed` or `workflow_changed`, force `delivery_strategy=ui-first`.
 - If `delivery_strategy=ui-first`, lock `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, and `DESIGN_REFERENCES/` as the UX source of truth and preserve the slice order `UI -> local state/mock -> real API/integration`.
 - If `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill `DESIGN_REFERENCES/`, then let `figma-less-ui-design` author the `UI Planning Packet` in `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md`. Preserve the exact section order for `UX_SPEC.md`: `Goal/Audience/Platform`, `30-Second Understanding Checklist`, `Visual Direction + Anti-goals`, `Reference Pack (adopt/avoid)`, `Glossary + Object Model`, `Layout/App-shell Contract`, `Token + Primitive Contract`, `Screen + Flow Coverage`, `Implementation Prompt/Handoff`. Preserve the exact section order for `UX_BEHAVIOR_ACCESSIBILITY.md`: `Interaction Model`, `Keyboard + Focus Contract`, `Accessibility Contract`, `Live Update Semantics`, `State Matrix + Fixture Strategy`, `Large-run Degradation Rules`, `Microcopy + Information Expression Rules`, `Task-based Approval Criteria`.
-- If an existing design system, shipped UI, brand guide, or Figma exists, record `reuse + delta` in the `UI Planning Packet` instead of proposing net-new style work.
+- If an existing design system, shipped UI, brand guide, or Figma exists, record `reuse + delta` in the `UI Planning Packet`.
 - In greenfield or new-project planning, if repository-level implementation rules do not exist yet, leave a blocking `$bootstrap-project-rules` issue in `SPEC_VALIDATION.md`.
 - For existing TS, JS, or React code, include structure preflight in quality preflight: target file role, expected post-change LOC, and whether split-first is needed.
 - If the split-first trigger is on, forbid plans that assume target-file append and create the decomposition proposal first.
-- Every execution slice must include change boundary, expected file count, validation owner, focused validation plan, and stop or replan conditions.
+- Every execution slice must include change boundary, expected file count, execution skill, validation owner, focused validation plan, and stop or replan conditions.
 - Every new or updated task bundle must include `task.yaml.agent_orchestration`. Default to `strategy=manager` and `main_thread_role=synthesize-control-only`.
 - In manager mode, the main thread only synthesizes bundle docs and structured helper results. Code reads or writes, shared-file integration, and validation execution belong to the designated execution roles.
 - Every execution slice must also include a `split decision` plus a target-file append forbidden trigger.
-- Every execution slice must include orchestration fields: `Orchestration`, `Preflight helpers`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
+- Every execution slice must include orchestration fields: `Orchestration`, `Preflight helpers`, `Execution skill`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
 - The default slice guardrail is a small slice: `repo-tracked files 3 or fewer`, net diff around `150 LOC`. Anything larger must fall back to `split/replan before execution`.
 - Do not create giant mixed slices that bundle common refactoring, multi-screen replacement, wholesale test updates, and static scans together.
 - `execution_topology` is optional and defaults to `keep-local`. Allowed values: `keep-local`, `csv-fanout`, `hybrid`.
 - `agent_orchestration` is required for new or updated bundles. It must include `strategy`, `main_thread_role`, `planning_helpers`, `execution_roles`, `context_policy`, `fallback_policy`, and `review_policy`.
 - Choose `csv-fanout` only when all 5 conditions hold: (1) the repeat unit is clear, (2) each unit has independent acceptance criteria, (3) inter-unit dependencies are sparse, (4) the output schema is fixed, and (5) the merge boundary is clear.
-- If `csv-fanout` or `hybrid` is used, add the `orchestration` block to `task.yaml`.
-- If `csv-fanout` is used, add `GLOBAL_CONTEXT.md`, `work-items/*.csv`, and `MERGE_POLICY.md` to the bundle and include them in `required_docs`.
-- Row workers may create or edit files only at `target_path` and may not modify shared files. Shared files are integrator-only.
+- If `csv-fanout` or `hybrid` is used, add the static `orchestration` block to `task.yaml`.
+- Runtime artifacts belong only to `$parallel-workflow`. Design bundles record static orchestration metadata only.
+- In parallel topologies, record the runtime handoff only. The planning bundle keeps static orchestration metadata, not runtime CSV paths.
+- Shared-file parallel writes must be resolved as change-group or single-lane policy, not by ad hoc planner notes.
 - For Figma-related CSV schemas, use the separate `figma-codex-pipeline` skill.
 
 ## Required References
@@ -90,14 +92,14 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 9. Fix the core `impact_flags`, then decide `delivery_strategy` as `standard` or `ui-first`.
 10. Decide `execution_topology`. Use `csv-fanout` when all 5 fan-out conditions hold, `hybrid` when only part of them hold, and otherwise `keep-local` (default).
 11. Add `agent_orchestration` to `task.yaml`. Default it to `strategy=manager`, `main_thread_role=synthesize-control-only`, helper-driven planning, bounded execution roles, bundle-doc plus structured-result context policy, `split-replan` fallback, and explicit `multi-review` review boundary.
-12. If `csv-fanout` or `hybrid` is selected, add the `orchestration` block (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `csv`, `merge_policy`) to `task.yaml`. If `csv-fanout`, also create `GLOBAL_CONTEXT.md`, `work-items/`, and `MERGE_POLICY.md`, then add them to `required_docs`.
+12. If `csv-fanout` or `hybrid` is selected, add the `orchestration` block (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `artifact_root`, `change_group_policy`) to `task.yaml`. Do not create runtime CSV artifacts during design.
 13. Decide `required_docs` using `${SKILL_DIR}/references/task-bundle-rules.md`. If the path is `reuse-existing` and the bundle already contains a bootstrap supplement, preserve `IMPLEMENTATION_CONTRACT.md`.
 14. Write `task.yaml` as the machine entry point. If the path is `reuse-existing` and the bundle already has `source_of_truth.implementation`, preserve that optional pointer too.
 15. Write `README.md` as the human-facing landing document.
 16. If `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill `DESIGN_REFERENCES/`, then lock `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`. Do not create integration slices until `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` are in place.
 17. In `EXECUTION_PLAN.md`, preserve the level-1 sections `Execution slices`, `Verification`, and `Stop / Replan conditions`, then describe bounded slices, orchestration ownership, focused validation, and split decisions.
-    - For every slice, record `Orchestration`, `Preflight helpers`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
-    - If `csv-fanout` is used, add a fan-out spec to each slice: CSV source, concurrency, batch mode, and row-worker scope.
+    - For every slice, record `Orchestration`, `Preflight helpers`, `Execution skill`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
+    - Use `Execution skill: parallel-workflow` for parallel runtime slices and `Execution skill: implement-task` for regular execution slices.
 18. If `delivery_strategy=ui-first`, fix `SLICE-1` as static or visual UI, `SLICE-2` as local state or mock work, and `SLICE-3+` as real API or integration. Explicitly forbid real API or integration work in `SLICE-1` and `SLICE-2`.
 19. Always create `SPEC_VALIDATION.md` and record a `blocking` or `advisory` verdict. If `delivery_strategy=ui-first` still lacks UX docs, a finished reference pack, or defined 30-second checklist, glossary, interaction, accessibility, live-update, degradation, and task-based approval sections, record them in `Blocking issues`. If the repo lacks baseline implementation rules for greenfield or new-project work, record a `$bootstrap-project-rules` requirement in `Blocking issues`.
 20. Create `STATUS.md` from the initial template, setting `Current slice` to `Not started.` and `Next slice` to `SLICE-1`.
@@ -117,7 +119,7 @@ Use the built-in `explorer` for repo read-only discovery, `web-researcher` for e
 When structural smells or `split-first` risk appears, add `structure-reviewer` and `test-engineer` so decomposition boundaries are clarified first.
 When public or shared boundary risk appears, fan out to `architecture-reviewer` first to lock the boundary decision.
 For AI or agent workflow planning, start with `web-researcher` and prioritize official vendor docs such as OpenAI and Anthropic.
-Keep planning fan-out limited to independent lenses instead of broad multi-agent sprawl.
+Keep planning fan-out limited to independent lenses.
 If helpers are unavailable, report blocked instead of replacing them with direct main-thread research.
 When a planning-role-card overlay is needed, use the built-in `explorer` together with `${SKILL_DIR}/references/planning-role-cards.md`.
 Use `architecture-reviewer` for boundary or module-impact checks, `type-specialist` for public type or contract impact, and `test-engineer` for deriving validation scenarios.
@@ -132,16 +134,10 @@ Every new task bundle includes at least these 5 documents.
 - `SPEC_VALIDATION.md`
 - `STATUS.md`
 
-Add the following when the topology is `csv-fanout` or `hybrid`.
-
-- `GLOBAL_CONTEXT.md`
-- `MERGE_POLICY.md`
-
-Add the following when the topology is `csv-fanout`.
-
-- `work-items/` (containing at least 1 `.csv` file)
-
 Add specialized docs such as `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.md`, `TECH_SPEC.md`, `BUG_REPORT.md`, `ROOT_CAUSE.md`, `MIGRATION.md`, `RUNBOOK.md`, and `DESIGN_REFERENCES/` according to the doc-selection matrix in `${SKILL_DIR}/references/task-bundle-rules.md`.
+
+Runtime artifacts for parallel execution are created only by
+`$parallel-workflow`. They are not part of the design bundle's required docs.
 
 ## Output Quality Checklist
 
@@ -150,6 +146,6 @@ Add specialized docs such as `PRD.md`, `UX_SPEC.md`, `UX_BEHAVIOR_ACCESSIBILITY.
 - Does `agent_orchestration` exist with `strategy=manager` and `main_thread_role=synthesize-control-only`?
 - Do `required_docs` match the real bundle structure?
 - Is the `SPEC_VALIDATION.md` verdict clearly `blocking` or `advisory`?
-- Does each slice include orchestration ownership, change boundary, file budget, split decision, and stop or replan trigger?
+- Does each slice include execution skill, orchestration ownership, change boundary, file budget, split decision, and stop or replan trigger?
 - If `delivery_strategy=ui-first`, are the `SLICE-1 / 2 / 3+` order explicit and `reference-pack` + UX docs complete?
-- If `csv-fanout`, are `GLOBAL_CONTEXT.md`, `MERGE_POLICY.md`, and `work-items/*.csv` included with documented 5-condition reasoning?
+- If `csv-fanout` or `hybrid`, does `task.yaml.orchestration` contain only static planning metadata and point runtime execution to `$parallel-workflow`?

@@ -1,61 +1,89 @@
 # Multi Work Routing Contract
 
-This reference is for the main orchestrating thread only. Helpers must not read or receive this file. They return their exploration findings without knowledge of orchestration rules, escalation policies, or the Orchestration Strategy format.
+This reference is for the main orchestrating thread only. Helpers do not read
+this file.
+
+## Routing Inputs
+
+Lock these before emitting a ready routing result:
+
+- `routing_mode` — `homogeneous` or `heterogeneous`
+- `worker_agent_name` — required when `routing_mode=homogeneous`
+- `shard_basis` — the dimension used to split helper work
+- `handoff_target` — usually `$design-task` or `$parallel-workflow`
+
+If any locked input is missing and cannot be derived from evidence, fail closed.
+
+## Routing Mode Rules
+
+- Default to `homogeneous`.
+- `homogeneous` means every parallel helper uses the same agent type. Example:
+  `web-researcher x4`.
+- `heterogeneous` is allowed only when distinct helper lenses are explicitly
+  required and the split is still easy to explain.
+- If a request expects same-type fan-out but the selected helper set becomes
+  mixed, stop and report `blocked`.
 
 ## Helper Matrix
 
 | Situation | Required helpers |
 |-----------|------------------|
-| Basic repo or code exploration | built-in `explorer`, `structure-reviewer` |
-| External technical judgment or official docs needed | Baseline pair + `web-researcher` |
-| Browser reproduction or visual evidence needed | Matching pair + `browser-explorer` |
-| Type or interface contract changes are central | Baseline pair + `type-specialist` |
-| React state model judgment is needed | Baseline pair + `react-state-reviewer` |
-| Test strategy judgment is needed | Baseline pair + `test-engineer` |
+| Basic repo discovery | built-in `explorer` x2 |
+| Structural boundary judgment | `explorer` + `structure-reviewer` |
+| External docs or official references | `web-researcher` x2 or baseline pair + `web-researcher` |
+| Browser reproduction or visual evidence | `browser-explorer` x2 or matching pair + `browser-explorer` |
+| Type or contract risk | baseline pair + `type-specialist` |
+| React state model risk | baseline pair + `react-state-reviewer` |
+| Test strategy risk | baseline pair + `test-engineer` |
 
 The minimum helper count is always 2.
 
 ## Helper Return Contract
 
-Each helper returns a compact structured payload so the main thread can synthesize without broad rereads.
+Each helper returns this compact shape:
 
-- `summary` — 1 short paragraph or bullet list of what matters.
-- `evidence` — concrete file paths, symbols, or external citations.
-- `target_paths` — files or directories the helper believes are in scope.
-- `recommended_next_step` — the exact next action the orchestrator should take.
-- `confidence` — `high`, `medium`, or `low`.
+- `summary` — short paragraph or bullets
+- `evidence` — file paths, symbols, or citations
+- `target_paths` — likely scope paths
+- `recommended_next_step` — the exact next action
+- `confidence` — `high`, `medium`, or `low`
 
-If a helper cannot produce this shape, it reports `blocked` instead of substituting a long free-form narrative.
+If a helper cannot return that shape, it reports `blocked`.
+
+## Fail-Closed Rules
+
+Stop and do not emit a ready routing result when any of these are true:
+
+- `routing_mode=homogeneous` but `worker_agent_name` is not locked
+- helper evidence implies mixed helper types for a same-type fan-out request
+- shard basis is unclear or overlaps heavily
+- shared-file ownership is central to the work
+- implementation, review, or task-bundle design is being requested from
+  `multi-work`
+
+Allowed outcomes in those cases:
+
+- `blocked`
+- `split-replan`
+- handoff to `$design-task`
 
 ## Escalation Response Matrix
 
-| Helper Signal | Main Thread Action |
+| Helper signal | Main-thread action |
 |---|---|
-| confidence: high | Synthesize and proceed to next step |
-| confidence: medium | Synthesize, but evaluate whether an additional targeted fan-out is needed |
-| confidence: low | `split-replan`, or re-dispatch with additional context files |
-| blocked | Immediate `split-replan`; record the reason in the Orchestration Strategy |
-| conflicting evidence across helpers | Surface the conflict explicitly and request user judgment |
+| `confidence=high` | Synthesize and emit routing result |
+| `confidence=medium` | Emit routing result only if shard basis is still clear |
+| `confidence=low` | `split-replan` or re-dispatch with tighter scope |
+| `blocked` | Immediate fail-closed result |
+| conflicting evidence | surface the conflict and mark handoff not ready |
 
-## Timeout Policy
+## Handoff Readiness
 
-- If a helper does not return within a reasonable time, treat it as stale and synthesize from the remaining results.
-- A single stale or failed helper must not block the entire fan-out.
-- Record the absent helper and its expected contribution in the Orchestration Strategy so downstream steps can compensate.
+Use only these values:
 
-## Conflict Resolution
+- `ready` — routing is locked and the next skill can start
+- `blocked` — missing routing inputs or conflicting evidence
+- `split-replan` — work must be re-sliced before any further handoff
 
-- When helpers return conflicting evidence, prefer the one with higher confidence.
-- At equal confidence, surface the conflict in the Orchestration Strategy and request user judgment.
-- When structural judgment (`structure-reviewer`) conflicts with domain judgment (`type-specialist`, `react-state-reviewer`), default to structural judgment but record the rationale.
-
-## Orchestration Matrix
-
-| Condition | Orchestration mode |
-|-----------|--------------------|
-| Repo or code understanding is still weak | helper fan-out + main-thread synthesis |
-| External technical judgment or official docs are required | add `web-researcher` |
-| Browser reproduction or visual evidence is required | add `browser-explorer` |
-| Work can be split into 2+ independent work units | bounded multi-work decomposition |
-| Shared-file edits or sequencing dependencies dominate | keep local or stop with `split-replan` |
-| Acceptance boundaries are still unclear after exploration | stop with `split-replan` |
+`multi-work` never claims that execution or review is complete. It only states
+whether routing is ready.

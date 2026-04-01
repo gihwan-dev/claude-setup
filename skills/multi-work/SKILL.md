@@ -1,77 +1,99 @@
 ---
 name: multi-work
 description: >
-  Manager-style multi-agent orchestration utility. Use when the user writes
-  "/multi-work", "$multi-work", or when a task requires multi-agent exploration
-  before deciding the execution strategy. Explores first with 2+ helpers, then
-  records an Orchestration Strategy the main thread must follow. Do not use for
-  simple single-file tasks, when the scope is already clear, or for tasks that
-  do not benefit from parallel exploration.
+  Routing-only multi-agent orchestration utility. Use when the user writes
+  "/multi-work" or "$multi-work", or when a task needs an explicit helper
+  routing decision before planning or execution. Produces a Routing Strategy
+  only. Do not use for implementation, review loops, or task-bundle authoring.
 allowed-tools: Read, Grep, Glob, Agent
 ---
 
 # Multi Work
 
-An orchestration utility that dispatches helpers first, then synthesizes their
-findings into a strategy the main thread follows. The core idea: the main thread
-should never build its own understanding of the codebase when helpers can do it
-in parallel with fresh context windows.
+`multi-work` decides how helpers should be routed in parallel. It does not
+implement code, run review loops, or design task bundles. Its only artifact is
+a `Routing Strategy` handoff that another skill or the user can execute.
+
+## Scope Boundary
+
+In scope:
+
+- choosing helper types
+- choosing routing mode and shard basis
+- deciding whether homogeneous fan-out is safe
+- determining whether routing is ready or must fail closed
+
+Out of scope:
+
+- code edits or execution
+- review ownership or review loops
+- task-bundle document creation
+- runtime CSV generation or maintenance
+- shared-file integration strategy beyond marking it as out of scope
 
 ## Dispatch Prompt Contract
 
-Each helper's dispatch prompt contains exactly these items and nothing else:
+Each helper prompt contains exactly these items and nothing else:
 
-1. **Exploration target** — the files, directories, or question to investigate.
-2. **Scope boundary** — what is in scope and what is out of scope for this helper.
-3. **Return shape** — the Helper Return Contract from `routing-contract.md` (summary, evidence, target_paths, recommended_next_step, confidence).
+1. `Exploration target` — files, directories, or the concrete question.
+2. `Scope boundary` — in scope and out of scope for that helper.
+3. `Return shape` — the Helper Return Contract from `routing-contract.md`.
 
-Do not include references to this SKILL.md, `routing-contract.md`, orchestration rules, Orchestration Strategy, split-replan, execution modes, or any other file in the skill directory. Helpers have their own profile via `developer_instructions`; the dispatch prompt adds only the target, scope, and expected output shape.
+Helper prompts contain only exploration target, scope boundary, and return shape.
 
 ## Workflow
 
-0. **Scope Gate** — If the request is ambiguous or acceptance criteria are unclear, ask the user a scoping question before dispatching helpers. Skip when the request is concrete.
-1. Read `${SKILL_DIR}/references/routing-contract.md` and choose the helper combination that matches the request type.
-2. Compose each helper's dispatch prompt per the Dispatch Prompt Contract above.
-3. Dispatch at least 2 helpers. If the runtime does not support multi-agent fan-out, report blocked instead of falling back to single-agent work.
-4. **Wait** — Do not read files, run searches, or explore the repo while helpers are running.
-5. Synthesize helper output into an **Orchestration Strategy**. Treat helper output as the primary evidence surface; re-reading the repository after fan-out is a failure mode.
-6. When helpers report low confidence or blocked status, follow the escalation response matrix in the routing contract.
-7. Decide the execution mode:
-   - **Keep local** — when shared-file edits or sequencing dependencies dominate.
-   - **`split-replan`** — when acceptance boundaries are still unclear after exploration, or the work is too broad to bound.
-   - **Decompose** — only when 2+ independent work units each have a clear owner, a clear output boundary, and limited sibling dependency. Shared-file integration and final validation stay with designated execution lanes, not ad hoc main-thread fallback.
-8. If review is needed after execution, leave an explicit `multi-review` next step.
+0. If the request is too ambiguous to choose a shard basis, ask 1 concise
+   scoping question before dispatching helpers.
+1. Read `${SKILL_DIR}/references/routing-contract.md`.
+2. Choose the routing mode. Default to `homogeneous`.
+3. Lock `worker_agent_name` before dispatch when routing mode is
+   `homogeneous`. If it is not locked, fail closed and hand off to
+   `split-replan` or `$design-task`.
+4. Compose helper prompts using the Dispatch Prompt Contract.
+5. Dispatch at least 2 helpers. If multi-agent fan-out is unavailable, report
+   `blocked` instead of falling back to solo exploration.
+6. While helpers run, do not reread the repo or add new ad hoc searches.
+7. Synthesize helper output into a `Routing Strategy`.
+8. If helpers return low confidence, blocked status, or conflicting evidence,
+   follow the fail-closed rules in `routing-contract.md`.
+9. Stop after the `Routing Strategy` is written. If runtime execution is the
+   next step, hand off to `$parallel-workflow`. If planning is the next step,
+   hand off to `$design-task`.
 
-## Orchestration Strategy Output
+## Routing Strategy Output
 
-In planning or collaborator modes, the output must include an `Orchestration Strategy` section. This section is the handoff contract between exploration and execution.
+In planning or collaborator modes, the output must include a `Routing Strategy`
+section with these fields only:
 
-Required fields:
-- **Helper plan** — which helpers were used and why
-- **Execution owner** — who executes (keep-local, worker lanes, csv-fanout)
-- **Allowed main-thread actions** — what the main thread may do beyond synthesis
-- **Fallback** — what happens when a lane blocks
-- **Review boundary** — who reviews, when, and whether `multi-review` is the next step
+- `Helper plan` — which helpers were used and why
+- `Routing mode` — `homogeneous` or `heterogeneous`
+- `Agent allocation` — helper type plus count or shard ownership
+- `Shard basis` — what each helper was split by
+- `Fail-closed rule` — what blocks execution when routing is underspecified
+- `Handoff readiness` — whether the next step is ready, blocked, or split-replan
 
 ### Example
 
-```
-## Orchestration Strategy
+```md
+## Routing Strategy
 
-- Helper plan: explorer + structure-reviewer (basic code exploration),
-  web-researcher added for external API docs
-- Execution owner: keep-local (2 files share state, not decomposable)
-- Allowed main-thread actions: synthesize helper output, write Orchestration
-  Strategy, update STATUS.md
-- Fallback: if web-researcher returns low confidence on API docs,
-  split-replan and ask user for doc links
-- Review boundary: after implementation, explicit multi-review
+- Helper plan: `explorer x2` for repo discovery, `structure-reviewer x1` for
+  boundary risk
+- Routing mode: `homogeneous`
+- Agent allocation: `explorer x2`, shard-A=`src/search/**`, shard-B=`src/data/**`
+- Shard basis: module boundary
+- Fail-closed rule: if shared-file ownership is unclear, do not route execution;
+  hand off to `split-replan`
+- Handoff readiness: ready for `$design-task`
 ```
 
 ## Required References
 
-- Helper matrix, escalation matrix, timeout policy, conflict resolution, orchestration matrix, decomposition guardrails: `${SKILL_DIR}/references/routing-contract.md`
+- `${SKILL_DIR}/references/routing-contract.md`
 
 ## Alignment
 
-Keep helper selection, decomposition thresholds, and execution guardrails aligned with `${SKILL_DIR}/references/routing-contract.md`. When you are working inside this repository, repo-maintenance policy files such as `policy/workflow.toml` can provide extra maintainer context, but installed skill runs must not depend on repo-root helpers.
+Keep helper selection, routing defaults, and fail-closed behavior aligned with
+`${SKILL_DIR}/references/routing-contract.md`. Installed runs must not depend on
+repo-root helpers or repo-local scripts.

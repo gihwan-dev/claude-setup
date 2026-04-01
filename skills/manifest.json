@@ -44,7 +44,7 @@
     },
     {
       "name": "design-task",
-      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes \"design-task\" or \"$design-task\". Builds a task.yaml bundle via continuity gate, derives delivery_strategy, and records agent_orchestration. Do not use for simple tasks, quick fixes, or when the user has not explicitly requested it.",
+      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes \"design-task\" or \"$design-task\". Builds a task.yaml bundle via continuity gate, derives delivery_strategy, records static orchestration, and prepares execution handoffs. Do not use for runtime CSV execution, simple tasks, or quick fixes.",
       "path": "skills/design-task/SKILL.md"
     },
     {
@@ -99,7 +99,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Execute the next approved slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Follows the slice orchestration → bounded execution → verification → commit flow. Do not use without an approved task bundle or when the user has not explicitly requested it.",
+      "description": "Execute the next approved non-parallel slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Follows the slice orchestration → bounded execution → verification → commit flow. If the current slice declares `Execution skill: parallel-workflow`, hand off instead of executing it directly.",
       "path": "skills/implement-task/SKILL.md"
     },
     {
@@ -114,8 +114,13 @@
     },
     {
       "name": "multi-work",
-      "description": "Manager-style multi-agent orchestration utility. Use when the user writes \"/multi-work\", \"$multi-work\", or when a task requires multi-agent exploration before deciding the execution strategy. Explores first with 2+ helpers, then records an Orchestration Strategy the main thread must follow. Do not use for simple single-file tasks, when the scope is already clear, or for tasks that do not benefit from parallel exploration.",
+      "description": "Routing-only multi-agent orchestration utility. Use when the user writes \"/multi-work\" or \"$multi-work\", or when a task needs an explicit helper routing decision before planning or execution. Produces a Routing Strategy only. Do not use for implementation, review loops, or task-bundle authoring.",
       "path": "skills/multi-work/SKILL.md"
+    },
+    {
+      "name": "parallel-workflow",
+      "description": "Parallel execution workflow for approved task-bundle slices. Invoke only when the user explicitly writes \"parallel-workflow\" or \"$parallel-workflow\". Uses a 3-CSV runtime under `runs/parallel-workflow/<slice-id>/` for information collection, implementation, and review. Do not use for task-bundle planning or helper routing.",
+      "path": "skills/parallel-workflow/SKILL.md"
     },
     {
       "name": "pm-spec-from-code",
