@@ -1,9 +1,9 @@
-Feature: Parallel Workflow Runtime
+Feature: 3-CSV Execution Runtime
 
-  Scenario: Parallel runtime artifacts are created for the slice
-    Given a slice with `Execution skill: parallel-workflow`
-    When the parallel runtime starts
-    Then `Documentation.md`, `info-collection.csv`, `implementation.csv`, and `review.csv` exist under `runs/parallel-workflow/SLICE-1/`
+  Scenario: Runtime artifacts are created for the slice
+    Given a slice with `Execution skill: implement-task`
+    When the 3-CSV pipeline starts
+    Then `Documentation.md`, `info-collection.csv`, `implementation.csv`, and `review.csv` exist under `runs/SLICE-1/`
 
   Scenario: Shared-file work falls back to a single lane
     Given an implementation row with `shared_file_touch=Y`

@@ -90,7 +90,6 @@ class RepoSurfaceTests(RepoTestCase):
         targets = (
             REPO_ROOT / "skills" / "design-task" / "agents" / "openai.yaml",
             REPO_ROOT / "skills" / "multi-work" / "agents" / "openai.yaml",
-            REPO_ROOT / "skills" / "parallel-workflow" / "agents" / "openai.yaml",
             REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml",
         )
         for path in targets:

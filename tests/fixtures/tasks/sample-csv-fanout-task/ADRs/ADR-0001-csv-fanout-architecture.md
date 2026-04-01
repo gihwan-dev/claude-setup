@@ -12,7 +12,7 @@ artifacts should not live in the top-level task bundle.
 ## Decision
 
 Keep `csv-fanout` as a design-time topology and move runtime execution artifacts
-to `parallel-workflow` under `runs/parallel-workflow/<slice-id>/`.
+to `implement-task` under `runs/<slice-id>/`.
 
 ## Consequences
 

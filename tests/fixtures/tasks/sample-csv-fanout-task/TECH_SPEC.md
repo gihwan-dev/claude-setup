@@ -3,13 +3,13 @@
 ## Overview
 
 The task bundle keeps only static `csv-fanout` intent. Runtime execution moves
-to `parallel-workflow` under `runs/parallel-workflow/<slice-id>/`.
+to `implement-task` under `runs/<slice-id>/`.
 
 ## Architecture
 
 - `design-task` records static orchestration metadata in `task.yaml`.
 - `multi-work` locks helper routing when agent type or shard basis is not yet fixed.
-- `parallel-workflow` creates `Documentation.md`, `info-collection.csv`,
+- `implement-task` creates `Documentation.md`, `info-collection.csv`,
   `implementation.csv`, and `review.csv`.
 - Shared-file rows are grouped by `change_group_id` and run single-lane.
 - `verification-worker` summarizes runtime validation output for the manager lane.

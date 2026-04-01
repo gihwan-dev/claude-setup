@@ -1,12 +1,10 @@
 ---
 name: multi-work
 description: >
-  Routing-only multi-agent orchestration utility for csv-fanout topologies.
-  Use when the user writes "/multi-work" or "$multi-work", or when
-  `$parallel-workflow` needs an explicit helper routing decision for
-  csv-fanout slices. Produces a Routing Strategy only. Not used for
-  keep-local topologies, implementation, review loops, or task-bundle
-  authoring.
+  Routing-only multi-agent orchestration utility. Use when the user writes
+  "/multi-work" or "$multi-work", or when a task needs an explicit helper
+  routing decision before planning or execution. Produces a Routing Strategy
+  only. Do not use for implementation, review loops, or task-bundle authoring.
 allowed-tools: Read, Grep, Glob, Agent
 ---
 
@@ -60,7 +58,7 @@ Helper prompts contain only exploration target, scope boundary, and return shape
 8. If helpers return low confidence, blocked status, or conflicting evidence,
    follow the fail-closed rules in `routing-contract.md`.
 9. Stop after the `Routing Strategy` is written. If runtime execution is the
-   next step, hand off to `$parallel-workflow`. If planning is the next step,
+   next step, hand off to `$implement-task`. If planning is the next step,
    hand off to `$design-task`.
 
 ## Routing Strategy Output

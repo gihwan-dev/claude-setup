@@ -1,7 +1,7 @@
 task: sample-csv-fanout-task
 goal: Demonstrate CSV fan-out execution topology for parallel row-level processing.
 success_criteria:
-  - Parallel slice execution records its runtime artifacts under runs/parallel-workflow.
+  - Parallel slice execution records its runtime artifacts under runs.
   - Shared-file work is reduced to change-group single-lane ownership.
 major_boundaries:
   - Static task-bundle planning
@@ -40,8 +40,8 @@ agent_orchestration:
     - explorer
     - structure-reviewer
   execution_roles:
-    implementation: parallel-workflow
-    integration: parallel-workflow
+    implementation: implement-task
+    integration: implement-task
     validation: verification-worker
   context_policy: bundle-docs-and-structured-results-only
   fallback_policy: blocked-lane-means-split-replan
@@ -57,7 +57,7 @@ orchestration:
     - EXECUTION_PLAN.md
   roles:
     router: multi-work
-    executor: parallel-workflow
-    verifier: parallel-workflow
-  artifact_root: runs/parallel-workflow
+    executor: implement-task
+    verifier: implement-task
+  artifact_root: runs
   change_group_policy: shared-file-groups-single-lane

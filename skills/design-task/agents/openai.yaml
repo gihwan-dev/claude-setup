@@ -5,14 +5,9 @@ interface:
     $design-task should record the quality-preflight verdict, apply the
     continuity gate, and create or update a `task.yaml` bundle with
     `README.md`, `EXECUTION_PLAN.md`, `SPEC_VALIDATION.md`, and `STATUS.md`.
-    Keep planning read-only. `task.yaml` must include `delivery_strategy`,
-    `agent_orchestration`, and, when parallel execution is intended, a static
-    `orchestration` block with `row_unit`, `batch_mode`,
-    `shared_context_files`, `roles`, `artifact_root`, and
-    `change_group_policy`. Do not create runtime CSVs or add them to
-    `required_docs`; runtime artifacts belong to `$parallel-workflow`.
-    Every execution slice must include `Execution skill`. Keep `agent_orchestration` at
-    `strategy=manager` and `main_thread_role=synthesize-control-only`, and keep
-    the main thread planning-only.
+    Keep planning read-only. `task.yaml` must include `delivery_strategy`
+    and `agent_orchestration`. Runtime CSV artifacts are created by
+    `implement-task` at execution time. Keep `agent_orchestration` at
+    `strategy=manager` and `main_thread_role=synthesize-control-only`.
 policy:
   allow_implicit_invocation: false

@@ -1,6 +1,6 @@
 # Requirement coverage
 
-- REQ-001: Parallel runtime artifacts exist under `runs/parallel-workflow/SLICE-1/`.
+- REQ-001: Parallel runtime artifacts exist under `runs/SLICE-1/`.
 - REQ-002: Shared-file work is reduced to a single-lane change group.
 
 # UX/state gaps

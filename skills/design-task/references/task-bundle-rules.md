@@ -37,14 +37,12 @@ Required keys:
 
 Optional keys:
 
-- `execution_topology` — one of `keep-local` (default), `csv-fanout`, or `hybrid`
-- `orchestration` — required for `csv-fanout` or `hybrid`; a static mapping that includes `row_unit`, `batch_mode`, `shared_context_files`, `roles`, `artifact_root`, and `change_group_policy`
 
 `required_docs` lists the real bundle documents and directories excluding `task.yaml` itself.
 `source_of_truth` points only to real file paths.
 `success_criteria` and `major_boundaries` are used directly in continuity-gate comparison.
 `delivery_strategy` is also used directly in continuity-gate comparison.
-`agent_orchestration` is required for new or updated bundles in this repo. It keeps the manager-style orchestration contract even when `execution_topology=keep-local`.
+`agent_orchestration` is required for new or updated bundles in this repo.
 After post-design bootstrap, `IMPLEMENTATION_CONTRACT.md` may be added to `required_docs`,
 and `source_of_truth.implementation` may appear as an optional pointer.
 When updating an existing bundle via `reuse-existing`, preserve any bootstrap supplement that already exists.
@@ -82,23 +80,11 @@ Derived rules:
 - If an existing design system, shipped UI, brand guide, or Figma exists, the packet records `reuse + delta` rather than inventing a new style.
 - For `ui-first`, do not create integration slices until UX direction, behavior or accessibility or live-update contracts, and state or fixture strategy are defined.
 
-## Execution Topologies
+## Execution
 
-- `keep-local` — default. Sequential slice execution. Same as existing behavior.
-- `csv-fanout` — the slice is intended for repeated parallel execution units. Runtime CSVs are created later by `parallel-workflow`.
-- `hybrid` — parallelize part of execution, but keep central integration or validation ownership.
-
-The 5 conditions for `csv-fanout`:
-
-1. The repeat unit is clear (for example API endpoint, component, or page).
-2. Each unit has independent acceptance criteria.
-3. Inter-unit dependencies are sparse (shared files are limited).
-4. The output schema is fixed (row-result format is consistent).
-5. The merge boundary is clear (the integrator edits shared files only).
-
-`delivery_strategy` and `execution_topology` are orthogonal axes. Every combination is allowed.
-Design-time bundles record only static orchestration intent. Runtime artifacts are not added to `required_docs`.
-In non-Codex environments such as Claude Code, `csv-fanout` and `hybrid` execution still need an explicit fallback path, but design-time bundles keep the same topology choice.
+All slices execute through the 3-CSV pipeline (read → write → review) defined
+in `implement-task/references/csv-execution-rules.md`. Runtime CSV artifacts
+are not added to `required_docs`.
 
 ## UI Planning Packet (`UX_SPEC.md`)
 
@@ -146,12 +132,12 @@ Additional rules:
 
 ## Parallel Runtime Artifacts
 
-If `execution_topology` is `csv-fanout` or `hybrid`, record only the static
-runtime handoff in `task.yaml.orchestration`.
+## Runtime Artifacts
 
-- `artifact_root` must be defined for `csv-fanout` or `hybrid` topologies
-- `change_group_policy` should explain how shared-file rows collapse to a single lane
-- Runtime artifacts are created only by `$parallel-workflow` and are not added to `required_docs`
+Runtime CSV artifacts (`info-collection.csv`, `implementation.csv`,
+`review.csv`, `Documentation.md`) are created by `implement-task` at
+execution time under `runs/<slice-id>/`. They are not added to
+`required_docs`.
 
 ## Impact Flags
 
@@ -288,7 +274,7 @@ Every slice inside `Execution slices` includes at least the fields below.
 
 - Change boundary
 - Expected files
-- Execution skill (`parallel-workflow` for all slices)
+- Execution skill (`implement-task` for all slices)
 - Orchestration
 - Preflight helpers
 - Implementation owner

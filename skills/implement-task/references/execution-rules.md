@@ -23,10 +23,10 @@ This reference collects the detailed execution rules for `implement-task`. `SKIL
   - public-boundary drift appears
   - a decision gap appears before the next slice can start
 
-## Pre-Handoff Gate Rules
+## Pre-Execution Gate Rules
 
-These rules are checked before handing off to `$parallel-workflow`. If any
-gate fails, stop and do not hand off.
+These rules are checked before starting the 3-CSV pipeline. If any gate
+fails, stop before execution.
 
 - If the slice budget exceeds the small-slice guardrail, fall back to
   `split/replan before execution`.
@@ -36,14 +36,14 @@ gate fails, stop and do not hand off.
   - `skills`: `python3 scripts/sync_skills_index.py` + `python3 scripts/sync_skills_index.py --check`
   - `agent-registry`: `python3 scripts/sync_agents.py` + `python3 scripts/sync_agents.py --check`
 
-## Parallel Workflow Handoff Rules
+## 3-CSV Execution Rules
 
-- All bundle slices hand off to `$parallel-workflow`. The 3-CSV pipeline
-  (info-collection → implementation → review) is the standard execution path.
-- `implement-task` owns task selection, STATUS.md updates, and commit.
-  Slice execution belongs to `$parallel-workflow`.
-- Static `task.yaml.orchestration` data may still be read to understand the
-  intended topology. Runtime artifacts belong to `$parallel-workflow`.
+- All bundle slices execute through the 3-CSV pipeline. To start execution,
+  read `${SKILL_DIR}/references/csv-execution-rules.md` and run its full
+  pipeline for the current slice. Do not skip this read step.
+- `implement-task` owns task selection, STATUS.md finalization, and commit.
+  The 3-CSV pipeline owns runtime artifacts and execution-detail STATUS
+  sections.
 
 ## STATUS Contract
 
@@ -60,18 +60,18 @@ gate fails, stop and do not hand off.
 
 ### Ownership
 
-`$parallel-workflow` writes execution details into `# Decisions made during
+The 3-CSV pipeline writes execution details into `# Decisions made during
 implementation`, `# Verification results`, and `# Known issues / residual risk`.
 `implement-task` finalizes `# Current slice`, `# Done`, and `# Next slice`
-after commit. Neither skill overwrites the other's sections.
+after commit.
 
 ### Update Rules
 
 - `# Current slice`: record the slice targeted by this run. (`implement-task`)
 - `# Done`: summarize completed outcomes and user or system impact. (`implement-task`)
-- `# Decisions made during implementation`: record decisions that affect the next slice or public boundaries. (`$parallel-workflow`)
-- `# Verification results`: record validation commands, pass or fail results, and key failure causes. (`$parallel-workflow`)
-- `# Known issues / residual risk`: record remaining risks and unresolved issues. (`$parallel-workflow`)
+- `# Decisions made during implementation`: record decisions that affect the next slice or public boundaries. (3-CSV pipeline)
+- `# Verification results`: record validation commands, pass or fail results, and key failure causes. (3-CSV pipeline)
+- `# Known issues / residual risk`: record remaining risks and unresolved issues. (3-CSV pipeline)
 - `# Next slice`: record the next execution target, prerequisites, and boundaries. (`implement-task`)
 - On the first run that creates `STATUS.md`, record the fact that the template was created in `# Done`.
 - Keep the design-stage initial bundle default of `# Current slice=Not started.` and `# Next slice=SLICE-1`.

@@ -4,11 +4,11 @@
 
 - Change boundary: API endpoint stub files plus one shared-file change-group lane.
 - Expected files: 4 row-local files, with shared-file work collapsed to single-lane integration.
-- Orchestration: manager lane + `parallel-workflow` runtime.
+- Orchestration: manager lane + `implement-task` runtime.
 - Preflight helpers: `explorer` + `structure-reviewer`
-- Execution skill: `parallel-workflow`
-- Implementation owner: `parallel-workflow`
-- Integration owner: `parallel-workflow`
+- Execution skill: `implement-task`
+- Implementation owner: `implement-task`
+- Integration owner: `implement-task`
 - Validation owner: `verification-worker`
 - Allowed main-thread actions: bundle-doc synthesis + handoff + STATUS/commit coordination
 - Focused validation plan: row-local validation commands are recorded in `review.csv`, then summarized for the manager lane.
@@ -17,8 +17,8 @@
 
 # Verification
 
-- `parallel-workflow` creates `Documentation.md`, `info-collection.csv`,
-  `implementation.csv`, and `review.csv` under `runs/parallel-workflow/SLICE-1/`.
+- `implement-task` creates `Documentation.md`, `info-collection.csv`,
+  `implementation.csv`, and `review.csv` under `runs/SLICE-1/`.
 - Shared-file rows are marked `parallelizable=false` or share the same
   `change_group_id`.
 - `python3 -m unittest discover -s tests -p 'test_*.py'`

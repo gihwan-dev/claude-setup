@@ -45,7 +45,7 @@ That means `required_docs` comparison uses the normalized set with bootstrap sup
 
 Do not treat runtime execution artifacts as task identity signals.
 
-- Ignore runtime artifacts created by `$parallel-workflow` during continuity comparison.
+- Ignore runtime CSV artifacts under `runs/` during continuity comparison.
 - `execution_topology` itself still counts as a task identity signal. For
   example, `keep-local -> csv-fanout` defaults to creating a new task.
 

@@ -30,7 +30,7 @@ class WorkflowContractTests(RepoTestCase):
             "\n".join(
                 [
                     "[public_surface]",
-                    'long_running = ["design-task", "implement-task", "parallel-workflow"]',
+                    'long_running = ["design-task", "implement-task"]',
                     "",
                     "[projection]",
                     'required_helper_agent_ids = ["helper"]',
