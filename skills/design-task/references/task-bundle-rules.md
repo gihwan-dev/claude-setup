@@ -288,6 +288,7 @@ Every slice inside `Execution slices` includes at least the fields below.
 
 - Change boundary
 - Expected files
+- Execution skill (`parallel-workflow` for all slices)
 - Orchestration
 - Preflight helpers
 - Implementation owner

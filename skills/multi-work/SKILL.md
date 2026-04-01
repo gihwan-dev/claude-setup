@@ -1,10 +1,12 @@
 ---
 name: multi-work
 description: >
-  Routing-only multi-agent orchestration utility. Use when the user writes
-  "/multi-work" or "$multi-work", or when a task needs an explicit helper
-  routing decision before planning or execution. Produces a Routing Strategy
-  only. Do not use for implementation, review loops, or task-bundle authoring.
+  Routing-only multi-agent orchestration utility for csv-fanout topologies.
+  Use when the user writes "/multi-work" or "$multi-work", or when
+  `$parallel-workflow` needs an explicit helper routing decision for
+  csv-fanout slices. Produces a Routing Strategy only. Not used for
+  keep-local topologies, implementation, review loops, or task-bundle
+  authoring.
 allowed-tools: Read, Grep, Glob, Agent
 ---
 

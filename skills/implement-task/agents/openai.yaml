@@ -1,14 +1,11 @@
 interface:
   display_name: "Implement Task"
-  short_description: "Run approved non-parallel slices with manager-lane execution, verification, commit, and STATUS updates"
+  short_description: "Select the next bundle slice, hand off to $parallel-workflow for 3-CSV execution, then commit and update STATUS"
   default_prompt: >
     $implement-task should read the approved bundle and current slice, keep
     `task.yaml.success_criteria`, `major_boundaries`, and `delivery_strategy`
-    as the implementation contract, and stay inside manager-lane rules. If the
-    current slice says `Execution skill: parallel-workflow`, stop direct
-    execution and hand off to `$parallel-workflow`. Otherwise run bounded
-    execution, focused validation, required sync checks, commit, and `STATUS.md`
-    updates without falling back to direct main-thread implementation when the
-    bundle forbids it.
+    as the implementation contract, and hand off to `$parallel-workflow` for
+    3-CSV execution. After parallel-workflow completes, commit and update
+    `STATUS.md`.
 policy:
   allow_implicit_invocation: false

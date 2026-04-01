@@ -44,7 +44,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 - Every execution slice must include orchestration fields: `Orchestration`, `Preflight helpers`, `Execution skill`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
 - The default slice guardrail is a small slice: `repo-tracked files 3 or fewer`, net diff around `150 LOC`. Anything larger must fall back to `split/replan before execution`.
 - Do not create giant mixed slices that bundle common refactoring, multi-screen replacement, wholesale test updates, and static scans together.
-- `execution_topology` is optional and defaults to `keep-local`. Allowed values: `keep-local`, `csv-fanout`, `hybrid`.
+- `execution_topology` determines CSV-2 (implementation) parallelism within the 3-CSV pipeline. All slices use `$parallel-workflow`. Allowed values: `keep-local` (CSV-2 single-lane, default), `csv-fanout` (CSV-2 multi-lane), `hybrid` (mix).
 - `agent_orchestration` is required for new or updated bundles. It must include `strategy`, `main_thread_role`, `planning_helpers`, `execution_roles`, `context_policy`, `fallback_policy`, and `review_policy`.
 - Choose `csv-fanout` only when all 5 conditions hold: (1) the repeat unit is clear, (2) each unit has independent acceptance criteria, (3) inter-unit dependencies are sparse, (4) the output schema is fixed, and (5) the merge boundary is clear.
 - If `csv-fanout` or `hybrid` is used, add the static `orchestration` block to `task.yaml`.
@@ -90,7 +90,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 7. In `Task continuity`, record `decision`, `compared tasks`, `reason`, and `chosen task path`. Also record bootstrap-supplement normalization or preservation when it applies.
 8. Decide `work_type` as one of `feature`, `bugfix`, `refactor`, `migration`, `prototype`, or `ops`.
 9. Fix the core `impact_flags`, then decide `delivery_strategy` as `standard` or `ui-first`.
-10. Decide `execution_topology`. Use `csv-fanout` when all 5 fan-out conditions hold, `hybrid` when only part of them hold, and otherwise `keep-local` (default).
+10. Decide `execution_topology` for CSV-2 parallelism. Use `csv-fanout` when all 5 fan-out conditions hold, `hybrid` when only part of them hold, and otherwise `keep-local` (default). All slices execute through the 3-CSV pipeline regardless of topology.
 11. Add `agent_orchestration` to `task.yaml`. Default it to `strategy=manager`, `main_thread_role=synthesize-control-only`, helper-driven planning, bounded execution roles, bundle-doc plus structured-result context policy, `split-replan` fallback, and explicit `multi-review` review boundary.
 12. If `csv-fanout` or `hybrid` is selected, add the `orchestration` block (`row_unit`, `batch_mode`, `shared_context_files`, `roles`, `artifact_root`, `change_group_policy`) to `task.yaml`. Do not create runtime CSV artifacts during design.
 13. Decide `required_docs` using `${SKILL_DIR}/references/task-bundle-rules.md`. If the path is `reuse-existing` and the bundle already contains a bootstrap supplement, preserve `IMPLEMENTATION_CONTRACT.md`.
@@ -99,7 +99,7 @@ For greenfield or new-project work, a `$bootstrap-project-rules` handoff may be 
 16. If `delivery_strategy=ui-first`, auto-run `reference-pack` first to fill `DESIGN_REFERENCES/`, then lock `source_of_truth.ux = UX_SPEC.md`, `source_of_truth.ux_behavior = UX_BEHAVIOR_ACCESSIBILITY.md`, and `source_of_truth.design_references = DESIGN_REFERENCES/manifest.json`. Do not create integration slices until `UX_SPEC.md` and `UX_BEHAVIOR_ACCESSIBILITY.md` are in place.
 17. In `EXECUTION_PLAN.md`, preserve the level-1 sections `Execution slices`, `Verification`, and `Stop / Replan conditions`, then describe bounded slices, orchestration ownership, focused validation, and split decisions.
     - For every slice, record `Orchestration`, `Preflight helpers`, `Execution skill`, `Implementation owner`, `Integration owner`, `Validation owner`, `Allowed main-thread actions`, `Focused validation plan`, and `Stop / Replan trigger`.
-    - Use `Execution skill: parallel-workflow` for parallel runtime slices and `Execution skill: implement-task` for regular execution slices.
+    - All slices use `Execution skill: parallel-workflow`. The `execution_topology` field determines CSV-2 parallelism.
 18. If `delivery_strategy=ui-first`, fix `SLICE-1` as static or visual UI, `SLICE-2` as local state or mock work, and `SLICE-3+` as real API or integration. Explicitly forbid real API or integration work in `SLICE-1` and `SLICE-2`.
 19. Always create `SPEC_VALIDATION.md` and record a `blocking` or `advisory` verdict. If `delivery_strategy=ui-first` still lacks UX docs, a finished reference pack, or defined 30-second checklist, glossary, interaction, accessibility, live-update, degradation, and task-based approval sections, record them in `Blocking issues`. If the repo lacks baseline implementation rules for greenfield or new-project work, record a `$bootstrap-project-rules` requirement in `Blocking issues`.
 20. Create `STATUS.md` from the initial template, setting `Current slice` to `Not started.` and `Next slice` to `SLICE-1`.

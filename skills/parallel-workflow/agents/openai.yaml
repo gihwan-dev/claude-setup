@@ -1,14 +1,12 @@
 interface:
   display_name: "Parallel Workflow"
-  short_description: "Run approved parallel slices with a fixed 3-CSV runtime under `runs/parallel-workflow/<slice-id>/`"
+  short_description: "Standard 3-CSV execution for all bundle slices: info-collection → implementation → review"
   default_prompt: >
-    $parallel-workflow should read the approved bundle and current slice, verify
-    that `Execution skill: parallel-workflow` is set, and then create
-    `Documentation.md`, `info-collection.csv`, `implementation.csv`, and
-    `review.csv` under `runs/parallel-workflow/<slice-id>/`. Never infer agent
-    type or shard basis when they are not locked; fail closed to `$multi-work`
-    instead. Keep shared-file writes single-lane by `change_group_id`, and only
-    auto-fix review findings when severity is `critical` or `blocker` and
-    row-local validation is available.
+    $parallel-workflow should read the approved bundle and current slice,
+    determine `execution_topology`, and run the 3-CSV pipeline. CSV-1 and
+    CSV-3 are always parallel with minimum 2 helpers. CSV-2 parallelism
+    depends on topology. For csv-fanout, fail closed to `$multi-work` when
+    routing is not locked. Update only the STATUS.md sections owned by this
+    skill.
 policy:
   allow_implicit_invocation: false

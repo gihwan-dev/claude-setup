@@ -99,7 +99,7 @@
     },
     {
       "name": "implement-task",
-      "description": "Execute the next approved non-parallel slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Follows the slice orchestration → bounded execution → verification → commit flow. If the current slice declares `Execution skill: parallel-workflow`, hand off instead of executing it directly.",
+      "description": "Execute the next approved slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Reads the bundle, selects the next slice, and hands off to `$parallel-workflow` for 3-CSV execution. Owns task selection, STATUS.md updates, and commit.",
       "path": "skills/implement-task/SKILL.md"
     },
     {
@@ -114,12 +114,12 @@
     },
     {
       "name": "multi-work",
-      "description": "Routing-only multi-agent orchestration utility. Use when the user writes \"/multi-work\" or \"$multi-work\", or when a task needs an explicit helper routing decision before planning or execution. Produces a Routing Strategy only. Do not use for implementation, review loops, or task-bundle authoring.",
+      "description": "Routing-only multi-agent orchestration utility for csv-fanout topologies. Use when the user writes \"/multi-work\" or \"$multi-work\", or when `$parallel-workflow` needs an explicit helper routing decision for csv-fanout slices. Produces a Routing Strategy only. Not used for keep-local topologies, implementation, review loops, or task-bundle authoring.",
       "path": "skills/multi-work/SKILL.md"
     },
     {
       "name": "parallel-workflow",
-      "description": "Parallel execution workflow for approved task-bundle slices. Invoke only when the user explicitly writes \"parallel-workflow\" or \"$parallel-workflow\". Uses a 3-CSV runtime under `runs/parallel-workflow/<slice-id>/` for information collection, implementation, and review. Do not use for task-bundle planning or helper routing.",
+      "description": "Standard execution workflow for all approved task-bundle slices. Invoke only when the user explicitly writes \"parallel-workflow\" or \"$parallel-workflow\". Uses a 3-CSV runtime under `runs/parallel-workflow/<slice-id>/` for information collection, implementation, and review. CSV-1 (read) and CSV-3 (review) are always parallel. CSV-2 (write) parallelism depends on execution_topology. Do not use for task-bundle planning or helper routing.",
       "path": "skills/parallel-workflow/SKILL.md"
     },
     {
