@@ -48,6 +48,11 @@
       "path": "skills/dev-socratic-design/SKILL.md"
     },
     {
+      "name": "fanout",
+      "description": "General-purpose 3-phase parallel execution primitive (Read → Write → Review). Decomposes a task into work items via CSV, fans out read agents in parallel, executes writes sequentially, then fans out review agents in parallel. Invoke with \"$fanout\". Do not use for single-file changes or tasks that don't benefit from decomposition.",
+      "path": "skills/fanout/SKILL.md"
+    },
+    {
       "name": "figma-codex-pipeline",
       "description": "Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. Decomposes a Figma page into semantic units, generates code for each component in parallel, then integrates and verifies the result. Use for page-level Figma work with multiple components. Do not use for single-component work (use figma-to-code instead).",
       "path": "skills/figma-codex-pipeline/SKILL.md"
