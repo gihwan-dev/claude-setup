@@ -1,3 +1,0 @@
-row_id,category,question,scope_boundary,assigned_agent_type,depends_on,status,last_error,result_summary
-INFO-001,endpoint-list,"Which endpoint files can stay row-local?","src/api/*.ts","codex-row-worker",,done,,"users/posts/comments/tags endpoints are row-local"
-INFO-002,shared-files,"Which files require grouped fallback?","src/api/index.ts","codex-row-worker",INFO-001,done,,"barrel export wiring must be single-lane"

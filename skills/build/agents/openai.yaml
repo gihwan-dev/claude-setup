@@ -1,0 +1,9 @@
+interface:
+  display_name: "Build"
+  short_description: "Execute the next milestone from BRIEF.md — implement, verify, update status"
+  default_prompt: >-
+    $build reads `tasks/<slug>/BRIEF.md`, picks the next milestone, implements
+    code changes, runs verification, and updates the Status and Log sections.
+    One milestone per invocation unless told to continue.
+policy:
+  allow_implicit_invocation: false

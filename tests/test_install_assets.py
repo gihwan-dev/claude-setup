@@ -322,7 +322,7 @@ class InstallAssetsTests(RepoTestCase):
             (destination / "my-manual-skill").mkdir()
             write_generated_skill_manifest(
                 destination,
-                {"design-task", "obsolete-skill"},
+                {"alpha-skill", "obsolete-skill"},
                 dry_run=False,
             )
 
@@ -410,16 +410,16 @@ class InstallAssetsTests(RepoTestCase):
 
             stale_generated = skills_dir / "obsolete-skill"
             stale_generated.mkdir()
-            (skills_dir / "design-task").mkdir()
-            (skills_dir / "implement-task").mkdir()
+            (skills_dir / "alpha-skill").mkdir()
+            (skills_dir / "beta-skill").mkdir()
             manual_skill = skills_dir / "my-manual-skill"
             manual_skill.mkdir()
 
             broken_symlink = skills_dir / "old-skill"
             broken_symlink.symlink_to(skills_dir / "missing-skill-target")
 
-            previous_generated = {"obsolete-skill", "design-task", "old-skill"}
-            expected_generated = {"design-task", "implement-task"}
+            previous_generated = {"obsolete-skill", "alpha-skill", "old-skill"}
+            expected_generated = {"alpha-skill", "beta-skill"}
             prune_generated_skills(
                 skills_dir=skills_dir,
                 expected_generated_names=expected_generated,
@@ -435,8 +435,8 @@ class InstallAssetsTests(RepoTestCase):
             self.assertFalse(stale_generated.exists())
             self.assertFalse(broken_symlink.exists() or broken_symlink.is_symlink())
             self.assertTrue(manual_skill.exists())
-            self.assertTrue((skills_dir / "design-task").exists())
-            self.assertTrue((skills_dir / "implement-task").exists())
+            self.assertTrue((skills_dir / "alpha-skill").exists())
+            self.assertTrue((skills_dir / "beta-skill").exists())
 
     def test_install_skill_sources_copies_canonical_skills_only(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

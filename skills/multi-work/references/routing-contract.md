@@ -10,7 +10,7 @@ Lock these before emitting a ready routing result:
 - `routing_mode` — `homogeneous` or `heterogeneous`
 - `worker_agent_name` — required when `routing_mode=homogeneous`
 - `shard_basis` — the dimension used to split helper work
-- `handoff_target` — usually `$design-task` or `$implement-task`
+- `handoff_target` — usually `$plan` or `$build`
 
 If any locked input is missing and cannot be derived from evidence, fail closed.
 
@@ -65,7 +65,7 @@ Allowed outcomes in those cases:
 
 - `blocked`
 - `split-replan`
-- handoff to `$design-task`
+- handoff to `$plan`
 
 ## Escalation Response Matrix
 

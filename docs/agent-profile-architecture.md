@@ -22,7 +22,7 @@ Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane r
 
 - Purpose: define the concrete inputs, constraints, and validation flow for a specific task.
 - Contents: handoff schema, validation contract, shared file policy, browser evidence checklist
-- Location: `skills/implement-task`, `skills/design-task`, related `references/`
+- Location: `skills/plan`, `skills/build`, related `references/`
 
 ### Schema/Eval
 
@@ -81,7 +81,7 @@ These agents keep a separate playbook outside the profile.
 - `agent-registry/structure-reviewer/references/decomposition-playbook.md`
 - `agent-registry/test-engineer/references/test-review-playbook.md`
 - `agent-registry/react-state-reviewer/references/state-anti-patterns.md`
-- `skills/implement-task/SKILL.md` for built-in `worker` delegation rules
+- `skills/build/SKILL.md` for built-in milestone execution rules
 - `agent-registry/browser-explorer/references/observation-points.md`
 - `agent-registry/browser-explorer/references/agent-browser-playbook.md`
 

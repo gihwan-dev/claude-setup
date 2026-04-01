@@ -2,9 +2,9 @@
 name: reference-pack
 description: >
   Advisory skill for task-local UI reference collection and curation. Use inside
-  design-task whenever delivery_strategy=ui-first to search, shortlist, save, and
+  plan whenever the task involves UI work to search, shortlist, save, and
   document references under DESIGN_REFERENCES/. Do not invoke standalone outside
-  of a design-task context.
+  of a plan context.
 allowed-tools: Read, Grep, Glob, Write, Agent
 ---
 
@@ -16,7 +16,7 @@ Curate task-local reference evidence under `tasks/<task-path>/DESIGN_REFERENCES/
 
 ## Hard Rules
 
-- This skill is advisory-only and only runs inside `design-task`.
+- This skill is advisory-only and only runs inside `plan`.
 - The save path is always `tasks/<task-path>/DESIGN_REFERENCES/`.
 - Outputs always include `shortlist.md`, `manifest.json`, `raw/`, and `curated/`.
 - Keep 5 to 10 shortlist candidates.

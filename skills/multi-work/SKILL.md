@@ -49,7 +49,7 @@ Helper prompts contain only exploration target, scope boundary, and return shape
 2. Choose the routing mode. Default to `homogeneous`.
 3. Lock `worker_agent_name` before dispatch when routing mode is
    `homogeneous`. If it is not locked, fail closed and hand off to
-   `split-replan` or `$design-task`.
+   `split-replan` or `$plan`.
 4. Compose helper prompts using the Dispatch Prompt Contract.
 5. Dispatch at least 2 helpers. If multi-agent fan-out is unavailable, report
    `blocked` instead of falling back to solo exploration.
@@ -58,8 +58,8 @@ Helper prompts contain only exploration target, scope boundary, and return shape
 8. If helpers return low confidence, blocked status, or conflicting evidence,
    follow the fail-closed rules in `routing-contract.md`.
 9. Stop after the `Routing Strategy` is written. If runtime execution is the
-   next step, hand off to `$implement-task`. If planning is the next step,
-   hand off to `$design-task`.
+   next step, hand off to `$build`. If planning is the next step,
+   hand off to `$plan`.
 
 ## Routing Strategy Output
 
@@ -85,7 +85,7 @@ section with these fields only:
 - Shard basis: module boundary
 - Fail-closed rule: if shared-file ownership is unclear, do not route execution;
   hand off to `split-replan`
-- Handoff readiness: ready for `$design-task`
+- Handoff readiness: ready for `$plan`
 ```
 
 ## Required References

@@ -1,6 +1,6 @@
 interface:
   display_name: "Reference Pack"
-  short_description: "Task-local UI reference collection advisory that saves shortlist and manifest artifacts under `DESIGN_REFERENCES/` for `design-task` ui-first planning"
+  short_description: "Task-local UI reference collection advisory that saves shortlist and manifest artifacts under `DESIGN_REFERENCES/` for UI planning"
   default_prompt: >
     `$reference-pack` should fill the task-local `DESIGN_REFERENCES/` directory
     for ui-first planning. Fix the save path to

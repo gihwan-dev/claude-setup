@@ -70,11 +70,7 @@ PUBLIC_SURFACE_POLICY = _require_table(
 )
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
-TASK_DOCUMENTS_POLICY = _require_table(
-    WORKFLOW_POLICY,
-    "task_documents",
-    path=WORKFLOW_POLICY_PATH,
-)
+MANIFEST_POLICY = _require_table(WORKFLOW_POLICY, "manifest", path=WORKFLOW_POLICY_PATH)
 
 REQUIRED_HELPER_AGENT_IDS = _require_str_list(
     PROJECTION_POLICY,
@@ -108,43 +104,8 @@ EXPECTED_CODEX_SANDBOX_BY_AGENT = _optional_str_map(
     path=WORKFLOW_POLICY_PATH,
 )
 GENERATED_SKILL_MANIFEST_NAME = _require_str(
-    TASK_DOCUMENTS_POLICY,
+    MANIFEST_POLICY,
     "generated_skill_manifest_name",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_TASK_YAML_REQUIRED_KEYS = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_task_yaml_required_keys",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_agent_orchestration_required_keys",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_AGENT_ORCHESTRATION_STRATEGIES = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_agent_orchestration_strategies",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_agent_orchestration_main_thread_roles",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_csv_fanout_orchestration_required_keys",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_EXECUTION_PLAN_SECTION_ORDER = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_execution_plan_section_order",
-    path=WORKFLOW_POLICY_PATH,
-)
-BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS = _require_str_list(
-    TASK_DOCUMENTS_POLICY,
-    "bundle_execution_plan_slice_required_fields",
     path=WORKFLOW_POLICY_PATH,
 )
 
@@ -154,25 +115,18 @@ def expected_reasoning_effort_for(agent_id: str) -> str:
 
 
 __all__ = [
-    "BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES",
-    "BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS",
-    "BUNDLE_AGENT_ORCHESTRATION_STRATEGIES",
-    "BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS",
-    "BUNDLE_EXECUTION_PLAN_SECTION_ORDER",
-    "BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS",
-    "BUNDLE_TASK_YAML_REQUIRED_KEYS",
     "CODEX_REASONING_EFFORT_OVERRIDES",
     "DEFAULT_CODEX_REASONING_EFFORT",
     "DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS",
     "EXPECTED_CODEX_REASONING_EFFORT",
     "EXPECTED_CODEX_SANDBOX_BY_AGENT",
     "GENERATED_SKILL_MANIFEST_NAME",
+    "MANIFEST_POLICY",
     "PUBLIC_LONG_RUNNING_SKILLS",
     "PUBLIC_SURFACE_POLICY",
     "PROJECTION_POLICY",
     "REPO_ROOT",
     "REQUIRED_HELPER_AGENT_IDS",
-    "TASK_DOCUMENTS_POLICY",
     "WORKFLOW_POLICY",
     "WORKFLOW_POLICY_PATH",
     "expected_reasoning_effort_for",

@@ -3,9 +3,9 @@
   "canonical_source_root": "skills",
   "skills": [
     {
-      "name": "bootstrap-project-rules",
-      "description": "Post-design bootstrap workflow for greenfield or newly shaped work. Use after design-task and before implement-task when the task bundle is ready but the repo still needs implementation rules. Creates ENGINEERING_RULES.md and IMPLEMENTATION_CONTRACT.md. Do not use before design-task completes or when implementation rules already exist.",
-      "path": "skills/bootstrap-project-rules/SKILL.md"
+      "name": "build",
+      "description": "Execute the next milestone from an approved BRIEF.md. Invoke when the user writes \"build\" or \"$build\". Reads the brief, picks the next milestone, implements code changes, runs verification, and updates Status/Log. Do not use without an existing BRIEF.md — run plan first.",
+      "path": "skills/build/SKILL.md"
     },
     {
       "name": "clean-code-inspector",
@@ -43,11 +43,6 @@
       "path": "skills/design-check/SKILL.md"
     },
     {
-      "name": "design-task",
-      "description": "Large or ambiguous non-trivial task planning skill. Invoke only when the user explicitly writes \"design-task\" or \"$design-task\". Builds a task.yaml bundle via continuity gate, derives delivery_strategy, records static orchestration, and prepares execution handoffs. Do not use for runtime CSV execution, simple tasks, or quick fixes.",
-      "path": "skills/design-task/SKILL.md"
-    },
-    {
       "name": "dev-socratic-design",
       "description": "Socratic questioning-driven design skill that completes architecture design, bugfix strategy, refactoring plan, or feature design before implementation. Invoke only when the user explicitly writes \"dev-socratic-design\", \"$dev-socratic-design\", or asks for deep design discussion, alternative comparison, adversarial review, or pre-implementation planning. Do not use for quick fixes, simple tasks, direct code generation, or when the user wants immediate implementation.",
       "path": "skills/dev-socratic-design/SKILL.md"
@@ -64,7 +59,7 @@
     },
     {
       "name": "figma-less-ui-design",
-      "description": "Advisory skill for no-Figma MVP/prototype UI planning. Use when design-task has delivery_strategy=ui-first and the team needs UX planning docs without Figma. Produces UX_SPEC.md and UX_BEHAVIOR_ACCESSIBILITY.md. Falls back to reuse+delta when an existing design system or Figma exists. Do not invoke standalone outside of a design-task context.",
+      "description": "Advisory skill for no-Figma MVP/prototype UI planning. Use when plan identifies UI work and the team needs UX planning docs without Figma. Produces UX_SPEC.md and UX_BEHAVIOR_ACCESSIBILITY.md. Falls back to reuse+delta when an existing design system or Figma exists. Do not invoke standalone outside of a plan context.",
       "path": "skills/figma-less-ui-design/SKILL.md"
     },
     {
@@ -98,11 +93,6 @@
       "path": "skills/gitlab-issue-worker/SKILL.md"
     },
     {
-      "name": "implement-task",
-      "description": "Execute the next approved slice from task.yaml bundles. Invoke only when the user explicitly writes \"implement-task\" or \"$implement-task\". Reads the bundle, selects the next slice, and runs the 3-CSV pipeline (read → write → review). Owns task selection, STATUS.md updates, and commit.",
-      "path": "skills/implement-task/SKILL.md"
-    },
-    {
       "name": "korean-cognitive-code-explainer",
       "description": "Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams. Use when the user asks for a Korean code explanation, \"코드 설명해줘\", a simpler explanation, a visual walkthrough, or help translating function names into Korean. Do not use for English explanations, code review, or refactoring tasks.",
       "path": "skills/korean-cognitive-code-explainer/SKILL.md"
@@ -118,6 +108,11 @@
       "path": "skills/multi-work/SKILL.md"
     },
     {
+      "name": "plan",
+      "description": "Read-only task planning skill. Invoke when the user writes \"plan\" or \"$plan\". Explores the codebase, clarifies requirements with the user, and produces a single BRIEF.md under tasks/<slug>/. Covers both product scope (what/why) and implementation design (how/milestones). Do not use for code changes or quick fixes that need no planning.",
+      "path": "skills/plan/SKILL.md"
+    },
+    {
       "name": "pm-spec-from-code",
       "description": "Convert implemented code into a PM-style spec focused on user-visible behavior and rules. Use when the user wants a feature spec derived from code, with behaviors, rules, constraints, exceptions, and non-goals in product language. Do not use for API documentation, code comments, or architecture documentation.",
       "path": "skills/pm-spec-from-code/SKILL.md"
@@ -129,7 +124,7 @@
     },
     {
       "name": "reference-pack",
-      "description": "Advisory skill for task-local UI reference collection and curation. Use inside design-task whenever delivery_strategy=ui-first to search, shortlist, save, and document references under DESIGN_REFERENCES/. Do not invoke standalone outside of a design-task context.",
+      "description": "Advisory skill for task-local UI reference collection and curation. Use inside plan whenever the task involves UI work to search, shortlist, save, and document references under DESIGN_REFERENCES/. Do not invoke standalone outside of a plan context.",
       "path": "skills/reference-pack/SKILL.md"
     },
     {
