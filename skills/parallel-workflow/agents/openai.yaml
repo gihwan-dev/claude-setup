@@ -1,0 +1,14 @@
+interface:
+  display_name: "Parallel Workflow"
+  short_description: "Run approved parallel slices with a fixed 3-CSV runtime under `runs/parallel-workflow/<slice-id>/`"
+  default_prompt: >
+    $parallel-workflow should read the approved bundle and current slice, verify
+    that `Execution skill: parallel-workflow` is set, and then create
+    `Documentation.md`, `info-collection.csv`, `implementation.csv`, and
+    `review.csv` under `runs/parallel-workflow/<slice-id>/`. Never infer agent
+    type or shard basis when they are not locked; fail closed to `$multi-work`
+    instead. Keep shared-file writes single-lane by `change_group_id`, and only
+    auto-fix review findings when severity is `critical` or `blocker` and
+    row-local validation is available.
+policy:
+  allow_implicit_invocation: false
