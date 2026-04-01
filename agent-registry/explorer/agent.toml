@@ -1,0 +1,15 @@
+id = "explorer"
+role = "explorer"
+description = "Read-only codebase explorer focused on fast navigation, dependency tracing, and architecture comprehension."
+source = "codex-builtin-override"
+
+[projection]
+repo = false
+codex = true
+
+[codex]
+agent_key = "explorer"
+config_file = "explorer.toml"
+model = "gpt-5.4-mini"
+reasoning_effort = "high"
+sandbox_mode = "read-only"

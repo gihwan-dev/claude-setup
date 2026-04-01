@@ -25,6 +25,10 @@ config_file = "agents/design-skeptic.toml"
 description = "Read-only research agent that finds and summarizes relevant documentation, code patterns, and domain context for design sessions."
 config_file = "agents/docs-researcher.toml"
 
+[agents.explorer]
+description = "Read-only codebase explorer focused on fast navigation, dependency tracing, and architecture comprehension."
+config_file = "agents/explorer.toml"
+
 [agents.react-state-reviewer]
 description = "Read-only reviewer focused on React state modeling, derived state, and impossible state reduction."
 config_file = "agents/react-state-reviewer.toml"

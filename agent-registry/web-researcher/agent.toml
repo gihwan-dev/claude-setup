@@ -15,5 +15,5 @@ tools = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"]
 agent_key = "web-researcher"
 config_file = "web-researcher.toml"
 model = "gpt-5.4-mini"
-reasoning_effort = "medium"
+reasoning_effort = "high"
 sandbox_mode = "read-only"
