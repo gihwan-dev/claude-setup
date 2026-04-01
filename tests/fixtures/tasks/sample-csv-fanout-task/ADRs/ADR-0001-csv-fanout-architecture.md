@@ -1,4 +1,4 @@
-# ADR-0001: CSV Fan-out Architecture
+# ADR-0001: CSV Fan-out Runtime Boundary
 
 ## Status
 
@@ -6,14 +6,16 @@ Accepted
 
 ## Context
 
-Independent API endpoints can be generated in parallel. Sequential execution is unnecessarily slow.
+Independent API endpoints can still be planned as `csv-fanout`, but runtime CSV
+artifacts should not live in the top-level task bundle.
 
 ## Decision
 
-Use `csv-fanout` execution topology with row-level worker isolation.
+Keep `csv-fanout` as a design-time topology and move runtime execution artifacts
+to `parallel-workflow` under `runs/parallel-workflow/<slice-id>/`.
 
 ## Consequences
 
-- Faster execution via parallelism.
-- Row workers must respect `target_path` isolation.
-- Shared file modifications require integrator role.
+- Design bundles stay stable and planning-focused.
+- Runtime CSVs become replaceable execution artifacts.
+- Shared-file modifications must collapse to a single lane or change group.

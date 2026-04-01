@@ -4,6 +4,7 @@
 
 - Orchestration: manager lane
 - Preflight helpers: explorer + structure-reviewer
+- Execution skill: implement-task
 - Implementation owner: worker
 - Integration owner: worker
 - Validation owner: verification-worker
@@ -17,6 +18,7 @@
 
 - Orchestration: manager lane
 - Preflight helpers: explorer + test-engineer
+- Execution skill: implement-task
 - Implementation owner: worker
 - Integration owner: worker
 - Validation owner: verification-worker
@@ -30,6 +32,7 @@
 
 - Orchestration: manager lane
 - Preflight helpers: explorer + architecture-reviewer
+- Execution skill: implement-task
 - Implementation owner: worker
 - Integration owner: worker
 - Validation owner: verification-worker

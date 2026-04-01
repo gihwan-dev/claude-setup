@@ -1,5 +1,5 @@
 [public_surface]
-long_running = ["design-task", "implement-task"]
+long_running = ["design-task", "implement-task", "parallel-workflow"]
 
 [projection]
 required_helper_agent_ids = [
@@ -147,6 +147,7 @@ bundle_execution_plan_slice_required_fields = [
   "Expected files",
   "Orchestration",
   "Preflight helpers",
+  "Execution skill",
   "Implementation owner",
   "Integration owner",
   "Validation owner",
@@ -173,10 +174,15 @@ bundle_impact_flags = [
 ]
 bundle_delivery_strategies = ["standard", "ui-first"]
 bundle_execution_topologies = ["keep-local", "csv-fanout", "hybrid"]
-bundle_csv_fanout_docs = ["GLOBAL_CONTEXT.md", "MERGE_POLICY.md"]
+bundle_parallel_runtime_artifacts = [
+  "Documentation.md",
+  "info-collection.csv",
+  "implementation.csv",
+  "review.csv",
+]
 bundle_csv_fanout_orchestration_required_keys = [
   "row_unit", "batch_mode", "shared_context_files",
-  "roles", "csv", "merge_policy",
+  "roles", "artifact_root", "change_group_policy",
 ]
 bundle_ui_first_work_types = ["feature", "bugfix", "refactor", "prototype"]
 bundle_ui_first_flags = ["ui_surface_changed", "workflow_changed"]

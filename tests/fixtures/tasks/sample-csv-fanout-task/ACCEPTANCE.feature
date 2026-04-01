@@ -1,13 +1,12 @@
-Feature: CSV Fan-out Execution
+Feature: Parallel Workflow Runtime
 
-  Scenario: Parallel row execution
-    Given a work-items CSV with 4 rows
-    When csv-fanout execution runs with max_concurrency 4
-    Then all 4 row outputs match the output schema
-    And the integrator merges shared files without conflict
+  Scenario: Parallel runtime artifacts are created for the slice
+    Given a slice with `Execution skill: parallel-workflow`
+    When the parallel runtime starts
+    Then `Documentation.md`, `info-collection.csv`, `implementation.csv`, and `review.csv` exist under `runs/parallel-workflow/SLICE-1/`
 
-  Scenario: Row failure recovery
-    Given a work-items CSV with 4 rows
-    When 1 row worker fails
-    Then the failed row is retried once
-    And the overall execution succeeds if retry passes
+  Scenario: Shared-file work falls back to a single lane
+    Given an implementation row with `shared_file_touch=Y`
+    When the runtime finalizes implementation rows
+    Then the row is marked `parallelizable=false` or grouped by `change_group_id`
+    And `execution_mode` records the fallback reason

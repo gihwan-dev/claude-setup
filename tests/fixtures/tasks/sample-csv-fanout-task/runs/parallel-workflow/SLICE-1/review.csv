@@ -1,0 +1,3 @@
+row_id,target_row_id,review_focus,assigned_agent_type,severity_gate,fix_owner,auto_fix,validation_command,status,last_error,result_summary
+REV-001,IMPL-001,"Confirm endpoint stub contract","verification-worker",advisory,parallel-workflow,false,"python3 -m unittest discover -s tests -p 'test_*.py'",done,,"row-local stub shape looks correct"
+REV-002,IMPL-003,"Confirm shared-file fallback stayed single-lane","verification-worker",critical,parallel-workflow,true,"python3 -m unittest discover -s tests -p 'test_*.py'",done,,"shared export lane stayed isolated"

@@ -1,11 +1,11 @@
 task: sample-csv-fanout-task
 goal: Demonstrate CSV fan-out execution topology for parallel row-level processing.
 success_criteria:
-  - Row-level parallel execution completes within concurrency limits.
-  - Integrator merges shared files without conflict.
+  - Parallel slice execution records its runtime artifacts under runs/parallel-workflow.
+  - Shared-file work is reduced to change-group single-lane ownership.
 major_boundaries:
-  - CSV-driven row worker spawning
-  - Integrator shared-file merge
+  - Static task-bundle planning
+  - Parallel runtime artifact execution
 work_type: feature
 impact_flags:
   - architecture_significant
@@ -18,8 +18,6 @@ required_docs:
   - TECH_SPEC.md
   - ACCEPTANCE.feature
   - ADRs/
-  - GLOBAL_CONTEXT.md
-  - MERGE_POLICY.md
 source_of_truth:
   product: PRD.md
   architecture: TECH_SPEC.md
@@ -42,8 +40,8 @@ agent_orchestration:
     - explorer
     - structure-reviewer
   execution_roles:
-    implementation: codex-row-worker
-    integration: codex-row-worker
+    implementation: parallel-workflow
+    integration: parallel-workflow
     validation: verification-worker
   context_policy: bundle-docs-and-structured-results-only
   fallback_policy: blocked-lane-means-split-replan
@@ -55,16 +53,11 @@ orchestration:
   row_unit: api-endpoint
   batch_mode: staged
   shared_context_files:
-    - GLOBAL_CONTEXT.md
+    - TECH_SPEC.md
+    - EXECUTION_PLAN.md
   roles:
-    decomposer: main-thread
-    worker: codex-row-worker
-    integrator: codex-row-worker
-    verifier: codex-row-worker
-  csv:
-    source: work-items/SLICE-1-items.csv
-    id_column: row_id
-    output_schema_ref: schemas/row-result.schema.json
-    output_csv: runs/SLICE-1-results.csv
-    max_concurrency: 4
-  merge_policy: integrator-only
+    router: multi-work
+    executor: parallel-workflow
+    verifier: parallel-workflow
+  artifact_root: runs/parallel-workflow
+  change_group_policy: shared-file-groups-single-lane

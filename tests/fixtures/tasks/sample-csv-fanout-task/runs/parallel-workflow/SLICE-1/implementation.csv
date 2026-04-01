@@ -1,0 +1,4 @@
+row_id,change_group_id,target_path,change_goal,assigned_agent_type,shared_file_touch,parallelizable,execution_mode,validation_command,fallback_reason,status,last_error
+IMPL-001,endpoint-users,src/api/users.ts,"Create GET /users stub","codex-row-worker",N,true,parallel,"python3 -m unittest discover -s tests -p 'test_*.py'",,done,
+IMPL-002,endpoint-posts,src/api/posts.ts,"Create GET /posts stub","codex-row-worker",N,true,parallel,"python3 -m unittest discover -s tests -p 'test_*.py'",,done,
+IMPL-003,exports,src/api/index.ts,"Wire shared exports for endpoint stubs","codex-row-worker",Y,false,single-lane,"python3 -m unittest discover -s tests -p 'test_*.py'","shared file change grouped into exports lane",done,

@@ -1,28 +1,30 @@
 # Execution slices
 
-## SLICE-1: API endpoint stubs via CSV fan-out
+## SLICE-1: API endpoint stubs via parallel runtime
 
-- Orchestration: manager lane + csv-fanout workers
-- Preflight helpers: explorer + structure-reviewer
-- Implementation owner: codex-row-worker
-- Integration owner: codex-row-worker
-- Validation owner: verification-worker
-- Allowed main-thread actions: bundle-doc synthesis + helper-result synthesis + handoff/STATUS/commit coordination
-- Change boundary: Each row worker creates files under its `target_path`.
-- Expected files: 1 per CSV row (up to 4 concurrent).
-- Focused validation plan: Row output schema check + shared file integrity.
-- Stop / Replan trigger: >50% row failure rate.
-- Fan-out spec: `work-items/SLICE-1-items.csv`, concurrency 4, staged batch mode.
-- Split decision: N/A — each row is independently scoped.
+- Change boundary: API endpoint stub files plus one shared-file change-group lane.
+- Expected files: 4 row-local files, with shared-file work collapsed to single-lane integration.
+- Orchestration: manager lane + `parallel-workflow` runtime.
+- Preflight helpers: `explorer` + `structure-reviewer`
+- Execution skill: `parallel-workflow`
+- Implementation owner: `parallel-workflow`
+- Integration owner: `parallel-workflow`
+- Validation owner: `verification-worker`
+- Allowed main-thread actions: bundle-doc synthesis + handoff + STATUS/commit coordination
+- Focused validation plan: row-local validation commands are recorded in `review.csv`, then summarized for the manager lane.
+- Stop / Replan trigger: blocked routing inputs, overlapping shared-file writes without a change group, or more than 50% failed runtime rows.
+- Split decision: keep parallel rows only for row-local files; collapse shared-file work into a single lane.
 
 # Verification
 
-- Row output CSV matches `schemas/row-result.schema.json`.
-- Integrator shared-file merge has no conflicts.
+- `parallel-workflow` creates `Documentation.md`, `info-collection.csv`,
+  `implementation.csv`, and `review.csv` under `runs/parallel-workflow/SLICE-1/`.
+- Shared-file rows are marked `parallelizable=false` or share the same
+  `change_group_id`.
 - `python3 -m unittest discover -s tests -p 'test_*.py'`
 
 # Stop / Replan conditions
 
-- Row failure rate exceeds 50%.
-- Shared file merge conflict detected.
-- New cross-row dependency discovered.
+- Routing inputs are not locked, so `$multi-work` is required first.
+- Shared-file ownership cannot be reduced to a single lane.
+- Review findings require fixes outside row-local validation boundaries.

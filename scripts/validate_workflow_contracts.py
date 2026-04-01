@@ -242,6 +242,11 @@ def _validate_fixture_task_bundle(
         errors.append(
             f"missing row-level orchestration block for execution_topology={execution_topology} in {task_yaml_path}"
         )
+    if execution_topology in {"csv-fanout", "hybrid"} and _yaml_has_top_level_key(task_text, "orchestration"):
+        orchestration_keys = _yaml_child_keys(task_text, "orchestration")
+        for key in task_contract["csv_fanout_orchestration_required_keys"]:
+            if key not in orchestration_keys:
+                errors.append(f"missing orchestration key '{key}' in {task_yaml_path}")
 
     execution_plan_text = execution_plan_path.read_text(encoding="utf-8")
     _validate_execution_plan_order(
@@ -307,6 +312,12 @@ def _validate_task_bundle_contracts(repo_root: Path, errors: list[str]) -> None:
         "execution_plan_slice_required_fields": _require_str_list(
             task_documents,
             "bundle_execution_plan_slice_required_fields",
+            path=policy_path,
+            errors=errors,
+        ),
+        "csv_fanout_orchestration_required_keys": _require_str_list(
+            task_documents,
+            "bundle_csv_fanout_orchestration_required_keys",
             path=policy_path,
             errors=errors,
         ),

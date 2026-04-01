@@ -11,6 +11,7 @@ from workflow_contract import (
     BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES,
     BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS,
     BUNDLE_AGENT_ORCHESTRATION_STRATEGIES,
+    BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
     BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS,
     BUNDLE_TASK_YAML_REQUIRED_KEYS,
@@ -28,6 +29,9 @@ class WorkflowContractTests(RepoTestCase):
             repo_root / "policy" / "workflow.toml",
             "\n".join(
                 [
+                    "[public_surface]",
+                    'long_running = ["design-task", "implement-task", "parallel-workflow"]',
+                    "",
                     "[projection]",
                     'required_helper_agent_ids = ["helper"]',
                     "documentation_only_builtins = []",
@@ -41,7 +45,8 @@ class WorkflowContractTests(RepoTestCase):
                     'bundle_agent_orchestration_strategies = ["manager"]',
                     'bundle_agent_orchestration_main_thread_roles = ["synthesize-control-only"]',
                     'bundle_execution_plan_section_order = ["Execution slices", "Verification", "Stop / Replan conditions"]',
-                    'bundle_execution_plan_slice_required_fields = ["Change boundary", "Expected files", "Orchestration", "Preflight helpers", "Implementation owner", "Integration owner", "Validation owner", "Allowed main-thread actions", "Focused validation plan", "Stop / Replan trigger"]',
+                    'bundle_execution_plan_slice_required_fields = ["Change boundary", "Expected files", "Orchestration", "Preflight helpers", "Execution skill", "Implementation owner", "Integration owner", "Validation owner", "Allowed main-thread actions", "Focused validation plan", "Stop / Replan trigger"]',
+                    'bundle_csv_fanout_orchestration_required_keys = ["row_unit", "batch_mode", "shared_context_files", "roles", "artifact_root", "change_group_policy"]',
                     'generated_skill_manifest_name = ".generated-skills.json"',
                     "",
                 ]
@@ -105,6 +110,10 @@ class WorkflowContractTests(RepoTestCase):
         self.assertEqual(
             tuple(policy["task_documents"]["bundle_execution_plan_slice_required_fields"]),
             BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS,
+        )
+        self.assertEqual(
+            tuple(policy["task_documents"]["bundle_csv_fanout_orchestration_required_keys"]),
+            BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS,
         )
 
     def test_validate_repo_reports_invalid_policy_toml(self) -> None:

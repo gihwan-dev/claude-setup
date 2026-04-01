@@ -85,3 +85,18 @@ class RepoSurfaceTests(RepoTestCase):
                         content,
                         msg=f"found legacy policy reference `{snippet}` in {path}",
                     )
+
+    def test_task_orchestration_skills_are_explicit_only(self) -> None:
+        targets = (
+            REPO_ROOT / "skills" / "design-task" / "agents" / "openai.yaml",
+            REPO_ROOT / "skills" / "multi-work" / "agents" / "openai.yaml",
+            REPO_ROOT / "skills" / "parallel-workflow" / "agents" / "openai.yaml",
+            REPO_ROOT / "skills" / "implement-task" / "agents" / "openai.yaml",
+        )
+        for path in targets:
+            content = path.read_text(encoding="utf-8")
+            self.assertIn(
+                "allow_implicit_invocation: false",
+                content,
+                msg=f"expected explicit-only policy in {path}",
+            )

@@ -63,6 +63,11 @@ def load_workflow_policy(path: Path = WORKFLOW_POLICY_PATH) -> TomlDict:
 
 WORKFLOW_POLICY = load_workflow_policy()
 
+PUBLIC_SURFACE_POLICY = _require_table(
+    WORKFLOW_POLICY,
+    "public_surface",
+    path=WORKFLOW_POLICY_PATH,
+)
 PROJECTION_POLICY = _require_table(WORKFLOW_POLICY, "projection", path=WORKFLOW_POLICY_PATH)
 CODEX_POLICY = _require_table(WORKFLOW_POLICY, "codex", path=WORKFLOW_POLICY_PATH)
 TASK_DOCUMENTS_POLICY = _require_table(
@@ -74,6 +79,11 @@ TASK_DOCUMENTS_POLICY = _require_table(
 REQUIRED_HELPER_AGENT_IDS = _require_str_list(
     PROJECTION_POLICY,
     "required_helper_agent_ids",
+    path=WORKFLOW_POLICY_PATH,
+)
+PUBLIC_LONG_RUNNING_SKILLS = _require_str_list(
+    PUBLIC_SURFACE_POLICY,
+    "long_running",
     path=WORKFLOW_POLICY_PATH,
 )
 DOCUMENTATION_ONLY_BUILTIN_AGENT_IDS = _require_str_list(
@@ -122,6 +132,11 @@ BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES = _require_str_list(
     "bundle_agent_orchestration_main_thread_roles",
     path=WORKFLOW_POLICY_PATH,
 )
+BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS = _require_str_list(
+    TASK_DOCUMENTS_POLICY,
+    "bundle_csv_fanout_orchestration_required_keys",
+    path=WORKFLOW_POLICY_PATH,
+)
 BUNDLE_EXECUTION_PLAN_SECTION_ORDER = _require_str_list(
     TASK_DOCUMENTS_POLICY,
     "bundle_execution_plan_section_order",
@@ -142,6 +157,7 @@ __all__ = [
     "BUNDLE_AGENT_ORCHESTRATION_MAIN_THREAD_ROLES",
     "BUNDLE_AGENT_ORCHESTRATION_REQUIRED_KEYS",
     "BUNDLE_AGENT_ORCHESTRATION_STRATEGIES",
+    "BUNDLE_CSV_FANOUT_ORCHESTRATION_REQUIRED_KEYS",
     "BUNDLE_EXECUTION_PLAN_SECTION_ORDER",
     "BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS",
     "BUNDLE_TASK_YAML_REQUIRED_KEYS",
@@ -151,6 +167,8 @@ __all__ = [
     "EXPECTED_CODEX_REASONING_EFFORT",
     "EXPECTED_CODEX_SANDBOX_BY_AGENT",
     "GENERATED_SKILL_MANIFEST_NAME",
+    "PUBLIC_LONG_RUNNING_SKILLS",
+    "PUBLIC_SURFACE_POLICY",
     "PROJECTION_POLICY",
     "REPO_ROOT",
     "REQUIRED_HELPER_AGENT_IDS",

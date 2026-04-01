@@ -1,5 +1,0 @@
-row_id,target_path,acceptance_criteria
-ROW-001,src/api/users.ts,GET /users returns 200 with user list
-ROW-002,src/api/posts.ts,GET /posts returns 200 with post list
-ROW-003,src/api/comments.ts,GET /comments returns 200 with comment list
-ROW-004,src/api/tags.ts,GET /tags returns 200 with tag list

@@ -2,7 +2,8 @@
 
 ## Goal
 
-Demonstrate CSV fan-out execution topology for parallel row-level processing.
+Demonstrate the split between design-time `csv-fanout` planning and runtime
+`parallel-workflow` execution artifacts.
 
 ## Document map
 
@@ -14,19 +15,21 @@ Demonstrate CSV fan-out execution topology for parallel row-level processing.
 - `STATUS.md` — progress tracking
 - `ACCEPTANCE.feature` — acceptance criteria
 - `ADRs/` — architecture decision records
-- `GLOBAL_CONTEXT.md` — shared context for row workers
-- `MERGE_POLICY.md` — merge strategy for shared files
-- `work-items/` — CSV work item definitions
+- `runs/parallel-workflow/SLICE-1/` — runtime execution artifacts for the
+  parallel slice
 
 ## Key decisions
 
-- ADR-0001: Use csv-fanout topology for independent API endpoint generation.
-- Row workers operate on `target_path` only; shared files are integrator-only.
+- ADR-0001: keep `csv-fanout` as a planning topology, but move runtime CSVs
+  under `parallel-workflow`
+- Shared-file work is not independently parallelized; it collapses into a
+  change-group single lane
 
 ## Validation gate status
 
-blocking — architecture_significant flag is set.
+blocking — `architecture_significant` flag is set.
 
 ## Implementation slice order
 
-SLICE-1: CSV fan-out parallel execution of API endpoint stubs.
+SLICE-1: `parallel-workflow` executes the API endpoint slice through
+`info-collection.csv`, `implementation.csv`, and `review.csv`.
