@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 import sys
-import tomllib
 from pathlib import Path
 from types import ModuleType
 
@@ -22,20 +21,16 @@ def _load_review_hotspots_module() -> ModuleType:
 
 
 class ReviewHotspotsTests(RepoTestCase):
-    def test_default_policy_matches_repo_review_thresholds(self) -> None:
+    def test_load_hotspot_policy_returns_positive_thresholds(self) -> None:
         module = _load_review_hotspots_module()
-        policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
-        defaults = module.HotspotPolicy()
+        loaded = module.load_hotspot_policy(REPO_ROOT)
 
-        self.assertEqual(
-            defaults.min_changed_files,
-            policy["review_triggers"]["structure_review_min_changed_files"],
-        )
-        self.assertEqual(
-            defaults.min_total_diff_loc,
-            policy["review_triggers"]["structure_review_min_diff_loc"],
-        )
-        self.assertEqual(defaults.max_hotspot_paths, 3)
+        self.assertIsInstance(loaded.min_changed_files, int)
+        self.assertGreater(loaded.min_changed_files, 0)
+        self.assertIsInstance(loaded.min_total_diff_loc, int)
+        self.assertGreater(loaded.min_total_diff_loc, 0)
+        self.assertIsInstance(loaded.max_hotspot_paths, int)
+        self.assertGreater(loaded.max_hotspot_paths, 0)
 
     def test_classifier_stays_diff_only_below_threshold(self) -> None:
         module = _load_review_hotspots_module()

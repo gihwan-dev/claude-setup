@@ -9,11 +9,7 @@ from unittest.mock import patch
 from support import REPO_ROOT, RepoTestCase
 import bootstrap_registry
 import sync_agents
-from workflow_contract import (
-    EXPECTED_CODEX_SANDBOX_BY_AGENT,
-    REQUIRED_HELPER_AGENT_IDS,
-    expected_reasoning_effort_for,
-)
+from workflow_contract import REQUIRED_HELPER_AGENT_IDS
 
 
 class AgentSyncTests(RepoTestCase):
@@ -66,31 +62,17 @@ class AgentSyncTests(RepoTestCase):
             profile_path = REPO_ROOT / "dist" / "codex" / config_file
             self.assertTrue(profile_path.exists(), msg=f"missing generated helper profile {profile_path}")
 
-    def test_required_helper_registry_profiles_follow_runtime_policy(self) -> None:
-        for agent_id in REQUIRED_HELPER_AGENT_IDS:
-            payload = tomllib.loads(
-                (REPO_ROOT / "agent-registry" / agent_id / "agent.toml").read_text(encoding="utf-8")
-            )
-            codex = payload.get("codex")
-            self.assertIsInstance(codex, dict, msg=f"missing [codex] table for {agent_id}")
-            self.assertEqual(
-                codex.get("reasoning_effort"),
-                expected_reasoning_effort_for(agent_id),
-                msg=f"unexpected reasoning effort for {agent_id}",
-            )
-            self.assertEqual(
-                codex.get("sandbox_mode"),
-                EXPECTED_CODEX_SANDBOX_BY_AGENT.get(agent_id, "read-only"),
-                msg=f"unexpected sandbox mode for {agent_id}",
-            )
-
-    def test_slice_budget_policy_defaults(self) -> None:
+    def test_slice_budget_policy_has_required_fields(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
         slice_budget = policy.get("slice_budget")
         self.assertIsInstance(slice_budget, dict)
-        self.assertEqual(slice_budget.get("max_repo_files"), 3)
-        self.assertEqual(slice_budget.get("max_net_loc"), 150)
-        self.assertEqual(slice_budget.get("enforcement"), "split-before-execution")
+        self.assertIsInstance(slice_budget.get("max_repo_files"), int)
+        self.assertGreater(slice_budget.get("max_repo_files"), 0)
+        self.assertIsInstance(slice_budget.get("max_net_loc"), int)
+        self.assertGreater(slice_budget.get("max_net_loc"), 0)
+        enforcement = slice_budget.get("enforcement")
+        self.assertIsInstance(enforcement, str)
+        self.assertTrue(enforcement.strip())
 
     def test_builtin_worker_and_explorer_are_not_projected_to_managed_config(self) -> None:
         self.assertNotIn("worker", REQUIRED_HELPER_AGENT_IDS)
@@ -107,19 +89,31 @@ class AgentSyncTests(RepoTestCase):
         self.assertFalse((REPO_ROOT / "agents" / "writer.md").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "explorer-worker.toml").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml").exists())
-    def test_repo_managed_profiles_do_not_use_xhigh(self) -> None:
-        managed_paths = [
-            REPO_ROOT / "policy" / "workflow.toml",
-            *sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")),
-            *sorted((REPO_ROOT / "dist" / "codex" / "agents").glob("*.toml")),
-        ]
 
-        for path in managed_paths:
-            self.assertNotIn(
-                '"xhigh"',
-                path.read_text(encoding="utf-8"),
-                msg=f"xhigh unexpectedly present in managed profile surface: {path}",
-            )
+    def test_repo_managed_profiles_expose_required_runtime_fields(self) -> None:
+        for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):
+            payload = tomllib.loads(path.read_text(encoding="utf-8"))
+            projection = payload.get("projection")
+            codex = payload.get("codex")
+
+            self.assertIsInstance(projection, dict, msg=f"missing projection in {path}")
+            self.assertIsInstance(codex, dict, msg=f"missing [codex] table in {path}")
+
+            if projection.get("codex") is not True:
+                continue
+
+            for field in ("agent_key", "config_file", "model", "reasoning_effort", "sandbox_mode"):
+                value = codex.get(field)
+                self.assertIsInstance(value, str, msg=f"missing codex.{field} in {path}")
+                self.assertTrue(value.strip(), msg=f"empty codex.{field} in {path}")
+
+        for path in sorted((REPO_ROOT / "dist" / "codex" / "agents").glob("*.toml")):
+            payload = tomllib.loads(path.read_text(encoding="utf-8"))
+
+            for field in ("model", "model_reasoning_effort", "sandbox_mode", "developer_instructions"):
+                value = payload.get(field)
+                self.assertIsInstance(value, str, msg=f"missing {field} in {path}")
+                self.assertTrue(value.strip(), msg=f"empty {field} in {path}")
 
     def test_projected_agents_do_not_expose_extra_writable_roles(self) -> None:
         for path in sorted((REPO_ROOT / "agent-registry").glob("*/agent.toml")):

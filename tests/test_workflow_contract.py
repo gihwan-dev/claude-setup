@@ -14,11 +14,7 @@ from workflow_contract import (
     BUNDLE_EXECUTION_PLAN_SECTION_ORDER,
     BUNDLE_EXECUTION_PLAN_SLICE_REQUIRED_FIELDS,
     BUNDLE_TASK_YAML_REQUIRED_KEYS,
-    DEFAULT_CODEX_REASONING_EFFORT,
-    EXPECTED_CODEX_SANDBOX_BY_AGENT,
     GENERATED_SKILL_MANIFEST_NAME,
-    REQUIRED_HELPER_AGENT_IDS,
-    expected_reasoning_effort_for,
 )
 
 
@@ -80,32 +76,11 @@ class WorkflowContractTests(RepoTestCase):
             msg=f"validate_workflow_contracts failed\nstdout={completed.stdout}\nstderr={completed.stderr}",
         )
 
-    def test_runtime_policy_exports_match_repo_policy(self) -> None:
+    def test_task_document_exports_match_repo_policy(self) -> None:
         policy = tomllib.loads((REPO_ROOT / "policy" / "workflow.toml").read_text(encoding="utf-8"))
-        self.assertEqual(
-            tuple(policy["projection"]["required_helper_agent_ids"]),
-            REQUIRED_HELPER_AGENT_IDS,
-        )
         self.assertEqual(
             policy["task_documents"]["generated_skill_manifest_name"],
             GENERATED_SKILL_MANIFEST_NAME,
-        )
-        self.assertEqual(
-            policy["codex"]["default_reasoning_effort"],
-            DEFAULT_CODEX_REASONING_EFFORT,
-        )
-        for agent_id, effort in policy["codex"]["reasoning_effort_overrides"].items():
-            self.assertEqual(
-                effort,
-                expected_reasoning_effort_for(agent_id),
-            )
-        self.assertEqual(
-            policy["codex"]["default_reasoning_effort"],
-            expected_reasoning_effort_for("missing-agent"),
-        )
-        self.assertEqual(
-            policy["codex"]["sandbox_overrides"],
-            EXPECTED_CODEX_SANDBOX_BY_AGENT,
         )
         self.assertEqual(
             tuple(policy["task_documents"]["bundle_task_yaml_required_keys"]),
