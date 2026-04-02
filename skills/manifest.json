@@ -113,6 +113,11 @@
       "path": "skills/multi-work/SKILL.md"
     },
     {
+      "name": "parallel-codex",
+      "description": "Codex 기반 병렬 작업 디스패처. 독립적인 작업들을 git worktree로 격리하고 각 worktree에서 Codex를 병렬 실행한다. 의존 그래프를 분석하여 병렬 가능한 작업을 식별한다. \"$parallel-codex\" 또는 \"병렬 작업\" 요청 시 호출.",
+      "path": "skills/parallel-codex/SKILL.md"
+    },
+    {
       "name": "plan",
       "description": "Read-only planning skill. Invoke when the user writes \"plan\" or \"$plan\". Explores the codebase, clarifies requirements with the user, and produces a single abstract BRIEF.md under tasks/<slug>/. The brief focuses on what and why — not how. Implementation details are left to Codex during build.",
       "path": "skills/plan/SKILL.md"

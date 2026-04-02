@@ -1,0 +1,9 @@
+interface:
+  display_name: "Parallel Codex"
+  short_description: "Git worktree 기반 Codex 병렬 디스패처 — 독립 작업을 워크트리로 격리하고 Codex 병렬 실행"
+  default_prompt: >-
+    $parallel-codex는 독립적인 작업들의 의존 그래프를 분석하고, 병렬 가능한
+    작업마다 git worktree를 생성하여 Codex를 병렬 실행한다. 완료 후 결과를
+    요약하고, 머지는 사용자에게 맡긴다.
+policy:
+  allow_implicit_invocation: false
