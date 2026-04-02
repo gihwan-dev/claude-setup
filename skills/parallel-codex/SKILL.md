@@ -100,9 +100,15 @@ git worktree add .worktrees/<task-name> -b parallel/<task-name>
 디스패치한다. 각 Bash 호출은 독립적으로 백그라운드 실행되며, 완료 시 Claude에
 자동 알림이 온다.
 
-```
-# 하나의 메시지에서 여러 Bash를 동시에 호출 (각각 run_in_background=true):
+```bash
+# 먼저 Codex 플러그인 런타임 경로를 확인:
+CODEX_SCRIPT=$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
 
+# 하나의 메시지에서 여러 Bash를 동시에 호출 (각각 run_in_background=true):
+Bash#1: node "$CODEX_SCRIPT" task --write --cwd .worktrees/task-a "<prompt A>"
+Bash#2: node "$CODEX_SCRIPT" task --write --cwd .worktrees/task-b "<prompt B>"
+
+# 플러그인 미설치 시 fallback:
 Bash#1: codex exec --full-auto --cd .worktrees/task-a "<prompt A>"
 Bash#2: codex exec --full-auto --cd .worktrees/task-b "<prompt B>"
 ```
@@ -199,7 +205,7 @@ git worktree prune
 
 - **Codex 타임아웃**: 해당 작업만 타임아웃으로 표시. 나머지 작업 진행에 영향 없음.
 - **워크트리 생성 실패**: 더티 상태 확인 후 사용자에게 보고.
-- **codex CLI 미설치**: `npm i -g @openai/codex` 안내.
+- **Codex 런타임 미설치**: 플러그인 경로와 `codex` CLI 모두 없으면 `/codex:setup` 안내.
 - **부분 실패**: 성공한 작업과 실패한 작업을 분리하여 보고.
 
 ## Session Resumption

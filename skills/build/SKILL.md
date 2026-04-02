@@ -93,13 +93,15 @@ and re-present. The user may also request the full raw prompt.
 
 ### Step 4: Execute
 
-Invoke Codex with the approved prompt:
+Invoke Codex with the approved prompt via the Codex plugin runtime:
 
 ```bash
-codex exec --full-auto "<approved prompt>"
+CODEX_SCRIPT=$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
+node "$CODEX_SCRIPT" task --write "<approved prompt>"
 ```
 
-If `codex` CLI is not available, suggest installing it via `npm i -g @openai/codex`.
+If the script is not found, fall back to `codex exec --full-auto "<approved prompt>"`.
+If neither is available, suggest `/codex:setup`.
 
 ### Step 5: Review
 
