@@ -96,27 +96,23 @@ git worktree add .worktrees/<task-name> -b parallel/<task-name>
 
 ### Step 5: 병렬 실행
 
-승인 후 각 워크트리에서 Codex를 백그라운드로 실행:
+승인 후 Bash 도구의 `run_in_background=true`를 사용하여 모든 작업을 동시에
+디스패치한다. 각 Bash 호출은 독립적으로 백그라운드 실행되며, 완료 시 Claude에
+자동 알림이 온다.
 
-```bash
-codex exec --full-auto --cd .worktrees/<task-name> "<approved prompt>"
+```
+# 하나의 메시지에서 여러 Bash를 동시에 호출 (각각 run_in_background=true):
+
+Bash#1: codex exec --full-auto --cd .worktrees/task-a "<prompt A>"
+Bash#2: codex exec --full-auto --cd .worktrees/task-b "<prompt B>"
 ```
 
-모든 작업을 동시에 디스패치한다.
+각 Codex 인스턴스는 자신의 워크트리에서 독립 실행된다.
+완료 알림이 오면 해당 작업의 결과를 수집한다.
 
-### Step 6: 상태 모니터링
+### Step 6: 결과 수집 + 보고
 
-주기적으로 각 작업의 상태를 확인:
-
-```bash
-codex exec --cd .worktrees/<task-name> "현재 작업 상태를 확인하라"
-```
-
-진행 상황을 사용자에게 보고한다.
-
-### Step 7: 결과 수집 + 보고
-
-모든 작업 완료 후 결과를 수집:
+각 작업 완료 알림이 오면 결과를 수집한다:
 
 ```bash
 git -C .worktrees/<task-name> diff main --stat
