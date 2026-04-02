@@ -37,7 +37,6 @@ Build 시작 시 Skill 도구로 아래 플러그인 스킬을 로드한다:
 2. `codex:codex-cli-runtime` — Codex 호출 명령어, 플래그, 실행 규칙
 
 로드된 스킬이 제공하는 호출 계약과 프롬프트 규칙을 따른다.
-로드 실패 시 `${SKILL_DIR}/references/codex-prompt-template.md`를 fallback.
 
 ## Build Loop (Per Phase)
 

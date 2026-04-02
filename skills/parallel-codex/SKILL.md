@@ -31,7 +31,7 @@ Codex가 각 워크트리에서 **구현 + 리뷰**를 독립적으로 수행.
 1. `codex:gpt-5-4-prompting` — 프롬프트 구조, XML 블록 규칙
 2. `codex:codex-cli-runtime` — Codex 호출 명령어, 플래그, 실행 규칙
 
-로드 실패 시 `${SKILL_DIR}/references/worker-prompt-template.md`를 fallback.
+로드된 스킬이 제공하는 호출 계약과 프롬프트 규칙을 따른다.
 
 ## Workflow
 
@@ -45,8 +45,6 @@ Skill 도구로 Codex plugin skills를 로드한다 (세션당 1회).
 - **이름**: 짧은 식별자
 - **설명**: 무엇을 해야 하는지
 - **관련 파일**: 주로 수정할 파일/디렉토리
-
-작업은 사용자가 직접 나열하거나, BRIEF.md의 Phases에서 가져올 수 있다.
 
 ### Step 2: 의존 분석
 
