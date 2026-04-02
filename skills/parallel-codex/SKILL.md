@@ -24,7 +24,20 @@ Codex가 각 워크트리에서 **구현 + 리뷰**를 독립적으로 수행.
 5. Codex 실행 실패 시 해당 작업만 실패로 표시. 다른 작업에 영향 없음.
 6. 모든 작업 완료 후 결과 요약을 제시하고 멈춘다. 자동 머지하지 않는다.
 
+## Codex Plugin Skills (첫 실행 시 로드)
+
+시작 시 아래 Codex 플러그인 스킬을 Skill 도구로 로드한다. 세션당 한 번.
+
+1. `codex:gpt-5-4-prompting` — GPT-5.4 프롬프트 구조, XML 블록 규칙
+2. `codex:codex-cli-runtime` — Codex 호출 명령어, 플래그, 실행 규칙
+
+로드 실패 시 `${SKILL_DIR}/references/worker-prompt-template.md`를 fallback으로 사용.
+
 ## Workflow
+
+### Step 0: Bootstrap
+
+Codex plugin skills를 로드한다 (세션당 1회).
 
 ### Step 1: 작업 수집
 
@@ -92,7 +105,8 @@ git worktree add .worktrees/<task-name> -b parallel/<task-name>
 [3] 작업 구성 변경
 ```
 
-프롬프트는 `skills/parallel-codex/references/worker-prompt-template.md` 참조.
+프롬프트는 `codex:gpt-5-4-prompting`의 XML 블록 규칙과
+`${SKILL_DIR}/references/worker-prompt-template.md`의 변수 구조를 결합한다.
 
 ### Step 5: 병렬 실행
 
@@ -100,11 +114,17 @@ git worktree add .worktrees/<task-name> -b parallel/<task-name>
 디스패치한다. 각 Bash 호출은 독립적으로 백그라운드 실행되며, 완료 시 Claude에
 자동 알림이 온다.
 
-```bash
-# 먼저 Codex 플러그인 런타임 경로를 확인:
-CODEX_SCRIPT=$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
+`codex:codex-cli-runtime`이 제공하는 호출 계약에 따라 실행한다.
 
+```bash
 # 하나의 메시지에서 여러 Bash를 동시에 호출 (각각 run_in_background=true):
+
+# 1순위: 플러그인 런타임 (CLAUDE_PLUGIN_ROOT가 있을 때)
+Bash#1: node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task --write --cwd .worktrees/task-a "<prompt A>"
+Bash#2: node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task --write --cwd .worktrees/task-b "<prompt B>"
+
+# 2순위: 동적 탐색 (CLAUDE_PLUGIN_ROOT가 없을 때)
+CODEX_SCRIPT=$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
 Bash#1: node "$CODEX_SCRIPT" task --write --cwd .worktrees/task-a "<prompt A>"
 Bash#2: node "$CODEX_SCRIPT" task --write --cwd .worktrees/task-b "<prompt B>"
 

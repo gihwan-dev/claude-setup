@@ -29,13 +29,25 @@ writes code, runs tests, produces phase reports.
 8. Session resumption: read `BRIEF.md` Status + Log + all existing
    `PHASE_REPORT_*.md` files, then continue.
 
+## Codex Plugin Skills (첫 실행 시 로드)
+
+Build 시작 시 아래 Codex 플러그인 스킬을 Skill 도구로 로드하여 Codex 호출
+계약과 프롬프트 작성 가이드를 확보한다. 세션당 한 번만 로드하면 된다.
+
+1. `codex:gpt-5-4-prompting` — GPT-5.4 프롬프트 구조, XML 블록 규칙, 레시피
+2. `codex:codex-cli-runtime` — Codex 호출 명령어, 플래그, 실행 규칙
+
+이 스킬들이 제공하는 호출 계약과 프롬프트 규칙을 따른다.
+스킬 로드 실패 시 `${SKILL_DIR}/references/codex-prompt-template.md`를 fallback으로 사용.
+
 ## Build Loop (Per Phase)
 
 ```
+0. Bootstrap   — Codex plugin skills 로드 (세션당 1회)
 1. Read        — BRIEF.md + previous PHASE_REPORT_*.md
-2. Craft       — Draft Codex prompt using template
+2. Craft       — Draft Codex prompt using template + plugin guidance
 3. Communicate — Present prompt to user, iterate until approved
-4. Execute     — Invoke Codex
+4. Execute     — Invoke Codex via plugin runtime
 5. Review      — Read Codex output + PHASE_REPORT
 6. Update      — Update BRIEF.md Status + Log
 7. Checkpoint  — Ask whether to continue to next phase
@@ -49,8 +61,8 @@ writes code, runs tests, produces phase reports.
 
 ### Step 2: Craft
 
-Build the Codex prompt using the template at
-`skills/build/references/codex-prompt-template.md`.
+Build the Codex prompt using `codex:gpt-5-4-prompting`의 XML 블록 규칙과
+`${SKILL_DIR}/references/codex-prompt-template.md`의 변수 구조를 결합한다.
 
 Fill variables:
 - `PHASE_PURPOSE` ← BRIEF Phase "Purpose"
@@ -93,15 +105,21 @@ and re-present. The user may also request the full raw prompt.
 
 ### Step 4: Execute
 
-Invoke Codex with the approved prompt via the Codex plugin runtime:
+Invoke Codex via `codex:codex-cli-runtime`이 제공하는 호출 계약에 따른다.
+기본 명령어:
+
+```bash
+node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task --write "<approved prompt>"
+```
+
+`CLAUDE_PLUGIN_ROOT`가 없으면 동적 탐색:
 
 ```bash
 CODEX_SCRIPT=$(ls -d ~/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs 2>/dev/null | sort -V | tail -1)
 node "$CODEX_SCRIPT" task --write "<approved prompt>"
 ```
 
-If the script is not found, fall back to `codex exec --full-auto "<approved prompt>"`.
-If neither is available, suggest `/codex:setup`.
+둘 다 실패하면 `codex exec --full-auto` fallback. 전부 없으면 `/codex:setup` 안내.
 
 ### Step 5: Review
 
