@@ -34,9 +34,12 @@ ${DONE_CRITERIA}
 
 <verification_loop>
 완료 전 반드시:
-- 실행: ${VERIFICATION_COMMANDS}
+- 포매팅 실행: 프로젝트의 포매터(prettier, biome 등)를 실행하여 변경 파일 포매팅
+- 린트 실행: 프로젝트의 린터(eslint, biome 등)를 실행하여 변경 파일 검증. 에러가 있으면 수정
+- 검증 실행: ${VERIFICATION_COMMANDS}
 - 모든 완료 기준 충족 여부 확인
-- 검증 실패 시 수정 후 재검증. 최대 3회 반복
+- 포매팅, 린트, 검증 중 하나라도 실패하면 수정 후 재검증. 최대 3회 반복
+- 최종 제출 전 lint/format이 clean 상태여야 한다
 </verification_loop>
 
 <action_safety>
