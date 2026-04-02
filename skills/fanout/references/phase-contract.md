@@ -1,155 +1,100 @@
-# Phase Contract
+# Multi-Agent Wave Contract
 
-Data contracts and execution rules for each phase of the fanout pipeline.
+Use this contract when executing helper-based milestones from `BRIEF.md`.
 
-## Phase 1: Read Fan-out
+## Wave 1: Discovery (Read)
 
-### Execution
+### Purpose
 
-1. Filter `phase=read` rows from `work-items.csv`
-2. Resolve `depends_on` — rows without dependencies dispatch first
-3. Dispatch up to `max_helpers_per_fanout` agents in parallel
-4. If more rows than budget, batch: dispatch batch 1, wait, dispatch batch 2
-5. Write each agent's result to its `output_ref` path
+Contain uncertainty and avoid context pollution by assigning narrow scopes to
+parallel read helpers.
 
-### Agent Return Shape
+### Required Inputs
 
-Read agents return this shape. If unable, report `blocked` with a reason.
+- lane name
+- bounded scope (paths/questions)
+- expected output
+
+### Return Shape
 
 ```markdown
 ## Summary
-{Short paragraph of key findings}
+<key findings>
 
 ## Evidence
-- {file_path}:{line} — {what was found}
-- ...
+- <path:line> — <finding>
 
-## Target Paths
-- {paths relevant to the write phase}
+## Unknowns
+- <open question>
 
 ## Confidence
-{high / medium / low}
+<high|medium|low>
 ```
 
-### Result Handling
+## Wave 2: Implementation (Build)
 
-| Agent Signal | Action |
-|---|---|
-| confidence: high | Write findings to `output_ref`, mark `success` |
-| confidence: medium | Write findings, mark `success`, flag for user awareness |
-| confidence: low | Write findings, mark `success` with caveat in output |
-| blocked | Mark `failed`, retry once with narrower scope |
-| timeout | Mark `failed`, retry once |
+### Purpose
 
-## Phase 2: Write Lane
+Execute bounded slices independently so long-running tasks can progress without
+one giant, decaying context window.
 
-### Execution
+### Required Inputs
 
-1. Filter `phase=write` rows, sort by topological order of `depends_on`
-2. For each row sequentially:
-   a. Read all `output_ref` files from `depends_on` rows
-   b. Execute the `instruction` — the main agent performs all edits
-   c. Record changes made in `output_ref`
-   d. Update `status`
+- slice scope (what this worker may change)
+- acceptance criteria
+- dependencies from prior wave outputs
 
-### Write Output Shape
-
-After each write, record in `output_ref`:
+### Return Shape
 
 ```markdown
 ## Changes
-- {file_path}: {what changed}
-- ...
+- <file>: <what changed>
 
 ## Decisions
-- {decision made and why, informed by read findings}
+- <decision + rationale>
+
+## Risks
+- <known risk or "none">
 
 ## Status
-{success / failed}
-
-## Error (if failed)
-{error description}
+<success|failed|blocked>
 ```
 
-### Dependency Resolution
+## Wave 3: Independent Review
 
-- A write row cannot start until all rows in its `depends_on` are `success`
-- If a dependency is `failed` or `skipped`, the dependent write is also
-  `skipped` unless the dependency is optional (noted in `acceptance`)
+### Purpose
 
-## Phase 3: Review Fan-out
+Counter author bias with reviewer helpers that did not implement the slice.
 
-### Execution
+### Required Inputs
 
-1. Filter `phase=review` rows from `work-items.csv`
-2. Dispatch review agents in parallel, up to `max_helpers_per_fanout`
-3. Each agent reviews the files modified in Phase 2
-4. Write results to `output_ref`
+- reviewed scope
+- review focus (correctness/tests/architecture/types)
+- acceptance criteria
 
-### Agent Return Shape
-
-Review agents return this shape:
+### Return Shape
 
 ```markdown
 ## Findings
-- [{severity}] {file_path}:{line} — {finding description}
-  Tag: {correctness / test-gap / maintainability}
-- ...
+- [<critical|major|minor|info>] <path:line> — <finding>
 
 ## Summary
-{Short paragraph of key observations}
+<overall quality + risk>
 
 ## Confidence
-{high / medium / low}
+<high|medium|low>
 ```
-
-### Severity Levels
-
-- **critical** — blocks completion; must fix before proceeding
-- **major** — should fix; quality or correctness risk
-- **minor** — nice to fix; style or minor improvement
-- **info** — observation only
-
-### Result Handling
-
-| Review Signal | Action |
-|---|---|
-| No critical findings | Mark `success`, report summary |
-| Critical findings | Mark `success` (review itself passed), surface findings to user |
-| blocked | Mark `failed`, note gap in synthesis |
 
 ## Failure Recovery
 
-### Per-Row Recovery
+1. Retry once with narrower scope and explicit error context.
+2. On second failure, mark lane `blocked` and report why.
+3. If multiple lanes block and progress is unclear, stop and replan with user.
 
-1. On first failure, retry once:
-   - Append `[RETRY] Previous error: {error}` to the instruction
-   - Narrow the scope if the error suggests the task was too broad
-2. On second failure, mark `skipped` and continue
+## Stop/Replan Triggers
 
-### Phase-Level Stop Conditions
+- Discovery invalidates core assumptions
+- Integration conflicts erase slice boundaries
+- Review reports unresolved critical findings
 
-- If success rate within a phase drops below 50%, stop the pipeline
-- Report which rows failed and their errors
-- Suggest the user re-scope or simplify the decomposition
-
-### Budget Exhaustion
-
-- Track fanout count against `max_total_fanouts_per_session`
-- Each Phase 1 and Phase 3 dispatch counts as one fanout
-- If budget exhausted, report `blocked` and suggest continuing in a new session
-
-## Cross-Phase Data Flow
-
-```
-Phase 1 (Read)
-  └─ output_ref files ─→ Phase 2 reads these before writing
-                            │
-Phase 2 (Write)             │
-  └─ output_ref files ─→ Phase 3 reads these to know what changed
-                            │
-Phase 3 (Review)            │
-  └─ output_ref files ─→ Synthesis reads all for final report
-```
-
-Each phase only reads output from prior phases. No backward data flow.
+When triggered, pause and present a revised helper plan for approval.

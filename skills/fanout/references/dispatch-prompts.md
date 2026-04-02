@@ -1,114 +1,107 @@
-# Dispatch Prompts
+# Helper Dispatch Prompts
 
-Prompt templates for sub-agents dispatched in Phase 1 (Read) and Phase 3
-(Review). The main agent fills placeholders from `work-items.csv` columns.
+Prompt templates for scoped discovery, bounded implementation, and independent
+review lanes.
 
-## Dispatch Prompt Contract
+## Core Contract
 
-Each sub-agent prompt contains exactly these items and nothing else:
+Each helper prompt must contain only:
 
-1. **Task target** — `target_paths` + `instruction` from the CSV row
-2. **Scope boundary** — what is in scope and out of scope for this agent
-3. **Return shape** — the expected output format from `phase-contract.md`
+1. Task objective
+2. Scope boundary (in/out)
+3. Expected return shape
 
-Do not include: references to SKILL.md, orchestration rules, budget info,
-other rows' data, or pipeline state.
+Never include orchestration internals, budget metadata, or unrelated lanes.
 
-## Phase 1: Read Agent Prompt
+## Discovery Helper Prompt
 
 ```markdown
-## Task
-
-{instruction}
-
-## Target
-
-Explore these paths:
-{target_paths}
+## Objective
+<objective>
 
 ## Scope
+In scope:
+- <paths/questions>
 
-- In scope: files and patterns within the target paths relevant to the task
-- Out of scope: files outside target paths, code modifications, unrelated modules
+Out of scope:
+- code edits
+- unrelated modules
 
 ## Return Shape
-
-Return your findings in this exact format:
-
 ### Summary
-{Short paragraph of key findings}
+<key findings>
 
 ### Evidence
-- {file_path}:{line} — {what was found}
+- <path:line> — <finding>
 
-### Target Paths
-- {paths relevant to downstream work}
+### Unknowns
+- <open question>
 
 ### Confidence
-{high / medium / low}
+<high|medium|low>
 ```
 
-## Phase 3: Review Agent Prompt
+## Implementation Helper Prompt
 
 ```markdown
-## Task
-
-{instruction}
-
-## Target
-
-Review these paths for changes made during implementation:
-{target_paths}
+## Objective
+<implementation slice objective>
 
 ## Scope
+In scope:
+- <bounded files and change intent>
 
-- In scope: verify correctness, completeness, and quality of recent changes
-- Out of scope: pre-existing issues unrelated to the current changes, code modifications
+Out of scope:
+- files outside slice
+- unrelated refactors
 
-## Acceptance Criteria
-
-{acceptance}
+## Acceptance
+- <done criteria>
 
 ## Return Shape
+### Changes
+- <file>: <what changed>
 
-Return your findings in this exact format:
+### Decisions
+- <decision + rationale>
 
-### Findings
-- [{severity}] {file_path}:{line} — {description}
-  Tag: {correctness / test-gap / maintainability}
+### Risks
+- <risk or "none">
 
-### Summary
-{Short paragraph of observations}
-
-### Confidence
-{high / medium / low}
+### Status
+<success|failed|blocked>
 ```
 
-## Placeholder Rules
+## Review Helper Prompt
 
-- `{instruction}` — from the `instruction` column of the CSV row
-- `{target_paths}` — from the `target_paths` column, formatted as a list
-- `{acceptance}` — from the `acceptance` column; omit the section if empty
-- Referencing a missing column resolves to an empty string
+```markdown
+## Objective
+<review objective>
 
-## Agent Type Selection Guide
+## Scope
+In scope:
+- <files/concerns>
 
-### Phase 1 (Read) Agent Types
+Out of scope:
+- unrelated legacy issues
+- code edits
 
-| Situation | Recommended agent |
-|-----------|-------------------|
-| Codebase structure and patterns | `explorer` |
-| External documentation or APIs | `web-researcher` |
-| Type contracts and interfaces | `type-specialist` |
-| Architecture and boundaries | `architecture-reviewer` |
+## Focus
+<correctness|tests|architecture|types>
 
-### Phase 3 (Review) Agent Types
+## Return Shape
+### Findings
+- [<critical|major|minor|info>] <path:line> — <finding>
 
-| Situation | Recommended agent |
-|-----------|-------------------|
-| General correctness verification | `verification-worker` |
-| Test coverage and quality | `test-engineer` |
-| Structural complexity | `structure-reviewer` |
-| Type safety | `type-specialist` |
-| React state correctness | `react-state-reviewer` |
-| Visual regression | `browser-explorer` |
+### Summary
+<overall quality assessment>
+
+### Confidence
+<high|medium|low>
+```
+
+## Lane Design Guidance
+
+- Split by risk boundary, not just by file count.
+- Prefer narrow scopes with clear acceptance over broad generic prompts.
+- Use separate reviewers when correctness risk is high.

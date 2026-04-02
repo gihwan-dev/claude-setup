@@ -1,9 +1,9 @@
 interface:
   display_name: "Build"
-  short_description: "Execute the next milestone from BRIEF.md — implement, verify, update status"
+  short_description: "Orchestrate Codex execution of phases from BRIEF.md — prompt crafting, user approval, Codex delegation"
   default_prompt: >-
-    $build reads `tasks/<slug>/BRIEF.md`, picks the next milestone, implements
-    code changes, runs verification, and updates the Status and Log sections.
-    One milestone per invocation unless told to continue.
+    $build reads `tasks/<slug>/BRIEF.md` and previous phase reports, crafts
+    a Codex prompt for the next phase, presents it to the user for approval,
+    then delegates implementation to Codex. Claude never writes code directly.
 policy:
   allow_implicit_invocation: false

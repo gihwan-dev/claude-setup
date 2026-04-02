@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "build",
-      "description": "Execute the next milestone from an approved BRIEF.md. Invoke when the user writes \"build\" or \"$build\". Reads the brief, picks the next milestone, implements code changes, runs verification, and updates Status/Log. Do not use without an existing BRIEF.md — run plan first.",
+      "description": "Execute approved phases from BRIEF.md by orchestrating Codex. Invoke when the user writes \"build\" or \"$build\". Claude designs prompts and orchestrates; Codex implements, reviews, and fixes code. Claude never writes code directly.",
       "path": "skills/build/SKILL.md"
     },
     {
@@ -49,7 +49,7 @@
     },
     {
       "name": "fanout",
-      "description": "General-purpose 3-phase parallel execution primitive (Read → Write → Review). Decomposes a task into work items via CSV, fans out read agents in parallel, executes writes sequentially, then fans out review agents in parallel. Invoke with \"$fanout\". Do not use for single-file changes or tasks that don't benefit from decomposition.",
+      "description": "Compatibility entrypoint for multi-agent orchestration. Fanout no longer uses CSV pipelines. Instead, it routes to plan/build workflows that use sub-agents for scoped discovery, isolated implementation slices, and independent review. Invoke with \"$fanout\" when you want helper-driven execution.",
       "path": "skills/fanout/SKILL.md"
     },
     {
@@ -114,7 +114,7 @@
     },
     {
       "name": "plan",
-      "description": "Read-only task planning skill. Invoke when the user writes \"plan\" or \"$plan\". Explores the codebase, clarifies requirements with the user, and produces a single BRIEF.md under tasks/<slug>/. Covers both product scope (what/why) and implementation design (how/milestones). Do not use for code changes or quick fixes that need no planning.",
+      "description": "Read-only planning skill. Invoke when the user writes \"plan\" or \"$plan\". Explores the codebase, clarifies requirements with the user, and produces a single abstract BRIEF.md under tasks/<slug>/. The brief focuses on what and why — not how. Implementation details are left to Codex during build.",
       "path": "skills/plan/SKILL.md"
     },
     {
