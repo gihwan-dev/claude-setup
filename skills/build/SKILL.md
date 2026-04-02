@@ -96,10 +96,10 @@ and re-present. The user may also request the full raw prompt.
 Invoke Codex with the approved prompt:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task --write "<approved prompt>"
+codex exec --full-auto "<approved prompt>"
 ```
 
-If `CLAUDE_PLUGIN_ROOT` is not set, suggest `/codex:setup`.
+If `codex` CLI is not available, suggest installing it via `npm i -g @openai/codex`.
 
 ### Step 5: Review
 

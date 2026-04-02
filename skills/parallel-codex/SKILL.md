@@ -99,11 +99,7 @@ git worktree add .worktrees/<task-name> -b parallel/<task-name>
 승인 후 각 워크트리에서 Codex를 백그라운드로 실행:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task \
-  --cwd .worktrees/<task-name> \
-  --write \
-  --background \
-  "<approved prompt>"
+codex exec --full-auto --cd .worktrees/<task-name> "<approved prompt>"
 ```
 
 모든 작업을 동시에 디스패치한다.
@@ -113,8 +109,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task \
 주기적으로 각 작업의 상태를 확인:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" status \
-  --cwd .worktrees/<task-name>
+codex exec --cd .worktrees/<task-name> "현재 작업 상태를 확인하라"
 ```
 
 진행 상황을 사용자에게 보고한다.
@@ -124,8 +119,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" status \
 모든 작업 완료 후 결과를 수집:
 
 ```bash
-node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" result \
-  --cwd .worktrees/<task-name>
+git -C .worktrees/<task-name> diff main --stat
 ```
 
 최종 결과를 요약하여 제시:
@@ -209,7 +203,7 @@ git worktree prune
 
 - **Codex 타임아웃**: 해당 작업만 타임아웃으로 표시. 나머지 작업 진행에 영향 없음.
 - **워크트리 생성 실패**: 더티 상태 확인 후 사용자에게 보고.
-- **CLAUDE_PLUGIN_ROOT 미설정**: `/codex:setup` 안내.
+- **codex CLI 미설치**: `npm i -g @openai/codex` 안내.
 - **부분 실패**: 성공한 작업과 실패한 작업을 분리하여 보고.
 
 ## Session Resumption
