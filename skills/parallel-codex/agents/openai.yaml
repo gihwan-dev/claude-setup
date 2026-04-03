@@ -1,9 +1,10 @@
 interface:
   display_name: "Parallel Codex"
-  short_description: "Git worktree 기반 Codex 병렬 디스패처 — 독립 작업을 워크트리로 격리하고 Codex 병렬 실행"
+  short_description: "DAG 기반 그룹 순차 + 병렬 파이프라인 — 의존성 분석, 위상 정렬 그룹 배치, Codex 병렬 실행, stage 브랜치 통합, draft MR 일괄 생성"
   default_prompt: >-
-    $parallel-codex는 독립적인 작업들의 의존 그래프를 분석하고, 병렬 가능한
-    작업마다 git worktree를 생성하여 Codex를 병렬 실행한다. 완료 후 결과를
-    요약하고, 머지는 사용자에게 맡긴다.
+    $parallel-codex는 작업 리스트를 의존성 DAG로 분석하여 위상 정렬된 그룹으로
+    배치한다. 각 그룹 내 작업은 git worktree에서 Codex가 병렬 실행하고,
+    그룹 간 전이 시 Codex가 stage 브랜치로 통합 + 검증한다. 완료 후 draft MR을
+    일괄 생성하고 머지 순서 가이드를 제공한다.
 policy:
   allow_implicit_invocation: false
