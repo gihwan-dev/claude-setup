@@ -114,7 +114,7 @@
     },
     {
       "name": "parallel-codex",
-      "description": "DAG 기반 그룹 순차 + 그룹 내 병렬 파이프라인 디스패처. 작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고, 각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다. 그룹 간 전이는 Codex가 stage 브랜치로 통합 + 검증 + 상태 요약. 완료 후 draft MR 일괄 생성 + 머지 순서 가이드 제공. \"$parallel-codex\" 또는 \"병렬 작업\" 요청 시 호출.",
+      "description": "DAG 기반 그룹 순차 + 그룹 내 병렬 파이프라인 디스패처. 작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고, 각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다. 그룹 간 전이는 임시 브랜치(temp/verify-*)로 호환성 검증 + 상태 요약. 그룹별 개별 task MR(→ main) 생성 + 머지 순서 가이드 제공. \"$parallel-codex\" 명시 호출 시 실행한다. \"$parallel-codex resume\"은 이전 그룹 MR 머지 후 다음 그룹 MR을 생성한다. 사용자가 \"병렬 작업\", \"여러 작업 동시에\", \"기능 여러 개 동시 개발\", \"동시에 돌려줘\" 등을 언급하면 `$parallel-codex` 사용을 제안하라. 단일 task나 순차 1개 작업에는 사용하지 않는다 — 일반 Codex 호출이 적합하다.",
       "path": "skills/parallel-codex/SKILL.md"
     },
     {

@@ -87,12 +87,12 @@ ${DONE_CRITERIA}
 | `REFERENCE_CONTEXT` | 이전 그룹 머지 리포트 압축 (있을 경우) | 500토큰 이내 목표 |
 | `TASK_GOAL` | 작업의 구체적 목표 | 행동 가능한 형태 |
 | `DONE_CRITERIA` | 완료 판단 기준 | 체크리스트 형태 |
-| `VERIFICATION_COMMANDS` | 프로젝트의 검증 명령어 | 타입체크, 테스트 등 |
+| `VERIFICATION_COMMANDS` | 프로젝트 전용 테스트 명령 (`npm test`, `pytest` 등) | format/lint/typecheck는 위 `<verification_loop>` 텍스트에서 이미 처리됨. 이 변수에는 추가 테스트 명령만 기입. 없으면 빈 문자열. |
 
 ### REFERENCE_CONTEXT 구성
 
 - **Group A 작업**: 비어 있음 (첫 그룹이므로 이전 컨텍스트 없음)
-- **Group B+ 작업**: 직전 그룹의 머지 리포트에서 다음을 추출:
+- **Group B+ 작업**: 직전 그룹의 검증 리포트에서 다음을 추출:
   1. 변경된 파일 요약
   2. 다음 그룹을 위한 상태 요약
   3. 현재 작업과 관련된 결정 사항
