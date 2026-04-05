@@ -74,9 +74,9 @@ class AgentSyncTests(RepoTestCase):
         self.assertIsInstance(enforcement, str)
         self.assertTrue(enforcement.strip())
 
-    def test_builtin_worker_and_explorer_are_not_projected_to_managed_config(self) -> None:
+    def test_builtin_worker_and_writer_are_not_projected_to_managed_config(self) -> None:
         self.assertNotIn("worker", REQUIRED_HELPER_AGENT_IDS)
-        self.assertNotIn("explorer", REQUIRED_HELPER_AGENT_IDS)
+        self.assertNotIn("writer", REQUIRED_HELPER_AGENT_IDS)
 
         managed_path = REPO_ROOT / "dist" / "codex" / "config.managed-agents.toml"
         payload = tomllib.loads(managed_path.read_text(encoding="utf-8"))
@@ -84,8 +84,7 @@ class AgentSyncTests(RepoTestCase):
         self.assertIsInstance(agents, dict)
 
         self.assertNotIn("worker", agents)
-        self.assertNotIn("explorer", agents)
-        self.assertFalse((REPO_ROOT / "agents" / "explorer.md").exists())
+        self.assertNotIn("writer", agents)
         self.assertFalse((REPO_ROOT / "agents" / "writer.md").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "explorer-worker.toml").exists())
         self.assertFalse((REPO_ROOT / "dist" / "codex" / "agents" / "writer.toml").exists())
