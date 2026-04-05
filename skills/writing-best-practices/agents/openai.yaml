@@ -1,6 +1,0 @@
-interface:
-  display_name: "Writing Best Practices"
-  short_description: "Prose-writing skill for drafting or rewriting text so it reads naturally and clearly"
-  default_prompt: "$writing-best-practices Polish this draft so it reads naturally, clearly, and quickly"
-policy:
-  allow_implicit_invocation: true

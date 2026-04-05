@@ -1,6 +1,0 @@
-interface:
-  display_name: "Refactor Repo Skills"
-  short_description: "Repo-specific execution skill that audits `skills/` and refactors the most verbose SKILL.md files in small batches"
-  default_prompt: "$refactor-repo-skills Audit all of `skills/` with `audit_skills.py`, score structure and verbosity smells, and if the user does not provide a path or name, refactor only the top 1-3 source-of-truth candidates. Do not edit generated files directly; use only `python3 scripts/sync_skills_index.py` and `python3 scripts/sync_skills_index.py --check` for sync. Do not touch `agent-registry` or non-skill repo infrastructure. Keep frontmatter descriptions trigger-focused, keep `SKILL.md` bodies limited to workflow and guardrails, move detailed rules and examples into `references/`, avoid extraneous docs, and summarize audit results with residual risk."
-policy:
-  allow_implicit_invocation: false

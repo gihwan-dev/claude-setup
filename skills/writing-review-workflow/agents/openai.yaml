@@ -1,6 +1,0 @@
-interface:
-  display_name: "Writing Review Workflow"
-  short_description: "Three parallel reviewers inspect a draft before the main agent rewrites the final version"
-  default_prompt: "$writing-review-workflow Review this draft from three parallel perspectives, then return only the final revised version"
-policy:
-  allow_implicit_invocation: true

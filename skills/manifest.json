@@ -8,39 +8,14 @@
       "path": "skills/build/SKILL.md"
     },
     {
-      "name": "clean-code-inspector",
-      "description": "AST-based TS/JS code quality inspection combining quantitative metrics (85%) and qualitative rubric overlay (15%). Generates `clean-code-inspect-result.json` and `.md`. Use when the user asks for \"code review\", \"quality inspection\", \"clean code\", \"inspection\", or \"code analysis\" on TS/JS files. Do not use for non-TS/JS files, runtime debugging, or when the user wants a quick opinion rather than a scored report.",
-      "path": "skills/clean-code-inspector/SKILL.md"
-    },
-    {
-      "name": "code-cleaner",
-      "description": "Remove unused code (dead exports, functions, types, console.log) from changed TS/JS files via git diff analysis. Use for \"unused-code cleanup\", \"dead code\", \"code cleanup\", or post-AI cleanup requests. Do not use on non-TS/JS files, for full-codebase analysis without git changes, or for logic refactoring.",
-      "path": "skills/code-cleaner/SKILL.md"
-    },
-    {
       "name": "commit",
       "description": "Generate conventional commit messages with logical diff splitting. Use when the user asks to commit changes, save work, \"커밋해줘\", or create a conventional commit. Do not use for amending, rebasing, or cherry-picking operations.",
       "path": "skills/commit/SKILL.md"
     },
     {
-      "name": "complexity-refactor",
-      "description": "Refactor high cyclomatic complexity functions into human-readable, maintainable code. Use for \"clean up this complex function\", \"this function is hard to read\", \"reduce cyclomatic complexity\", or \"please refactor this\". Prioritizes logical reconstruction and readability over simple extraction or raw performance. Do not use for cosmetic formatting, renaming, or moving code between files.",
-      "path": "skills/complexity-refactor/SKILL.md"
-    },
-    {
-      "name": "component-screenshot",
-      "description": "Capture component screenshots from Storybook stories. Use when you need to capture component screenshots, such as \"/screenshot\" or \"capture a screenshot\". Do not use when Storybook is not configured or for full-page screenshots outside Storybook.",
-      "path": "skills/component-screenshot/SKILL.md"
-    },
-    {
       "name": "create-mr",
       "description": "Create a merge request (or pull request) with change-type analysis and project MR/PR template adherence. Use when the user asks to create an MR/PR, says \"MR 만들어줘\", \"create-mr\", \"$create-mr\", or \"PR 생성해줘\". Do not use for amending existing MRs, reviewing code, or committing changes.",
       "path": "skills/create-mr/SKILL.md"
-    },
-    {
-      "name": "design-check",
-      "description": "Automated design verification comparing Figma designs vs implemented components with pixel-diff reports. Requires: component-screenshot skill. Use for \"/design-check\", \"run design verification\", or Figma vs implementation comparison. Do not use when Figma URL is unavailable or Storybook is not configured.",
-      "path": "skills/design-check/SKILL.md"
     },
     {
       "name": "dev-socratic-design",
@@ -53,24 +28,9 @@
       "path": "skills/fanout/SKILL.md"
     },
     {
-      "name": "figma-codex-pipeline",
-      "description": "Page-level Figma-to-Code pipeline using Codex spawn_agents_on_csv. Decomposes a Figma page into semantic units, generates code for each component in parallel, then integrates and verifies the result. Use for page-level Figma work with multiple components. Do not use for single-component work (use figma-to-code instead).",
-      "path": "skills/figma-codex-pipeline/SKILL.md"
-    },
-    {
-      "name": "figma-design-pipeline",
-      "description": "End-to-end Figma-to-code pipeline: converts Figma design to React code then verifies against the original design. Requires: figma-to-code, design-check skills. Use for \"/figma-pipeline\" or full single-component Figma implementation with verification. Do not use for page-level work (use figma-codex-pipeline instead).",
-      "path": "skills/figma-design-pipeline/SKILL.md"
-    },
-    {
       "name": "figma-less-ui-design",
       "description": "Advisory skill for no-Figma MVP/prototype UI planning. Use when plan identifies UI work and the team needs UX planning docs without Figma. Produces UX_SPEC.md and UX_BEHAVIOR_ACCESSIBILITY.md. Falls back to reuse+delta when an existing design system or Figma exists. Do not invoke standalone outside of a plan context.",
       "path": "skills/figma-less-ui-design/SKILL.md"
-    },
-    {
-      "name": "figma-to-code",
-      "description": "Generate React component code from a Figma URL and target file path. Collects design data, reads local project patterns and token rules, and produces React code. Use for single-component Figma-to-code conversion. Do not use for page-level work (use figma-codex-pipeline instead) or when no Figma URL is provided.",
-      "path": "skills/figma-to-code/SKILL.md"
     },
     {
       "name": "fresh-loop",
@@ -131,36 +91,6 @@
       "name": "pm-spec-from-code",
       "description": "Convert implemented code into a PM-style spec focused on user-visible behavior and rules. Use when the user wants a feature spec derived from code, with behaviors, rules, constraints, exceptions, and non-goals in product language. Do not use for API documentation, code comments, or architecture documentation.",
       "path": "skills/pm-spec-from-code/SKILL.md"
-    },
-    {
-      "name": "refactor-repo-skills",
-      "description": "Refactor verbose local skills by auditing SKILL.md files, scoring verbosity and structure smells, then rewriting the top 1-3 candidates. Scope is skills/ and generated index sync only. Do not use for agent-registry, non-skill infrastructure, or when skills are already concise and well-structured.",
-      "path": "skills/refactor-repo-skills/SKILL.md"
-    },
-    {
-      "name": "reference-pack",
-      "description": "Advisory skill for task-local UI reference collection and curation. Use inside plan whenever the task involves UI work to search, shortlist, save, and document references under DESIGN_REFERENCES/. Do not invoke standalone outside of a plan context.",
-      "path": "skills/reference-pack/SKILL.md"
-    },
-    {
-      "name": "story-generator",
-      "description": "Auto-generate Storybook story files for component screenshot comparison. Use for \"/story-gen\", \"generate a Story\", or when Story files are needed before screenshot capture. Do not use when Story files already exist or Storybook is not configured.",
-      "path": "skills/story-generator/SKILL.md"
-    },
-    {
-      "name": "test",
-      "description": "Write reliable test code (unit/browser/integration) focusing on failure detection over coverage metrics. Use for \"write tests\", \"browser test\", \"unit test\", \"table test\", or \"테스트 작성해줘\". Do not use for running existing tests, debugging test failures, or generating mocks without test logic.",
-      "path": "skills/test/SKILL.md"
-    },
-    {
-      "name": "writing-best-practices",
-      "description": "Write or rewrite prose so it reads naturally, clearly, and quickly. Use when the user wants a draft polished, new prose written, or text improved by removing stiffness, translation tone, filler, and cliches. Do not use for code comments, commit messages, or structured technical documentation.",
-      "path": "skills/writing-best-practices/SKILL.md"
-    },
-    {
-      "name": "writing-review-workflow",
-      "description": "Review an existing draft with three parallel read-only reviewers, then rewrite it into a stronger final version. Use when the user wants structure, reader experience, and accuracy reviewed separately before producing the final rewrite. Do not use for new writing from scratch (use writing-best-practices instead) or for code review.",
-      "path": "skills/writing-review-workflow/SKILL.md"
     }
   ]
 }
