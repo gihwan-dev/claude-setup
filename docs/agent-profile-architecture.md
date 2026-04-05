@@ -16,7 +16,7 @@ Repo-root `AGENTS.md` carries global main-thread behavior such as manager-lane r
 
 - Purpose: define when helpers are invoked, how they are combined, and which execution boundaries apply.
 - Contents: helper selection, fan-out boundaries, review trigger, budget, termination
-- Location: `AGENTS.md`, `policy/workflow.toml`, repo-maintenance helpers such as `scripts/workflow_contract.py`, installable runtime helpers under `skills/_shared/scripts`, `skills/multi-work`, `skills/multi-review`
+- Location: `AGENTS.md`, `policy/workflow.toml`, repo-maintenance helpers such as `scripts/workflow_contract.py`
 
 ### Task Contract
 

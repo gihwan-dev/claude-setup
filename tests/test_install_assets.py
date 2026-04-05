@@ -14,7 +14,6 @@ from support import REPO_ROOT, RepoTestCase
 from install_assets import (
     _install_internal_skill_assets,
     _install_skill_sources,
-    _iter_internal_skill_asset_dirs,
     _iter_installable_skill_dirs,
     _remove_managed_agent_sections,
     install_path,
@@ -97,20 +96,6 @@ class InstallAssetsTests(RepoTestCase):
         self.assertEqual(mode, "link")
         self.assertEqual(stdout.getvalue(), "")
 
-    def test_repo_shared_assets_are_internal_only(self) -> None:
-        manifest_payload = json.loads(
-            (REPO_ROOT / "skills" / "manifest.json").read_text(encoding="utf-8")
-        )
-        manifest_names = {entry["name"] for entry in manifest_payload["skills"]}
-        generated_names = expected_generated_skill_names(REPO_ROOT / "skills")
-        internal_asset_names = {
-            path.name for path in _iter_internal_skill_asset_dirs(REPO_ROOT / "skills")
-        }
-
-        self.assertIn("_shared", internal_asset_names)
-        self.assertNotIn("_shared", manifest_names)
-        self.assertNotIn("_shared", generated_names)
-
     def test_install_assets_dry_run_with_temp_homes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -149,7 +134,6 @@ class InstallAssetsTests(RepoTestCase):
             )
             self.assertIn("skill source:", completed.stdout)
             self.assertNotIn(str(codex_home / "AGENTS.md"), completed.stdout)
-            self.assertIn("internal skill asset:", completed.stdout)
 
     def test_codex_managed_block_contains_required_helpers(self) -> None:
         # managed config를 실제 파일로 사용해 업데이트 결과에 필수 helper가 포함되는지 확인
@@ -470,30 +454,6 @@ class InstallAssetsTests(RepoTestCase):
             )
 
             self.assertTrue((destination / "_shared" / "storybook-screenshot-guidelines.md").exists())
-
-    def test_multi_review_installs_shared_hotspot_classifier(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            destination = Path(tmpdir) / "skills"
-
-            _install_skill_sources(
-                skills_src=REPO_ROOT / "skills",
-                destination=destination,
-                mode="copy",
-                dry_run=False,
-            )
-            _install_internal_skill_assets(
-                canonical_skills_src=REPO_ROOT / "skills",
-                destination=destination,
-                mode="copy",
-                dry_run=False,
-            )
-
-            classifier_path = destination / "_shared" / "scripts" / "review_hotspots.py"
-            multi_review_text = (destination / "multi-review" / "SKILL.md").read_text(encoding="utf-8")
-
-            self.assertTrue(classifier_path.exists(), msg=f"missing installed classifier: {classifier_path}")
-            self.assertIn("../_shared/scripts/review_hotspots.py", multi_review_text)
-            self.assertNotIn("scripts/workflow_contract.py", multi_review_text)
 
     def test_install_path_copy_replaces_broken_symlink(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

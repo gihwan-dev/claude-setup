@@ -1,6 +1,0 @@
-interface:
-  display_name: "Frontend UI State Decomposer"
-  short_description: "Break vague frontend requirements into a UI state model and transition plan"
-  default_prompt: "$frontend-ui-state-decomposer Organize this requirement into a UI state model, event transitions, component boundaries, and a test checklist"
-policy:
-  allow_implicit_invocation: false

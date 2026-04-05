@@ -1,9 +1,0 @@
-interface:
-  display_name: "Fanout"
-  short_description: "3-phase parallel execution — Read fan-out, sequential Write, Review fan-out"
-  default_prompt: >-
-    $fanout decomposes a task into work items (CSV), fans out read agents in
-    parallel, executes writes sequentially, then fans out review agents in
-    parallel. Respects workflow.toml budget limits.
-policy:
-  allow_implicit_invocation: false

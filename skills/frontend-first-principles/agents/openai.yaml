@@ -1,6 +1,0 @@
-interface:
-  display_name: "Frontend First Principles"
-  short_description: "Validate frontend requirements and solution tradeoffs before implementation"
-  default_prompt: "$frontend-first-principles Analyze whether this frontend approach is right before implementation using first-principles reasoning"
-policy:
-  allow_implicit_invocation: false

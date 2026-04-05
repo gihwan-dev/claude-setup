@@ -1,8 +1,0 @@
-interface:
-  display_name: "Multi Review"
-  short_description: "Multi-agent review entry for the current diff or a selected target"
-  default_prompt: >
-    $multi-review — execute a multi-agent code review per SKILL.md.
-    Default target: current worktree diff vs HEAD.
-policy:
-  allow_implicit_invocation: false
