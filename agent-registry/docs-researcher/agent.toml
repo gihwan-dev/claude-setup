@@ -1,7 +1,7 @@
 id = "docs-researcher"
 role = "researcher"
 description = "Read-only research agent that finds and summarizes relevant documentation, code patterns, and domain context for design sessions."
-source = "dev-socratic-design"
+source = "design-docs"
 
 [projection]
 repo = true

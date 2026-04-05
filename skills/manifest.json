@@ -18,9 +18,9 @@
       "path": "skills/create-mr/SKILL.md"
     },
     {
-      "name": "dev-socratic-design",
-      "description": "Socratic questioning-driven design skill that completes architecture design, bugfix strategy, refactoring plan, or feature design before implementation. Invoke only when the user explicitly writes \"dev-socratic-design\", \"$dev-socratic-design\", or asks for deep design discussion, alternative comparison, adversarial review, or pre-implementation planning. Do not use for quick fixes, simple tasks, direct code generation, or when the user wants immediate implementation.",
-      "path": "skills/dev-socratic-design/SKILL.md"
+      "name": "design-docs",
+      "description": "Document bundle orchestrator that selects a minimum-sufficient set of design docs (PRD, UX flow, architecture, ADR, etc.) based on task risk signals, drafts them with inline question tags, and refines them to implementation-ready through subagent dispatch. Invoke only when the user explicitly writes \"design-docs\", \"$design-docs\", or asks to plan/flesh-out/refine a design bundle for a task before implementation. Do not use for single-decision discussions, code generation, or direct implementation.",
+      "path": "skills/design-docs/SKILL.md"
     },
     {
       "name": "fresh-loop",

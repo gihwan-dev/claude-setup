@@ -1,7 +1,7 @@
 id = "design-evaluator"
 role = "reviewer"
 description = "Rubric-based design quality evaluator that scores design sessions against defined criteria and identifies gaps to resolve."
-source = "dev-socratic-design"
+source = "design-docs"
 
 [projection]
 repo = true

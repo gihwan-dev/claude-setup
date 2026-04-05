@@ -1,7 +1,7 @@
 id = "socratic-partner"
 role = "design-partner"
 description = "Deep design dialogue partner for Socratic questioning sessions. Responds with structured 5-part answers and never agrees without evidence."
-source = "dev-socratic-design"
+source = "design-docs"
 
 [projection]
 repo = true

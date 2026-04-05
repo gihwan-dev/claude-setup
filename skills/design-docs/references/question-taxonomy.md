@@ -1,6 +1,9 @@
 # Question Taxonomy
 
-Every question in the session must be tagged with one of these types. The type determines the question's purpose and the expected response pattern.
+Every question the main agent asks the user during refine mode, and every
+question embedded in an ADR's "questions considered" section, is tagged with
+one of these six types. The type determines the question's purpose and the
+expected response pattern.
 
 ## Types
 
@@ -24,7 +27,7 @@ Purpose: Find conditions under which the current assumption breaks.
 
 When to use:
 - A claim has been accepted without evidence.
-- The assumption ledger has unchallenged entries.
+- An `[ASSUMPTION][candidate]` has survived without challenge.
 - An alternative has been dismissed too quickly.
 
 Examples:
@@ -37,7 +40,7 @@ Examples:
 Purpose: Narrow the solution space by surfacing hard limits.
 
 When to use:
-- Multiple approaches seem equally valid.
+- Multiple approaches seem equally valid in an ADR.
 - Non-functional requirements haven't been stated.
 - Deployment or operational context is missing.
 
@@ -51,9 +54,9 @@ Examples:
 Purpose: Force explicit trade-off evaluation between alternatives.
 
 When to use:
-- The `alternatives` state has 2+ options.
+- A `[DECISION-CANDIDATE]` has 2+ options.
 - The user gravitates toward one option without articulating why.
-- Trade-offs haven't been stated.
+- Trade-offs haven't been stated in an ADR.
 
 Examples:
 - "Option A is simpler but requires downtime. Option B is zero-downtime but adds a new dependency. Which constraint matters more?"
@@ -62,12 +65,13 @@ Examples:
 
 ### `validate`
 
-Purpose: Confirm that a resolved question or decision still holds under the current model.
+Purpose: Confirm that a resolved question or decision still holds under the
+current model.
 
 When to use:
-- The system model has changed since the original decision.
-- A new constraint was introduced that may invalidate prior choices.
-- Moving from `decision` to `plan`.
+- A prior decision was made and new context has emerged.
+- A new constraint was introduced that may invalidate prior ADRs.
+- Moving from refine to done.
 
 Examples:
 - "Earlier we decided X because of assumption Y. We've since learned Z. Does X still hold?"
@@ -79,9 +83,9 @@ Examples:
 Purpose: Surface failure modes, operational hazards, and second-order effects.
 
 When to use:
-- Entering `adversarial-review`.
+- Refining a doc whose axis is sensitivity, scale, or architecture.
 - The design involves distributed systems, migrations, or user-facing changes.
-- The assumption ledger has items marked "likely true but unverified."
+- An `[ASSUMPTION][candidate]` is marked "likely true but unverified".
 
 Examples:
 - "If this migration fails halfway, what state is the data in?"
@@ -90,8 +94,13 @@ Examples:
 
 ## Usage Rules
 
-1. Tag every question with its type in brackets: `[clarify]`, `[falsify]`, etc.
-2. Prefer `clarify` early, `falsify` and `risk` late.
-3. In `adversarial-review`, at least 50% of questions must be `falsify` or `risk`.
-4. If the same type has been used 3 turns in a row, consider whether a different type would surface new information.
-5. `compare` is mandatory in the `alternatives` state. Do not skip it.
+1. Tag every must-answer question in brackets when asking the user:
+   `[clarify] ...`, `[falsify] ...`, etc.
+2. Prefer `clarify` early (during flesh interview), `falsify` and `risk`
+   late (during refine adversarial pass).
+3. When dispatching `design-skeptic` in refine, ≥50% of the attacks the
+   skeptic surfaces should be `falsify` or `risk` shaped.
+4. If the same type has been used 3 turns in a row, consider whether a
+   different type would surface new information.
+5. `compare` is mandatory for every `[DECISION-CANDIDATE]` elevated to the
+   user. Do not let the user pick without the trade-off on the table.
