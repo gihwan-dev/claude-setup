@@ -23,43 +23,56 @@ glab auth status
 
 ## Workflow
 
-### 1. 사용자/호스트 식별
+### 1. 스크립트로 데이터 수집
+
+`scripts/collect_events.py` 스크립트를 실행하여 이벤트를 수집·집계한다.
 
 ```bash
-glab api /user --hostname <hostname>
+python3 "{{SKILL_DIR}}/scripts/collect_events.py"
 ```
 
-- `glab auth status`에서 인증된 호스트를 자동 감지한다.
-- 여러 호스트가 있으면 사용자에게 선택받는다.
-- user id와 username을 확보한다.
+**옵션**:
+- `--months N` : 최근 N개월 (기본 12)
+- `--from-date YYYY-MM-DD` : 시작일 지정
+- `--to-date YYYY-MM-DD` : 종료일 지정
+- `--hostname HOST` : GitLab 호스트 명시 (기본 자동 감지)
 
-### 2. 이벤트 데이터 수집
+사용자가 기간을 지정하면 해당 옵션을 전달한다.
 
-Python 스크립트를 `/tmp/claude/` 아래에 생성하여 실행한다.
-
-**수집 범위**: 기본 최근 12개월. 사용자가 기간을 지정하면 그에 따른다.
-
-**수집 방법**:
+**스크립트 출력** (JSON stdout):
+```json
+{
+  "user": { "id": 123, "username": "foo" },
+  "hostname": "gitlab.example.com",
+  "summary": {
+    "period_start": "2025-04-01",
+    "period_end": "2026-04-01",
+    "total_events": 1200,
+    "active_days": 180,
+    "avg_per_active_day": 6.7
+  },
+  "aggregation": {
+    "monthly": { "2025-04": 64, "2025-05": 185 },
+    "weekly": { "2025-W14": 32 },
+    "yearly": { "2025": 800, "2026": 400 },
+    "daily": { "2025-04-01": 5 },
+    "quarterly": { "2025-Q2": 300 },
+    "monthly_by_action": {
+      "2025-04": { "pushed to": 40, "opened": 5, "commented on": 10 }
+    },
+    "action_totals": { "pushed to": 600, "commented on": 200 }
+  }
+}
 ```
-glab api "/users/{user_id}/events?per_page=100&page={page}&after={start_date}" --hostname {hostname}
-```
 
-- 페이지네이션으로 전체 이벤트를 수집한다 (최대 100페이지 안전 제한).
-- 각 이벤트에서 `created_at`, `action_name`을 파싱한다.
+- stderr로 진행 상태가 출력되므로 사용자에게 보여줘도 된다.
+- 스크립트 실패 시 stderr 에러 메시지를 사용자에게 전달하고 종료한다.
 
-**집계 항목**:
-- `monthly_counts`: 월별 총 이벤트 수
-- `weekly_counts`: 주별 총 이벤트 수 (ISO week)
-- `yearly_counts`: 연도별 총 이벤트 수
-- `monthly_by_action`: 월별 액션 유형 분해 (pushed to, pushed new, opened, commented on, closed, accepted, deleted, created 등)
-- `daily_counts`: 일별 총 이벤트 수
-- `quarterly_counts`: 분기별 총 이벤트 수
+### 2. 리포트 출력
 
-### 3. 리포트 출력
+스크립트 JSON 결과를 아래 형식의 마크다운 테이블로 **대화 출력**한다. 파일로 저장하지 않는다.
 
-아래 형식의 마크다운 테이블을 **대화 출력**으로 제공한다. 파일로 저장하지 않는다.
-
-#### 3-1. 전체 요약
+#### 2-1. 전체 요약
 
 | 항목 | 값 |
 |------|-----|
@@ -68,7 +81,9 @@ glab api "/users/{user_id}/events?per_page=100&page={page}&after={start_date}" -
 | 활동일 수 | N일 |
 | 활동일 평균 | N.N건/일 |
 
-#### 3-2. 월별 추이 테이블
+#### 2-2. 월별 추이 테이블
+
+`monthly`와 `monthly_by_action`을 조합한다.
 
 | 월 | 총 | Push | MR | Comment | 전월 대비 |
 |------|-----:|-----:|----:|--------:|--------:|
@@ -80,19 +95,23 @@ glab api "/users/{user_id}/events?per_page=100&page={page}&after={start_date}" -
 - **Comment** = `commented on`
 - **전월 대비** = 전월 총 이벤트 대비 증감률
 
-#### 3-3. 주별 추이 (최근 12주)
+#### 2-3. 주별 추이 (최근 12주)
+
+`weekly`에서 최근 12주를 추출한다.
 
 | 주 | 총 | 4주 이동평균 |
 |----|---:|----------:|
 | 2026-W10 | 72 | 87.8 |
 
-#### 3-4. 연도별/분기별 요약
+#### 2-4. 연도별/분기별 요약
+
+`quarterly`를 사용한다.
 
 | 분기 | 건수 | 월 평균 |
 |------|-----:|-------:|
 | 2025-Q1 | 557 | 186 |
 
-### 4. AI 코멘트
+### 3. AI 코멘트
 
 수집된 데이터를 분석하여 아래 관점의 코멘트를 작성한다:
 
@@ -111,10 +130,9 @@ glab api "/users/{user_id}/events?per_page=100&page={page}&after={start_date}" -
 - MR 수 증가 추이가 있으면: "더 작은 단위로 더 자주 배포하는 패턴" 해석
 - 코멘트 비중 증가가 있으면: "리뷰어/멘토 역할 확대" 해석
 
-### 5. 옵션
+### 4. 옵션
 
 사용자가 추가 요청 시:
-- **특정 기간**: `--from 2025-01 --to 2025-06` 형태로 범위 지정
 - **팀 비교**: 여러 사용자 ID를 받아 비교 테이블 생성
 - **프로젝트별**: 특정 프로젝트 필터링
 - **파일 저장**: 사용자가 요청하면 마크다운 파일로 저장
@@ -122,5 +140,5 @@ glab api "/users/{user_id}/events?per_page=100&page={page}&after={start_date}" -
 ## 주의사항
 
 - 대화 출력 전용. 파일 저장은 사용자가 명시적으로 요청할 때만.
-- API 호출이 많으므로 rate limit 주의. 실패 시 수집된 데이터까지만으로 리포트 생성.
+- API 호출이 많으므로 rate limit 주의. 스크립트가 실패하면 수집된 데이터까지만으로 리포트 생성.
 - 이벤트 API는 최대 2년 전까지만 제공될 수 있음.
