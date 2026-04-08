@@ -165,6 +165,73 @@ def build_summary(
     }
 
 
+def _safe_pct(numerator: float, denominator: float) -> float:
+    return round(numerator / denominator * 100, 1) if denominator else 0
+
+
+def build_balance(agg: dict[str, Any]) -> dict[str, Any]:
+    """Analyze contribution balance across push/MR/comment/other."""
+    totals = agg["action_totals"]
+    total = sum(totals.values()) or 1
+
+    push = totals.get("pushed to", 0) + totals.get("pushed new", 0)
+    mr = totals.get("opened", 0)
+    comment = totals.get("commented on", 0)
+    other = total - push - mr - comment
+
+    push_pct = _safe_pct(push, total)
+    mr_pct = _safe_pct(mr, total)
+    comment_pct = _safe_pct(comment, total)
+    other_pct = _safe_pct(other, total)
+
+    # Comment-to-MR ratio (review density)
+    comment_per_mr = round(comment / mr, 1) if mr else None
+
+    # Monthly trend: compare first half vs second half
+    months = sorted(agg["monthly_by_action"].keys())
+    mid = len(months) // 2
+    first_half = months[:mid] if mid else months
+    second_half = months[mid:] if mid else []
+
+    def _half_ratios(month_keys: list[str]) -> dict[str, float]:
+        h_push = h_mr = h_comment = h_total = 0
+        for m in month_keys:
+            actions = agg["monthly_by_action"].get(m, {})
+            h_push += actions.get("pushed to", 0) + actions.get("pushed new", 0)
+            h_mr += actions.get("opened", 0)
+            h_comment += actions.get("commented on", 0)
+            h_total += sum(actions.values())
+        return {
+            "push_pct": _safe_pct(h_push, h_total),
+            "mr_pct": _safe_pct(h_mr, h_total),
+            "comment_pct": _safe_pct(h_comment, h_total),
+            "months": len(month_keys),
+        }
+
+    first_ratios = _half_ratios(first_half) if first_half else None
+    second_ratios = _half_ratios(second_half) if second_half else None
+
+    return {
+        "totals": {
+            "push": push,
+            "mr": mr,
+            "comment": comment,
+            "other": other,
+        },
+        "percentages": {
+            "push": push_pct,
+            "mr": mr_pct,
+            "comment": comment_pct,
+            "other": other_pct,
+        },
+        "comment_per_mr": comment_per_mr,
+        "trend": {
+            "first_half": first_ratios,
+            "second_half": second_ratios,
+        },
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Collect GitLab contribution events")
     parser.add_argument("--hostname", help="GitLab hostname (auto-detected if omitted)")
@@ -211,6 +278,7 @@ def main() -> int:
     # 5. Aggregate
     agg = aggregate(events)
     summary = build_summary(events, agg, start_date, end_date)
+    balance = build_balance(agg)
 
     # 6. Output
     payload = {
@@ -218,6 +286,7 @@ def main() -> int:
         "hostname": hostname,
         "summary": summary,
         "aggregation": agg,
+        "balance": balance,
     }
 
     print(json.dumps(payload, ensure_ascii=False, indent=args.indent))
