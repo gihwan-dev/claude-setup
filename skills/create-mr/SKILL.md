@@ -61,7 +61,50 @@ git status
 
 Warn the user if unstaged changes or untracked files exist.
 
-### 4. Create the MR
+### 4. UI 변경 시 Before/After 스크린샷 (MANDATORY for UI changes)
+
+If the diff touches UI code (components, styles, layouts, templates, CSS, HTML), capture
+Before/After screenshots with Playwright and attach them to the MR body.
+
+**Detect UI changes:**
+```bash
+git diff <base>...HEAD --name-only | grep -iE '\.(tsx|jsx|vue|svelte|html|css|scss|sass|less|styled)\b'
+```
+If any files match, this step is **mandatory**.
+
+**Capture screenshots:**
+
+1. **Before** — check out the base branch in a temporary worktree and take screenshots:
+   ```bash
+   git worktree add /tmp/mr-before <base>
+   # install deps & start dev server in /tmp/mr-before, then:
+   npx playwright screenshot --wait-for-timeout=3000 <target-url> /tmp/mr-before-screenshot.png
+   git worktree remove /tmp/mr-before
+   ```
+
+2. **After** — take screenshots from the current branch:
+   ```bash
+   # start dev server on current branch, then:
+   npx playwright screenshot --wait-for-timeout=3000 <target-url> /tmp/mr-after-screenshot.png
+   ```
+
+3. **Upload** — attach both images to the MR body using the platform's upload mechanism:
+   - GitLab: `glab mr note` with uploaded images, or inline in body via GitLab upload API
+   - GitHub: drag-and-drop style markdown image links via `gh` asset upload
+
+4. **Format in MR body** — add a `## Before / After` section:
+   ```markdown
+   ## Before / After
+   | Before | After |
+   |--------|-------|
+   | ![before](<before-image-url>) | ![after](<after-image-url>) |
+   ```
+
+> **Tip:** If the project has a Playwright config or test setup, reuse it.
+> Adjust `--wait-for-timeout` or add `--full-page` as needed for the target pages.
+> Capture each distinct UI change (multiple pages/states) as separate screenshot pairs.
+
+### 5. Create the MR
 
 1. Push the branch if needed: `git push -u origin <branch>`.
 2. Detect platform:
@@ -92,6 +135,12 @@ Use when no project template is found:
 ## Changes
 <!-- key changes, bulleted -->
 
+## Before / After
+<!-- UI 변경 시 Playwright 스크린샷 필수. UI 변경 없으면 "N/A" -->
+| Before | After |
+|--------|-------|
+| ![before]() | ![after]() |
+
 ## Related Issues
 <!-- links or "None" -->
 
@@ -114,3 +163,4 @@ Use when no project template is found:
 4. **Confirm with the user** before pushing or creating the MR.
 5. **MR titles in Korean** (except the type prefix).
 6. **No emoji** in titles.
+7. **UI 변경 시 Before/After 스크린샷 필수** — UI 관련 파일이 diff에 포함되면 반드시 Playwright로 Before/After 스크린샷을 찍어 MR 본문에 첨부한다. 스크린샷 없이 UI MR을 생성하지 않는다.
