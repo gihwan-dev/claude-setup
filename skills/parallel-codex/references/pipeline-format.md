@@ -26,19 +26,9 @@ a1, a2 → b1
 | B | b1 | temp/verify-a | temp/verify-b | pending |
 
 ## MR Plan
-| Source | Target | Group | Status | URL |
-|--------|--------|-------|--------|-----|
-| parallel/a1-db-schema | main | A | pending | |
-| parallel/a2-api-types | main | A | pending | |
-| parallel/b1-endpoint | main | B | pending | |
-
-## Merge Order
-Group A (순서 무관 — 파일 겹침 없음):
-1. parallel/a1-db-schema → main
-2. parallel/a2-api-types → main
-
-Group B (Group A 머지 완료 후 → $parallel-codex resume):
-3. parallel/b1-endpoint → main
+| Source | Target | Status | URL |
+|--------|--------|--------|-----|
+| temp/verify-b | main | pending | |
 ```
 
 ## 필드 규칙
@@ -56,24 +46,19 @@ Group B (Group A 머지 완료 후 → $parallel-codex resume):
 - 독립 작업은 별도 줄
 
 ### Groups 테이블
-- **Status**: `pending` → `running` → `verified` → `mr_created` → `mr_merged`
+- **Status**: `pending` → `running` → `verified`
 - **Base Branch**: 워크트리 분기 기준 브랜치
-- **Verify Branch**: 호환성 검증용 임시 브랜치 (`temp/verify-*`). MR target이 아님.
+- **Verify Branch**: 호환성 검증용 임시 브랜치 (`temp/verify-*`). 마지막 그룹의 Verify Branch가 MR 소스가 된다.
 
 ### MR Plan 테이블
+- **Source**: 마지막 그룹의 Verify Branch (전체 변경이 통합된 브랜치)
 - **Target**: 항상 `main`
-- **Group**: 소속 그룹 (머지 순서 결정에 사용)
 - **Status**: `pending` → `created` → `merged`
-  - `pending`: MR 미생성 (실행 미완료 또는 이전 그룹 머지 대기)
+  - `pending`: MR 미생성 (실행 미완료)
   - `created`: draft MR 생성됨
   - `merged`: main에 머지 완료
 - **URL**: MR 생성 후 채움
-
-### Merge Order
-- 그룹 단위로 구분하여 표시
-- 같은 그룹 내 task들은 순서 무관 (파일 겹침 없음)
-- 후속 그룹은 이전 그룹 머지 완료 후 `$parallel-codex resume`으로 MR 생성
-- 번호는 전체 순서 참고용
+- 항상 **1행**만 존재 (단일 MR)
 
 ## 상태 업데이트 시점
 
@@ -81,6 +66,6 @@ Group B (Group A 머지 완료 후 → $parallel-codex resume):
 |------|---------|
 | 그룹 실행 시작 | Groups Status → `running` |
 | 그룹 검증 완료 | Groups Status → `verified` |
-| MR 생성 완료 | Groups Status → `mr_created`, MR Plan Status → `created`, URL 채움 |
-| MR main 머지 완료 | Groups Status → `mr_merged`, MR Plan Status → `merged` (resume 시 확인) |
+| MR 생성 완료 | MR Plan Status → `created`, URL 채움 |
+| MR main 머지 완료 | MR Plan Status → `merged` |
 | 작업 실패 | Tasks 테이블에 실패 표시 (Description에 `[FAILED]` 접두어) |

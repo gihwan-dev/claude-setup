@@ -5,9 +5,8 @@ description: >
   작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고,
   각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다.
   그룹 간 전이는 임시 브랜치(temp/verify-*)로 호환성 검증 + 상태 요약.
-  그룹별 개별 task MR(→ main) 생성 + 머지 순서 가이드 제공.
+  모든 그룹 실행·검증 완료 후 마지막 verify 브랜치에서 단일 MR 생성.
   "$parallel-codex" 명시 호출 시 실행한다.
-  "$parallel-codex resume"은 이전 그룹 MR 머지 후 다음 그룹 MR을 생성한다.
   사용자가 "병렬 작업", "여러 작업 동시에", "기능 여러 개 동시 개발",
   "동시에 돌려줘" 등을 언급하면 `$parallel-codex` 사용을 제안하라.
   단일 task나 순차 1개 작업에는 사용하지 않는다 — 일반 Codex 호출이 적합하다.
@@ -17,11 +16,12 @@ description: >
 
 Claude: 의존 분석 + 그룹 배치 + 프롬프트 설계 + PIPELINE.md 관리.
 Codex: 구현 + 검증. Claude는 검증 리포트만 읽어 컨텍스트를 fresh하게 유지.
+모든 그룹 완료 후 마지막 verify 브랜치에서 단일 MR을 생성한다.
 
 ## Hard Rules
 
 1. Claude는 코드를 직접 작성하지 않는다. 모든 구현/검증은 Codex를 통해. (Claude가 코드를 읽으면 컨텍스트가 소모되고 Codex의 독립 검증이 무력화됨)
-2. 실행 Phase는 승인 게이트 없이 자동 실행한다. MR Phase는 그룹별 점진적.
+2. 실행 Phase는 승인 게이트 없이 자동 실행한다. MR은 모든 그룹 완료 후 단일 생성.
 3. 각 작업은 **별도의 git worktree**에서 실행한다. (병렬 실행 중 파일 시스템 충돌을 원천 차단)
 4. **같은 파일을 수정하는 작업은 다른 그룹**에 배치한다. (같은 그룹 = 병렬이므로 머지 충돌 불가피)
 5. Codex 실행 실패 시 해당 작업만 실패로 표시. 다른 작업에 영향 없음.
@@ -29,8 +29,7 @@ Codex: 구현 + 검증. Claude는 검증 리포트만 읽어 컨텍스트를 fre
 7. Claude는 그룹 간 전이 시 **검증 리포트만 읽는다**. (전체 diff를 읽으면 컨텍스트 폭발)
 8. 모든 MR은 **draft**로 생성한다. (사용자가 리뷰 후 직접 머지해야 하므로)
 9. `PIPELINE.md`가 전체 파이프라인의 **single source of truth**이다.
-10. **모든 MR은 `main`을 타겟**으로 한다. (task → main이어야 diff가 해당 task 변경만 보여줌)
-11. **그룹 간 MR 생성은 이전 그룹의 MR이 main에 머지된 후** 진행한다. (rebase 후 깔끔한 diff 확보)
+10. **단일 MR**: 모든 그룹 실행·검증 완료 후, 마지막 그룹의 `temp/verify-*` 브랜치에서 `main`으로 **하나의 MR**만 생성한다. (마지막 verify 브랜치에 전체 변경이 통합되어 있으므로 별도 머지 불필요)
 
 ## Codex Plugin Skills (세션당 1회 로드)
 
@@ -44,8 +43,7 @@ Codex: 구현 + 검증. Claude는 검증 리포트만 읽어 컨텍스트를 fre
 ## Workflow
 
 진입 분기:
-- 입력이 `resume`이면 → **Resume** 섹션으로 직행한다 (Step 0~7 건너뜀).
-- `PIPELINE.md`가 이미 존재하면 → **Session Resumption** 섹션에서 상태를 판단한 뒤 적절한 Step 또는 Resume로 진입한다.
+- `PIPELINE.md`가 이미 존재하면 → **Session Resumption** 섹션에서 상태를 판단한 뒤 적절한 Step으로 진입한다.
 - 그 외 → Step 0부터 시작한다.
 
 ### Step 0: Bootstrap
@@ -95,8 +93,7 @@ Group C (depth 2): Group B에 의존하는 작업들 → 병렬 실행
 - 전체 작업 목록 (ID, 이름, 설명, 관련 파일)
 - 의존성 그래프
 - 그룹 배치 (각 그룹의 작업, 베이스 브랜치, 검증 브랜치, 상태)
-- MR 계획 (소스 → main, 그룹, 상태)
-- 머지 순서
+- MR 계획 (마지막 verify 브랜치 → main, 상태)
 
 이 파일이 전체 파이프라인의 source of truth.
 
@@ -147,7 +144,7 @@ Bash 도구의 `run_in_background=true`를 사용하여 그룹 내 모든 작업
 3. 실패 시 **개별 task 브랜치에서** 수정 (temp 브랜치가 아님)
 4. 검증 리포트 작성
 
-**중요**: `temp/verify-*` 브랜치는 다음 그룹의 branching point로만 사용된다. MR target이 아니다.
+**중요**: `temp/verify-*` 브랜치는 다음 그룹의 branching point로 사용되며, 마지막 그룹의 verify 브랜치가 단일 MR의 소스 브랜치가 된다.
 
 #### 5f. 검증 리포트 읽기 + PIPELINE.md 업데이트
 
@@ -155,57 +152,23 @@ Claude는 검증 리포트만 읽는다 (수십 줄).
 PIPELINE.md의 해당 그룹 상태를 `verified`로 업데이트한다.
 다음 그룹의 프롬프트 설계에 검증 리포트 내용을 활용한다.
 
-### Step 6: Group A MR 생성
+### Step 6: 단일 MR 생성
 
-전체 실행 루프 완료 후, **첫 번째 그룹(Group A)의 MR만** 생성한다.
+모든 그룹의 실행·검증이 완료되면, **마지막 그룹의 `temp/verify-*` 브랜치**에서 `main`으로 **하나의 draft MR**을 생성한다.
+
+마지막 verify 브랜치에는 모든 task의 변경이 순차적으로 머지·검증된 상태이므로 별도 통합 작업이 불필요하다.
 
 Claude가 `git remote get-url origin`으로 플랫폼(GitLab/GitHub)을 감지하여 `PLATFORM` 변수를 채운 뒤,
 `${SKILL_DIR}/references/mr-creator-prompt-template.md`의 프롬프트를 MR 생성 Codex에 전달한다.
-
-- Group A의 모든 task 브랜치에 대해 `parallel/<task> → main` draft MR 생성
-- Group A task들은 main에서 직접 분기했으므로 diff가 해당 task 변경만 포함
-- 같은 그룹 내 task들은 파일 겹침이 없으므로 머지 순서 무관
-
-후속 그룹(B, C, ...)의 MR은 이 단계에서 생성하지 않는다.
-이유: 후속 그룹의 task 브랜치는 temp/verify-* 위에서 개발되어 이전 그룹 변경을 포함하고 있다.
-main에 이전 그룹이 머지된 후 rebase해야 깔끔한 diff를 얻을 수 있다.
 
 ### Step 7: 최종 보고
 
 PIPELINE.md에서 최종 상태를 읽어 사용자에게 제시한다:
 
 - 그룹별 실행 결과 (성공/실패)
-- **Group A MR 링크 목록**
-- **머지 가이드** — PIPELINE.md의 Merge Order 섹션을 기반으로 그룹별 리뷰 + 머지 순서 안내.
-  후속 그룹이 있으면 `$parallel-codex resume`으로 다음 그룹 MR 생성을 안내한다.
-  머지 가이드 포맷은 `${SKILL_DIR}/references/pipeline-format.md`의 Merge Order 참조.
-- 워크트리 정리 안내: 모든 MR 머지 완료 후 `git worktree prune`
-
-## Resume (그룹 간 MR 점진 생성)
-
-사용자가 이전 그룹의 MR을 main에 머지한 후 `$parallel-codex resume`을 실행하면:
-
-1. `PIPELINE.md`를 읽어 현재 상태를 파악한다
-2. 다음 MR 대기 그룹을 식별한다 (상태가 `verified`이고 MR 미생성)
-3. **Claude가 직접** 해당 그룹의 task 브랜치들을 현재 `main`으로 rebase한다:
-   ```bash
-   git checkout parallel/<task-id>-<task-name>
-   git rebase main
-   ```
-   (Codex가 아닌 Claude가 Bash 도구로 실행. rebase는 단순 git 명령이므로 Codex 불필요)
-4. rebase 성공 시: MR 생성 Codex를 디스패치하여 `parallel/<task> → main` draft MR 생성
-5. rebase 충돌 시: 충돌 내용을 사용자에게 보고하고 수동 해결 요청
-6. PIPELINE.md 업데이트 (MR URL, 상태)
-7. 머지 가이드 제시 (다음 그룹이 있으면 다시 resume 안내)
-
-### Resume 완료 조건
-
-모든 그룹의 MR이 생성되고 머지되면 파이프라인 완료.
-사용자에게 최종 완료 메시지와 정리 명령 안내:
-```bash
-git worktree prune
-git branch -d temp/verify-a temp/verify-b ...  # 임시 검증 브랜치 정리
-```
+- **단일 MR 링크**
+- 포함된 전체 task 목록 요약
+- 워크트리 정리 안내: MR 머지 완료 후 `git worktree prune` + `git branch -d temp/verify-*`
 
 ## Error Handling
 
@@ -215,7 +178,6 @@ git branch -d temp/verify-a temp/verify-b ...  # 임시 검증 브랜치 정리
 - **부분 실패**: 성공한 작업만 검증 진행. 실패 작업은 PIPELINE.md에 기록.
 - **검증 Codex 실패**: PIPELINE.md에 기록하고 사용자에게 수동 개입 요청. 후속 그룹은 중단.
 - **검증 시 worktree 체크아웃 충돌**: 검증 Codex가 `git checkout <task-branch>`를 시도할 때 해당 브랜치가 이미 워크트리에 체크아웃되어 있으면 실패한다. 이 경우 워크트리 경로에서 직접 수정해야 한다 (`cd .worktrees/<group>/<task>` 후 수정+커밋).
-- **Rebase 충돌** (resume 시): 충돌 내용을 사용자에게 보고. 수동 해결 후 재시도 안내.
 
 ## Session Resumption
 
@@ -224,9 +186,9 @@ git branch -d temp/verify-a temp/verify-b ...  # 임시 검증 브랜치 정리
 1. `PIPELINE.md`가 있으면 읽는다
 2. 파이프라인 상태에 따라 분기:
    - 실행 중인 그룹이 있으면 (`running`): 해당 그룹부터 실행 재개 → Step 5로 진입
-   - 모든 그룹이 `verified`이고 MR 대기 중: → **Resume 섹션** 흐름 실행
-   - 일부 그룹만 `mr_created`: 사용자에게 해당 그룹 머지 후 `$parallel-codex resume` 안내
-   - 모든 그룹이 `mr_merged`: 파이프라인 완료 메시지 + 정리 안내
+   - 모든 그룹이 `verified`이고 MR 미생성: → Step 6 (단일 MR 생성)으로 진입
+   - MR이 `created` 상태: 사용자에게 리뷰 + 머지 안내
+   - MR이 `merged`: 파이프라인 완료 메시지 + 정리 안내
 3. `.worktrees/` 디렉토리와 `git worktree list`로 실제 상태 교차 검증
 
 ## References
