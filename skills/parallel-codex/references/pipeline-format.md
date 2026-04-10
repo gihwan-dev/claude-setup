@@ -26,9 +26,16 @@ a1, a2 → b1
 | B | b1 | temp/verify-a | temp/verify-b | pending |
 
 ## MR Plan
-| Source | Target | Status | QA | URL |
-|--------|--------|--------|----|-----|
-| temp/verify-b | main | pending | - | |
+| # | Task | Source | Target | Status | URL |
+|---|------|--------|--------|--------|-----|
+| 1 | a1: DB 스키마 | stack/01-db-schema | main | pending | |
+| 2 | a2: API 타입 | stack/02-api-types | stack/01-db-schema | pending | |
+| 3 | b1: 엔드포인트 | stack/03-endpoint | stack/02-api-types | pending | |
+
+## QA
+| Status | Detail |
+|--------|--------|
+| - | |
 ```
 
 ## 필드 규칙
@@ -48,18 +55,24 @@ a1, a2 → b1
 ### Groups 테이블
 - **Status**: `pending` → `running` → `verified`
 - **Base Branch**: 워크트리 분기 기준 브랜치
-- **Verify Branch**: 호환성 검증용 임시 브랜치 (`temp/verify-*`). 마지막 그룹의 Verify Branch가 MR 소스가 된다.
+- **Verify Branch**: 호환성 검증용 임시 브랜치 (`temp/verify-*`). 다음 그룹의 branching point + stack 브랜치 머지 순서 기준.
 
-### MR Plan 테이블
-- **Source**: 마지막 그룹의 Verify Branch (전체 변경이 통합된 브랜치)
-- **Target**: 항상 `main`
+### MR Plan 테이블 (Stacked MR)
+- **#**: 머지 순서 (1부터 시작). 반드시 이 순서대로 머지해야 한다
+- **Task**: task ID + 이름
+- **Source**: stack 브랜치 (`stack/<NN>-<task-name>`)
+- **Target**: 이전 stack 브랜치 (첫 번째는 `main`)
 - **Status**: `pending` → `created` → `merged`
   - `pending`: MR 미생성 (실행 미완료)
   - `created`: draft MR 생성됨
-  - `merged`: main에 머지 완료
-- **QA**: Browser QA 결과. `-` (미실행) | `pass` | `issues_found`
+  - `merged`: 타겟 브랜치에 머지 완료
 - **URL**: MR 생성 후 채움
-- 항상 **1행**만 존재 (단일 MR)
+- **task 수만큼 행이 존재** (task별 1개 MR)
+
+### QA 테이블
+- Browser QA 결과를 별도 테이블로 관리
+- **Status**: `-` (미실행) | `pass` | `issues_found`
+- **Detail**: QA 이슈 요약 (있는 경우)
 
 ## 상태 업데이트 시점
 
@@ -67,7 +80,7 @@ a1, a2 → b1
 |------|---------|
 | 그룹 실행 시작 | Groups Status → `running` |
 | 그룹 검증 완료 | Groups Status → `verified` |
-| Browser QA 완료 | MR Plan QA → `pass` 또는 `issues_found` |
-| MR 생성 완료 | MR Plan Status → `created`, URL 채움 |
-| MR main 머지 완료 | MR Plan Status → `merged` |
+| Browser QA 완료 | QA 테이블 Status → `pass` 또는 `issues_found` |
+| MR 생성 완료 | MR Plan 각 행 Status → `created`, URL 채움 |
+| MR 머지 완료 | MR Plan 해당 행 Status → `merged` |
 | 작업 실패 | Tasks 테이블에 실패 표시 (Description에 `[FAILED]` 접두어) |

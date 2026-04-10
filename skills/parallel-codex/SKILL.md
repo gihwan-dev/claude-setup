@@ -5,7 +5,7 @@ description: >
   작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고,
   각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다.
   그룹 간 전이는 임시 브랜치(temp/verify-*)로 호환성 검증 + 상태 요약.
-  모든 그룹 실행·검증 완료 후 마지막 verify 브랜치에서 단일 MR 생성.
+  모든 그룹 실행·검증 완료 후 task별 Stacked MR 생성 (각 MR은 해당 변경분만 표시).
   "$parallel-codex" 명시 호출 시 실행한다.
   사용자가 "병렬 작업", "여러 작업 동시에", "기능 여러 개 동시 개발",
   "동시에 돌려줘" 등을 언급하면 `$parallel-codex` 사용을 제안하라.
@@ -16,12 +16,12 @@ description: >
 
 Claude: 의존 분석 + 그룹 배치 + 프롬프트 설계 + PIPELINE.md 관리.
 Codex: 구현 + 검증. Claude는 검증 리포트만 읽어 컨텍스트를 fresh하게 유지.
-모든 그룹 완료 후 마지막 verify 브랜치에서 단일 MR을 생성한다.
+모든 그룹 완료 후 task별 Stacked MR을 생성한다 (각 MR은 해당 task의 변경분만 diff에 표시).
 
 ## Hard Rules
 
 1. Claude는 코드를 직접 작성하지 않는다. 모든 구현/검증은 Codex를 통해. (Claude가 코드를 읽으면 컨텍스트가 소모되고 Codex의 독립 검증이 무력화됨)
-2. 실행 Phase는 승인 게이트 없이 자동 실행한다. MR은 모든 그룹 완료 후 단일 생성.
+2. 실행 Phase는 승인 게이트 없이 자동 실행한다.
 3. 각 작업은 **별도의 git worktree**에서 실행한다. (병렬 실행 중 파일 시스템 충돌을 원천 차단)
 4. **같은 파일을 수정하는 작업은 다른 그룹**에 배치한다. (같은 그룹 = 병렬이므로 머지 충돌 불가피)
 5. Codex 실행 실패 시 해당 작업만 실패로 표시. 다른 작업에 영향 없음.
@@ -29,7 +29,7 @@ Codex: 구현 + 검증. Claude는 검증 리포트만 읽어 컨텍스트를 fre
 7. Claude는 그룹 간 전이 시 **검증 리포트만 읽는다**. (전체 diff를 읽으면 컨텍스트 폭발)
 8. 모든 MR은 **draft**로 생성한다. (사용자가 리뷰 후 직접 머지해야 하므로)
 9. `PIPELINE.md`가 전체 파이프라인의 **single source of truth**이다.
-10. **단일 MR**: 모든 그룹 실행·검증 완료 후, 마지막 그룹의 `temp/verify-*` 브랜치에서 `main`으로 **하나의 MR**만 생성한다. (마지막 verify 브랜치에 전체 변경이 통합되어 있으므로 별도 머지 불필요)
+10. **Stacked MR**: 모든 그룹 실행·검증 완료 후, task를 선형 순서(그룹 순 → 그룹 내 ID 순)로 정렬하고 각 task별 MR을 생성한다. 각 MR의 타겟은 이전 task의 stack 브랜치(첫 번째는 `main`)이므로 리뷰어는 **해당 task의 변경분만** 볼 수 있다.
 
 ## Codex Plugin Skills (세션당 1회 로드)
 
@@ -93,7 +93,7 @@ Group C (depth 2): Group B에 의존하는 작업들 → 병렬 실행
 - 전체 작업 목록 (ID, 이름, 설명, 관련 파일)
 - 의존성 그래프
 - 그룹 배치 (각 그룹의 작업, 베이스 브랜치, 검증 브랜치, 상태)
-- MR 계획 (마지막 verify 브랜치 → main, 상태)
+- Stacked MR 계획 (task별 stack 브랜치 → 이전 stack 브랜치, 상태)
 
 이 파일이 전체 파이프라인의 source of truth.
 
@@ -144,7 +144,7 @@ Bash 도구의 `run_in_background=true`를 사용하여 그룹 내 모든 작업
 3. 실패 시 **개별 task 브랜치에서** 수정 (temp 브랜치가 아님)
 4. 검증 리포트 작성
 
-**중요**: `temp/verify-*` 브랜치는 다음 그룹의 branching point로 사용되며, 마지막 그룹의 verify 브랜치가 단일 MR의 소스 브랜치가 된다.
+**중요**: `temp/verify-*` 브랜치는 다음 그룹의 branching point로 사용되며, Step 6에서 stack 브랜치를 생성할 때의 머지 순서 기준이 된다.
 
 #### 5f. 검증 리포트 읽기 + PIPELINE.md 업데이트
 
@@ -167,28 +167,47 @@ PIPELINE.md의 해당 그룹 상태를 `verified`로 업데이트한다.
      - general-purpose 타입이어야 Claude in Chrome MCP 도구(`mcp__claude-in-chrome__*`) 접근 가능
    - 서브에이전트가 `.worktrees/QA_REPORT.md`에 QA 리포트 작성
 5. QA 리포트를 읽고 Step 7 최종 보고에 요약 포함
-6. PIPELINE.md MR Plan의 QA 컬럼 업데이트 (`pass` 또는 `issues_found`)
+6. PIPELINE.md QA 테이블 Status 업데이트 (`pass` 또는 `issues_found`)
 
 QA 결과는 **정보 제공용**이다. 이슈가 발견되어도 MR 생성을 자동으로 차단하지 않는다.
 이슈 발견 시 MR body에 QA 결과 요약을 포함한다.
 
-### Step 6: 단일 MR 생성
+### Step 6: Stacked MR 생성
 
-모든 그룹의 실행·검증이 완료되면, **마지막 그룹의 `temp/verify-*` 브랜치**에서 `main`으로 **하나의 draft MR**을 생성한다.
+모든 그룹의 실행·검증이 완료되면, task별 Stacked MR을 생성한다.
+각 MR은 **해당 task의 변경분만** diff에 표시되어 리뷰가 용이하다.
 
-마지막 verify 브랜치에는 모든 task의 변경이 순차적으로 머지·검증된 상태이므로 별도 통합 작업이 불필요하다.
+#### 6a. Task 선형 순서 결정
 
-Claude가 `git remote get-url origin`으로 플랫폼(GitLab/GitHub)을 감지하여 `PLATFORM` 변수를 채운 뒤,
+그룹 순서(A→B→C) + 그룹 내 task ID 순서로 전체 task를 일렬로 정렬한다.
+예: a1 → a2 → b1 → c1 → c2
+
+#### 6b. Stack 브랜치 생성 + MR 생성
+
+Claude가 `git remote get-url origin`으로 플랫폼(GitLab/GitHub)을 감지한 뒤,
 `${SKILL_DIR}/references/mr-creator-prompt-template.md`의 프롬프트를 MR 생성 Codex에 전달한다.
+
+MR 생성 Codex가 수행하는 작업:
+1. 순서대로 stack 브랜치를 merge 방식으로 생성:
+   - `stack/01-<a1-name>` = `main`에서 checkout → `parallel/a1-*` 머지
+   - `stack/02-<a2-name>` = `stack/01-*`에서 checkout → `parallel/a2-*` 머지
+   - `stack/03-<b1-name>` = `stack/02-*`에서 checkout → `parallel/b1-*` 머지
+2. 각 stack 브랜치에서 이전 stack 브랜치(또는 `main`)로 draft MR 생성
+
+검증 Codex가 이미 같은 순서로 머지를 검증했으므로 충돌 없이 진행되어야 한다.
+
+**머지 순서**: MR은 순서대로 머지해야 한다 (MR-1 → MR-2 → ...).
+GitLab의 "Automatically retarget merge requests" 설정이 켜져 있으면,
+MR-1 머지 시 MR-2의 타겟이 자동으로 `main`으로 변경된다.
 
 ### Step 7: 최종 보고
 
 PIPELINE.md에서 최종 상태를 읽어 사용자에게 제시한다:
 
 - 그룹별 실행 결과 (성공/실패)
-- **단일 MR 링크**
-- 포함된 전체 task 목록 요약
-- 워크트리 정리 안내: MR 머지 완료 후 `git worktree prune` + `git branch -d temp/verify-*`
+- **Stacked MR 목록** (머지 순서대로, 각 MR 링크 포함)
+- 머지 순서 안내: MR-1부터 순서대로 리뷰·머지
+- 워크트리 정리 안내: 모든 MR 머지 완료 후 `git worktree prune` + `git branch -d temp/verify-* stack/*`
 
 ## Error Handling
 
@@ -208,7 +227,7 @@ PIPELINE.md에서 최종 상태를 읽어 사용자에게 제시한다:
 1. `PIPELINE.md`가 있으면 읽는다
 2. 파이프라인 상태에 따라 분기:
    - 실행 중인 그룹이 있으면 (`running`): 해당 그룹부터 실행 재개 → Step 5로 진입
-   - 모든 그룹이 `verified`이고 MR 미생성: → Step 6 (단일 MR 생성)으로 진입
+   - 모든 그룹이 `verified`이고 MR 미생성: → Step 6 (Stacked MR 생성)으로 진입
    - MR이 `created` 상태: 사용자에게 리뷰 + 머지 안내
    - MR이 `merged`: 파이프라인 완료 메시지 + 정리 안내
 3. `.worktrees/` 디렉토리와 `git worktree list`로 실제 상태 교차 검증
