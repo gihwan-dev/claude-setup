@@ -37,10 +37,12 @@ glab issue view <번호> --comments
 
 ```bash
 glab issue list --assignee=@me -P 10
+glab issue list --assignee=none -P 10
 ```
 
-- 번호·제목·라벨 포함 목록을 보여주고 사용자에게 선택받는다.
-- 본인 할당 이슈가 없으면 `glab issue list -P 10`으로 전체 조회.
+- 두 명령을 병렬 실행하여 **본인 할당 이슈 + 미할당 이슈**를 모두 수집한다.
+- 중복 제거 후 번호·제목·라벨·할당자 포함 목록을 보여주고 사용자에게 선택받는다.
+- 두 조회 모두 결과가 없으면 `glab issue list -P 10`으로 전체 조회.
 
 ### 2. 모호성 판단
 
