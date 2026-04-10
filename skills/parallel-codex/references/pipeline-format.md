@@ -26,9 +26,9 @@ a1, a2 → b1
 | B | b1 | temp/verify-a | temp/verify-b | pending |
 
 ## MR Plan
-| Source | Target | Status | URL |
-|--------|--------|--------|-----|
-| temp/verify-b | main | pending | |
+| Source | Target | Status | QA | URL |
+|--------|--------|--------|----|-----|
+| temp/verify-b | main | pending | - | |
 ```
 
 ## 필드 규칙
@@ -57,6 +57,7 @@ a1, a2 → b1
   - `pending`: MR 미생성 (실행 미완료)
   - `created`: draft MR 생성됨
   - `merged`: main에 머지 완료
+- **QA**: Browser QA 결과. `-` (미실행) | `pass` | `issues_found`
 - **URL**: MR 생성 후 채움
 - 항상 **1행**만 존재 (단일 MR)
 
@@ -66,6 +67,7 @@ a1, a2 → b1
 |------|---------|
 | 그룹 실행 시작 | Groups Status → `running` |
 | 그룹 검증 완료 | Groups Status → `verified` |
+| Browser QA 완료 | MR Plan QA → `pass` 또는 `issues_found` |
 | MR 생성 완료 | MR Plan Status → `created`, URL 채움 |
 | MR main 머지 완료 | MR Plan Status → `merged` |
 | 작업 실패 | Tasks 테이블에 실패 표시 (Description에 `[FAILED]` 접두어) |

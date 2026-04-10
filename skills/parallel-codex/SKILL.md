@@ -152,6 +152,26 @@ Claude는 검증 리포트만 읽는다 (수십 줄).
 PIPELINE.md의 해당 그룹 상태를 `verified`로 업데이트한다.
 다음 그룹의 프롬프트 설계에 검증 리포트 내용을 활용한다.
 
+#### 5g. Browser QA (conditional)
+
+모든 그룹의 검증이 완료된 후 **1회만** 실행한다 (중간 그룹에서는 실행하지 않음).
+
+1. `git diff main...<last-verify-branch> --name-only`로 전체 변경 파일 확인
+2. UI 패턴 매칭: `\.(tsx|jsx|vue|svelte|html|css|scss|sass|less|styled)\b` (create-mr과 동일)
+3. UI 파일이 없으면 → 스킵
+4. UI 파일이 있으면:
+   - 마지막 verify 브랜치를 checkout
+   - `package.json` scripts에서 dev server 명령어 확인
+   - `skills/_shared/references/browser-qa-prompt-template.md`의 변수를 치환하여 프롬프트 작성
+   - `Agent(subagent_type="general-purpose")`로 서브에이전트 소환
+     - general-purpose 타입이어야 Claude in Chrome MCP 도구(`mcp__claude-in-chrome__*`) 접근 가능
+   - 서브에이전트가 `.worktrees/QA_REPORT.md`에 QA 리포트 작성
+5. QA 리포트를 읽고 Step 7 최종 보고에 요약 포함
+6. PIPELINE.md MR Plan의 QA 컬럼 업데이트 (`pass` 또는 `issues_found`)
+
+QA 결과는 **정보 제공용**이다. 이슈가 발견되어도 MR 생성을 자동으로 차단하지 않는다.
+이슈 발견 시 MR body에 QA 결과 요약을 포함한다.
+
 ### Step 6: 단일 MR 생성
 
 모든 그룹의 실행·검증이 완료되면, **마지막 그룹의 `temp/verify-*` 브랜치**에서 `main`으로 **하나의 draft MR**을 생성한다.
@@ -178,6 +198,8 @@ PIPELINE.md에서 최종 상태를 읽어 사용자에게 제시한다:
 - **부분 실패**: 성공한 작업만 검증 진행. 실패 작업은 PIPELINE.md에 기록.
 - **검증 Codex 실패**: PIPELINE.md에 기록하고 사용자에게 수동 개입 요청. 후속 그룹은 중단.
 - **검증 시 worktree 체크아웃 충돌**: 검증 Codex가 `git checkout <task-branch>`를 시도할 때 해당 브랜치가 이미 워크트리에 체크아웃되어 있으면 실패한다. 이 경우 워크트리 경로에서 직접 수정해야 한다 (`cd .worktrees/<group>/<task>` 후 수정+커밋).
+- **Browser QA 실패**: dev server 미기동, Chrome 미연결 등으로 QA를 수행할 수 없으면
+  경고만 표시하고 MR 생성을 계속 진행한다.
 
 ## Session Resumption
 
@@ -197,4 +219,5 @@ PIPELINE.md에서 최종 상태를 읽어 사용자에게 제시한다:
 - `${SKILL_DIR}/references/verifier-prompt-template.md` — 검증 전담 Codex 프롬프트 구조
 - `${SKILL_DIR}/references/mr-creator-prompt-template.md` — MR 생성 Codex 프롬프트 구조
 - `${SKILL_DIR}/references/pipeline-format.md` — PIPELINE.md 파일 포맷 명세
+- `skills/_shared/references/browser-qa-prompt-template.md` — Browser QA 서브에이전트 프롬프트 (build과 공유)
 - `${SKILL_DIR}/agents/openai.yaml` — Codex 에이전트 인터페이스 설정

@@ -41,14 +41,15 @@ Build 시작 시 Skill 도구로 아래 플러그인 스킬을 로드한다:
 ## Build Loop (Per Phase)
 
 ```
-0. Bootstrap   — Codex plugin skills 로드 (세션당 1회)
-1. Read        — BRIEF.md + previous PHASE_REPORT_*.md
-2. Craft       — Draft Codex prompt
-3. Communicate — Present prompt to user, iterate until approved
-4. Execute     — Invoke Codex (codex:codex-cli-runtime 계약에 따라)
-5. Review      — Read Codex output + PHASE_REPORT
-6. Update      — Update BRIEF.md Status + Log
-7. Checkpoint  — Ask whether to continue to next phase
+0. Bootstrap    — Codex plugin skills 로드 (세션당 1회)
+1. Read         — BRIEF.md + previous PHASE_REPORT_*.md
+2. Craft        — Draft Codex prompt
+3. Communicate  — Present prompt to user, iterate until approved
+4. Execute      — Invoke Codex (codex:codex-cli-runtime 계약에 따라)
+5. Review       — Read Codex output + PHASE_REPORT
+5.5 Browser QA  — UI 파일 변경 시 서브에이전트 QA (conditional)
+6. Update       — Update BRIEF.md Status + Log
+7. Checkpoint   — Ask whether to continue to next phase
 ```
 
 ### Step 1: Read
@@ -116,6 +117,24 @@ and re-present. The user may also request the full raw prompt.
 - Present a summary to the user: what was done, verification result, any
   open issues.
 
+### Step 5.5: Browser QA (conditional)
+
+PHASE_REPORT의 `Files Changed` 테이블에서 UI 파일 변경 여부를 확인한다.
+패턴: `\.(tsx|jsx|vue|svelte|html|css|scss|sass|less|styled)\b` (create-mr과 동일)
+
+UI 파일이 없으면 이 스텝을 건너뛴다.
+
+UI 파일이 있으면:
+1. `package.json` scripts에서 dev server 명령어 확인 (`dev` > `start` > `serve` 우선순위)
+2. `skills/_shared/references/browser-qa-prompt-template.md`의 변수를 치환하여 프롬프트 작성
+3. `Agent(subagent_type="general-purpose")`로 서브에이전트 소환
+   - general-purpose 타입이어야 Claude in Chrome MCP 도구(`mcp__claude-in-chrome__*`) 접근 가능
+4. 서브에이전트가 `tasks/<slug>/QA_REPORT_<NN>.md`에 QA 리포트 작성
+5. QA 리포트를 읽고 Step 7 Checkpoint에서 요약 포함
+
+QA 결과는 **정보 제공용**이다. 이슈가 발견되어도 phase 완료를 자동으로 차단하지 않는다.
+사용자가 Checkpoint에서 진행 여부를 결정한다.
+
 ### Step 6: Update
 
 - Update `BRIEF.md` Status: move completed phase to `done`, advance `current`.
@@ -147,6 +166,8 @@ Codex writes `tasks/<slug>/PHASE_REPORT_<NN>.md` after each phase.
 - **Phase report missing**: Warn user. Extract what's available from stdout.
 - **Verification failure reported by Codex**: Present the failure. Ask user
   whether to retry (re-invoke Codex with fix instructions) or mark blocked.
+- **Browser QA 실패**: dev server 미기동, Chrome 미연결 등으로 QA를 수행할 수 없으면
+  경고만 표시하고 다음 스텝으로 진행한다. phase 완료를 차단하지 않는다.
 
 ## Session Resumption
 
