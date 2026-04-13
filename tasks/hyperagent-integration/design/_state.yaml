@@ -1,0 +1,155 @@
+slug: hyperagent-integration
+work_mode: architecture
+phase: done
+signals:
+  has_user_problem: true        # 현재 에이전트/스킬은 정적이며 경험에서 자동 개선되지 않음
+  scope_clarity: false          # 인터뷰를 통해 구체화 필요
+  has_ui: false                 # CLI 기반, 새 UI 없음
+  has_user_interaction: true    # 개발자가 CLI로 자기개선 루프와 상호작용
+  public_facing: false          # 내부 도구
+  exposes_api: true             # 성능 추적, 변종 관리, 개선 루프용 인터페이스
+  changes_contract: true        # agent-registry, skills SSOT 계약 변경
+  touches_multiple_services: true  # agent-registry, skills, orchestration, sync 파이프라인
+  new_service: true             # 자기개선 레이어 (meta-agent layer)
+  data_flow_changes: true       # 성능 데이터 수집, 변종 아카이브, 피드백 루프
+  has_nontrivial_decision: true # 진화 전략, 안전 경계, 변종 관리 등 다수의 아키텍처 결정
+  handles_pii: false
+  auth_changes: false
+  compliance_required: false
+  requires_measurement: true    # 에이전트/스킬 성능 측정이 자기개선의 핵심
+  pm_dashboard_needed: false
+  perf_sensitive: true          # 진화 루프의 LLM 호출 비용 및 지연
+  scale_sensitive: true         # 변종 수 폭발 가능성
+  new_deployable: false         # 기존 시스템 확장
+  has_platform_dependency: true # Claude Code hooks, session 지속성, Codex 런타임 의존
+  requires_runtime_validation: true  # 훅 동작, 세션 히스토리 접근, 프로파일 동적 리로딩 검증 필요
+
+spikes:
+  - id: spike-1
+    assumption: "Claude Code hooks(Stop, PostToolUse 등)로 에이전트 실행 성능 데이터를 수집할 수 있다"
+    status: passed
+    result: |
+      hooks 인프라 확인됨. ~/.claude/hooks/ 디렉토리 존재. settings.json에 hooks 키로
+      PostToolUse, Stop 등 이벤트별 matcher+command 등록 가능. 현재 비어있으나
+      인프라 자체는 Claude Code에 내장. 환경변수(CLAUDE_TOOL_NAME 등)로 컨텍스트 전달 가능.
+
+  - id: spike-2
+    assumption: "agent-registry의 instructions.md를 수정하면 다음 Claude Code 세션에서 즉시 반영된다 (symlink 기반)"
+    status: passed
+    result: |
+      ~/.claude/agents/ 하위 모든 파일이 SSOT repo의 agents/ 디렉토리로 symlink됨 확인.
+      install_assets.py가 --link(기본) 모드에서 symlink 생성. 소스 파일 수정 시
+      다음 세션에서 즉시 반영. worktree 환경에서는 자동으로 copy 모드로 전환.
+
+  - id: spike-3
+    assumption: "Claude Code 세션 로그/히스토리가 프로그래밍적으로 접근 가능하여 과거 성능 추출이 가능하다"
+    status: passed
+    result: |
+      풍부한 세션 데이터 확인:
+      - ~/.claude/history.jsonl (4.1MB): 전역 명령어 히스토리 (timestamp, project, sessionId)
+      - ~/.claude/projects/<project>/<uuid>.jsonl: 세션별 대화 전체 기록 (메시지, 도구 호출, 결과, 타임스탬프, git branch)
+      - ~/.claude/stats-cache.json: 일별 활동(messageCount, sessionCount, toolCallCount), 모델별 토큰 사용량, 총 2175 세션/288707 메시지
+      - ~/.claude/sessions/: 활성 세션 메타데이터
+      JSONL 형식으로 프로그래밍적 파싱 완전 가능.
+
+interview_answers:
+  users_and_jobs: "1인 개발자(본인). 개인 생산성 도구의 에이전트/스킬이 사용 경험에서 자동으로 개선되길 원함."
+  success_criteria: "피드백 빈도 감소, 스킬/에이전트 수동 생성 불필요, 시스템이 알아서 구성·개선·추가."
+  scope_and_non_scope: "In: 에이전트 프로파일 자동개선 + 스킬 프롬프트 자동튜닝 + 새 에이전트/스킬 자동생성 + 오케스트레이션 정책 자동조정. Out: 모델 파인튜닝, 팀 공유 메커니즘, 인-세션 실시간 자기수정."
+  constraints_and_deadlines: "없음. 제약 없이 자유롭게 설계."
+  reuse_surface: "기존 SSOT 파이프라인(agent-registry, sync_agents.py, install_assets.py), 세션 JSONL, hooks 인프라, skill-creator 플러그인, parallel-codex."
+  data_and_integrations: "세션 JSONL 중심. 대화 자체가 최고의 신호 소스. 파이프라인 실패 등도 대화에서 자연스럽게 언급되므로 별도 CI 연동 불필요."
+  quality_attributes: "특별 우선순위 없음. 합리적 기본값으로 설계."
+  future_direction: "1) 프로젝트 간 학습 전이 (A 프로젝트 학습이 B에도 적용). 2) 메타-메타 루프 (자기개선을 개선하는 루프, HyperAgents DGM-H의 핵심)."
+  technical_risk: "spikes에서 모두 검증 완료: hooks 인프라, symlink 즉시 반영, 세션 데이터 접근."
+
+bundle:
+  - name: prd-lite
+    path: tasks/hyperagent-integration/design/PRD.md
+    status: drafted
+    confidence: high
+    open_questions:
+      must_answer: 0
+      nice_to_have: 2
+      decision_candidate: 2
+      assumption_candidate: 5
+    rationale: "모든 비단순 작업에 필수. 자기개선 통합의 문제, 목표, 성공 기준 정의."
+
+  - name: architecture-context
+    path: tasks/hyperagent-integration/design/ARCHITECTURE.md
+    status: drafted
+    confidence: high
+    open_questions:
+      must_answer: 3
+      nice_to_have: 2
+      decision_candidate: 4
+      assumption_candidate: 3
+    rationale: "touches_multiple_services + new_service + data_flow_changes. Mermaid 다이어그램 3개, HyperAgents/Managed Agents 매핑 섹션 포함."
+
+  - name: adr
+    path: tasks/hyperagent-integration/design/adr/
+    status: drafted
+    confidence: medium
+    open_questions:
+      must_answer: 0
+      nice_to_have: 0
+      decision_candidate: 4
+      assumption_candidate: 15
+    rationale: "4개 ADR 작성 완료. ADR-0001(진화전략), ADR-0002(안전경계), ADR-0003(변종관리), ADR-0004(세션이벤트로그). 각 ADR에 DECISION-CANDIDATE 1개씩, ASSUMPTION 다수."
+
+  - name: api-contract
+    path: tasks/hyperagent-integration/design/API-CONTRACT.md
+    status: drafted
+    confidence: medium
+    open_questions:
+      must_answer: 0
+      nice_to_have: 0
+      decision_candidate: 2
+      assumption_candidate: 10
+    rationale: "6개 CLI 인터페이스 정의. 세션 JSONL 파싱 규칙, 파일 기반 계약(hyperagent.toml), 데이터 흐름 다이어그램 포함."
+
+  - name: nfr-checklist
+    path: tasks/hyperagent-integration/design/NFR.md
+    status: drafted
+    confidence: medium
+    open_questions:
+      must_answer: 0
+      nice_to_have: 0
+      decision_candidate: 0
+      assumption_candidate: 21
+    rationale: "perf_sensitive + scale_sensitive. LLM 호출 비용 예산, 변종 수 상한, 진화 루프 시간 제한."
+
+  - name: analytics
+    path: tasks/hyperagent-integration/design/ANALYTICS.md
+    status: drafted
+    confidence: high
+    open_questions:
+      must_answer: 0
+      nice_to_have: 2
+      decision_candidate: 1
+      assumption_candidate: 14
+    rationale: "성능 신호 택소노미(부정6/긍정5/중립5), 한국어 패턴 regex, 엔티티별 점수 모델, 이벤트 JSON Schema 포함."
+
+skipped:
+  - name: ux-flow
+    rationale: "has_ui=false. CLI 기반 내부 도구, 새로운 UI 흐름 불필요."
+  - name: security-privacy
+    rationale: "handles_pii=false, auth_changes=false. 민감 데이터 미취급."
+  - name: accessibility
+    rationale: "public_facing=false. 공개 UI 없음."
+  - name: ops-runbook
+    rationale: "new_deployable=false. 기존 시스템 확장이므로 별도 운영 런북 불필요."
+
+next_action: "구현 준비 완료. $plan 또는 $build로 진행."
+log:
+  - "2026-04-13T00:00:00Z: phase=plan, design-docs session started for hyperagent-integration"
+  - "2026-04-13T00:01:00Z: phase=plan, 9-axis signals inferred from task description + codebase exploration"
+  - "2026-04-13T00:02:00Z: phase=plan, bundle selected: 6 docs (prd-lite, architecture-context, adr, api-contract, nfr-checklist, analytics) + 3 spikes"
+  - "2026-04-13T00:03:00Z: phase=spike, all 3 spikes passed — hooks infra confirmed, symlink deployment confirmed, rich session data (JSONL+stats) confirmed"
+references:
+  socratic_design: null
+  brief: null
+  external:
+    - "https://arxiv.org/abs/2603.19461 — Meta HyperAgents paper (DGM-H)"
+    - "https://www.anthropic.com/engineering/managed-agents — Anthropic Managed Agents architecture"
+    - "https://github.com/facebookresearch/Hyperagents — HyperAgents source code"
