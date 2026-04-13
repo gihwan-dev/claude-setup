@@ -155,3 +155,15 @@ Codex writes `tasks/<slug>/PHASE_REPORT_<NN>.md` after each phase.
 
 Read `BRIEF.md` Status + Log + all `PHASE_REPORT_*.md` → identify where to
 resume → continue from that phase.
+
+
+<!-- HyperAgent variant patch: v-20260413-130514-03 -->
+<!-- Created at: 2026-04-13T13:05:14Z -->
+<!-- Entity: skill:build -->
+<!-- Reason: acceptance_rate -->
+<!-- Score: 0.2157 -->
+<!-- Priority: high -->
+<!-- Evidence sessions: e1309bb6-e031-43d4-9006-138745680682 -->
+<!-- Improvement suggestion: -->
+<!-- 수용률이 낮습니다. 입력 조건, 성공 기준, 산출물 형식을 더 명확히 고정하는 개선이 우선입니다. -->
+<!-- End HyperAgent variant patch -->
