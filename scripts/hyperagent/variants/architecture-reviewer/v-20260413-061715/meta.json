@@ -1,0 +1,36 @@
+{
+  "baseline_delta": null,
+  "change_reason": "정확도 신호가 약합니다. 근거 확인, 파일 참조, 불확실성 표기 규칙을 에이전트 지침에 강화하세요.",
+  "created_at": "2026-04-13T06:17:15Z",
+  "entity_id": "architecture-reviewer",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "8056a9f6-e523-4422-a6e0-d7bb1e9b8bcc"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "rule_based",
+  "llm_requested": false,
+  "llm_status": "not_requested",
+  "original_path": "agent-registry/architecture-reviewer/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/score-report.json",
+  "source_path": "agent-registry/architecture-reviewer/instructions.md",
+  "source_score": 0.0,
+  "source_target": "agent-registry/architecture-reviewer/instructions.md",
+  "status": "staged",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "accuracy"
+  ],
+  "trend": {
+    "confidence": 0.1,
+    "direction": "new",
+    "magnitude": 0.0,
+    "period_sessions": 1
+  },
+  "variant_id": "v-20260413-061715"
+}

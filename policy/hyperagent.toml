@@ -1,0 +1,80 @@
+schema_version = "1"
+
+[trigger]
+mode = "daily-cron"
+time = "22:00"
+timezone = "Asia/Seoul"
+default_date_range_days = 7
+min_turns = 3
+max_targets_per_cycle = 1
+cycle_timeout_seconds = 600
+
+[cost_budget]
+hard_cap_usd_per_cycle = 5.0
+monthly_budget_usd = 30.0
+warning_threshold_ratio = 0.8
+cost_log_path = "meta/cost-log.jsonl"
+
+[variant_limits]
+max_active_per_entity = 5
+max_total = 50
+max_generated_per_run = 3
+lineage_max_generations = 10
+gc_schedule = "monthly"
+prune_score_drop_ratio = 0.20
+
+[safety_tiers.tier1]
+name = "agent_profile_update"
+applies_to = ["agent"]
+rule = "Existing agent instruction update under agent-registry/*/instructions.md"
+action = "apply"
+requires_approval = false
+observation_sessions = 0
+
+[safety_tiers.tier2]
+name = "skill_prompt_update"
+applies_to = ["skill"]
+rule = "Existing skill prompt update under skills/*/SKILL.md"
+action = "apply_observe"
+requires_approval = false
+observation_sessions = 3
+
+[safety_tiers.tier3]
+name = "new_creation_or_boundary_change"
+applies_to = ["agent", "skill", "orchestration"]
+rule = "New target creation, missing target path, or orchestration boundary change"
+action = "pending"
+requires_approval = true
+observation_sessions = 0
+
+[scoring]
+decay_half_life_days = 7
+baseline_min_sessions = 5
+trend_threshold = 0.15
+weights = { correction_rate = 0.35, repeated_instruction_rate = 0.25, tool_failure_rate = 0.15, positive_feedback_rate = 0.15, usage_frequency = 0.10 }
+
+[generation]
+max_variants_per_run = 3
+default_strategy = "auto"
+model = "claude-sonnet-4-20250514"
+max_tokens = 4096
+
+[archive]
+max_age_days = 90
+min_score_threshold = 0.3
+archive_path = "scripts/hyperagent/archive.jsonl"
+
+[paths]
+archive = "scripts/hyperagent/archive.jsonl"
+variants = "scripts/hyperagent/variants"
+improvement_log = "scripts/hyperagent/improvement-log.jsonl"
+baseline = "~/.claude/hyperagent/baseline.json"
+runs = "~/.claude/hyperagent/runs"
+proposals = "scripts/hyperagent/proposals"
+
+[signals]
+min_turns_threshold = 3
+correction_keywords_ko = ["아니", "그게 아니라", "다시", "방금 말한", "이미 말했"]
+correction_keywords_en = ["no", "not what I", "I already said", "again", "wrong"]
+positive_keywords_ko = ["좋아", "완벽", "감사", "잘했"]
+positive_keywords_en = ["great", "perfect", "thanks", "good job", "exactly"]

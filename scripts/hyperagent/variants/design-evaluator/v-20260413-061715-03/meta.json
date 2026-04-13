@@ -1,0 +1,40 @@
+{
+  "baseline_delta": 0.0804,
+  "change_reason": "관련성 신호가 약합니다. 에이전트의 작업 수락 조건과 제외 범위를 더 좁혀 라우팅 품질을 높이세요.",
+  "created_at": "2026-04-13T06:17:15Z",
+  "entity_id": "design-evaluator",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "02103b28-e689-4497-b7cf-b3d4ad8134de",
+    "4420f368-c1c0-4b20-a13e-6d1b9de954f4",
+    "b7cca9c6-aa27-4023-b12f-1724f96f6cc3",
+    "86ad443b-03be-4763-8800-41161201fd1f",
+    "e1309bb6-e031-43d4-9006-138745680682"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "rule_based",
+  "llm_requested": false,
+  "llm_status": "not_requested",
+  "original_path": "agent-registry/design-evaluator/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/score-report.json",
+  "source_path": "agent-registry/design-evaluator/instructions.md",
+  "source_score": 0.0804,
+  "source_target": "agent-registry/design-evaluator/instructions.md",
+  "status": "staged",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "relevance"
+  ],
+  "trend": {
+    "confidence": 0.5,
+    "direction": "improving",
+    "magnitude": 8.84,
+    "period_sessions": 5
+  },
+  "variant_id": "v-20260413-061715-03"
+}

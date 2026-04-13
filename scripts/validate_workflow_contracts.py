@@ -44,6 +44,31 @@ def _validate_policy(repo_root: Path, errors: list[str]) -> None:
         errors.append(str(exc))
 
 
+def _validate_hyperagent(repo_root: Path, errors: list[str]) -> None:
+    hyperagent_dir = repo_root / "scripts" / "hyperagent"
+    hyperagent_policy = repo_root / "policy" / "hyperagent.toml"
+    if not hyperagent_dir.exists() and not hyperagent_policy.exists():
+        return
+
+    try:
+        _load_toml(hyperagent_policy)
+    except ValueError as exc:
+        errors.append(str(exc))
+
+    required_files = (
+        "analyze_sessions.py",
+        "score.py",
+        "generate_variant.py",
+        "archive.py",
+        "apply.py",
+        "evolve.py",
+    )
+    for filename in required_files:
+        script_path = hyperagent_dir / filename
+        if not script_path.is_file():
+            errors.append(f"missing hyperagent script: {script_path}")
+
+
 def _validate_skills(repo_root: Path, errors: list[str]) -> None:
     skills_root = repo_root / "skills"
     if not skills_root.is_dir():
@@ -96,6 +121,7 @@ def _run_check_command(repo_root: Path, script_name: str, errors: list[str]) -> 
 def validate_repo(repo_root: Path, *, run_sync_checks: bool = True) -> list[str]:
     errors: list[str] = []
     _validate_policy(repo_root, errors)
+    _validate_hyperagent(repo_root, errors)
     _validate_skills(repo_root, errors)
 
     if run_sync_checks:
