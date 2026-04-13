@@ -116,18 +116,44 @@ external API access — so multi-tenancy and authz are likely reopens."
 **Stop condition**: User names at least one likely follow-up OR explicitly
 says none are known.
 
+### 9. Technical Risk (Spike Candidates)
+
+**Question**: What is the single biggest technical bet in this design — the
+assumption that, if wrong, would invalidate the entire approach? How would
+you verify it in under 30 minutes with a minimal test?
+
+**Why**: Surfaces runtime-only assumptions that cannot be validated by
+reading code or documentation. These become `[SPIKE][required]` entries
+that must be tested before full document production begins. Prevents
+building an elaborate design on an unverified foundation.
+
+**Good answers look like**: "We assume the Claude Code Stop hook fires
+once per session exit, not per-turn. Verify: register a Stop hook that
+appends a timestamp to a log file, run one session with 3 turns, check
+if the log has 1 line or 3."
+
+**Stop condition**: User names at least one runtime-verifiable assumption
+with a concrete test, OR explicitly confirms all technical assumptions
+are already verified or verifiable via code reading.
+
+**When to ask**: Always ask this axis. It is the most important axis for
+architecture and feature work modes. Even if the user says "none", record
+that as an explicit acknowledgment in `_state.yaml`.
+
 ## Conduct Rules
 
 1. **One axis per turn.** Do not bundle axis questions together. Give the
    user space to answer each.
 2. **Prefer axes that unblock the most docs.** Users+Jobs and Constraints
-   unblock nearly every doc; ask them first.
+   unblock nearly every doc; ask them first. **Technical Risk (Axis 9)
+   should be asked early for architecture/feature work modes** — it can
+   invalidate the entire design direction.
 3. **Stop asking when answered.** If the user's answer to Axis 1 already
    implied Axis 3 (scope), skip Axis 3's explicit question and record the
    inferred answer with `[ASSUMPTION][candidate]` marker.
 4. **Never ask UI-level questions here.** Button color, spacing, copy — those
    are filled inside `ux-flow` drafts in flesh, not in the interview.
-5. **Close the interview explicitly.** After 6-8 axes are answered, summarize
+5. **Close the interview explicitly.** After 6-9 axes are answered, summarize
    the domain context to the user and ask "is this accurate before I
    dispatch the writers?"
 

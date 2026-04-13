@@ -65,15 +65,18 @@ $design-docs refine                   # force refine mode on current bundle
 ## Mode State Machine
 
 ```
-plan → flesh → refine → done
-        ↑        ↓
-        └────────┘  (refine may demote docs back to flesh when gaps appear)
+plan → spike → flesh → refine → done
+  ↑      ↓       ↑        ↓
+  └──────┘       └────────┘
+  (spike failure    (refine may demote
+   revises plan)     docs back to flesh)
 ```
 
-- **plan**: classify task on 8 axes → select bundle → create placeholder files → freeze bundle with user approval
+- **plan**: classify task on 9 axes → select bundle → identify runtime assumptions → create placeholder files → freeze bundle with user approval
+- **spike**: validate runtime-only assumptions with minimal executable tests → block flesh until all spikes pass or design adjusts
 - **flesh**: conduct abstract interview → dispatch per-doc writers in parallel → fill templates + leave question tags
 - **refine**: scan tags → 3-way triage → dispatch researchers for self-resolve → batch must-answer to user → run evaluator gate
-- **done**: all docs refined, no must-answer remaining, evaluator verdict = implementation-ready
+- **done**: all docs refined, no must-answer remaining, all spikes passed, evaluator verdict = implementation-ready
 
 ## Required References
 
@@ -111,6 +114,7 @@ Summary:
 | Sensitivity | security-privacy |
 | Measurement | analytics |
 | Scale | nfr-checklist, ops-runbook |
+| **Feasibility** | **spike tests (plan→spike gate)** |
 | Work mode | determines mode-playbook (arch/bugfix/refactor/feature) |
 
 ## Consultation Loop
@@ -130,7 +134,7 @@ Every substantive action during flesh or refine follows this 5-step cycle:
 
 Every Agent dispatch includes these fields in the prompt:
 
-- `mode`: plan | flesh | refine
+- `mode`: plan | spike | flesh | refine
 - `doc_type`: prd-lite | ux-flow | architecture-context | adr | api-contract | nfr-checklist | security-privacy | accessibility | analytics | ops-runbook
 - `doc_path`: absolute path to the target file
 - `template_path`: absolute path to the source template
@@ -144,22 +148,64 @@ Every Agent dispatch includes these fields in the prompt:
 ### plan mode
 
 1. If no `tasks/<slug>/design/` exists, create it + `adr/` subdir.
-2. Infer 8-axis signals from task description.
+2. Infer 9-axis signals from task description.
 3. Dispatch `docs-researcher` in parallel to search the codebase for each
    `unknown` signal. Use the 5-field payload from
    `agent-dispatch-guide.md` for each.
 4. For unresolved signals, ask user ≤3 axis questions.
 5. Evaluate `bundle-rules.md` conditions → candidate bundle list.
-6. Present the bundle to user with per-doc rationale. Accept additions /
-   removals. Freeze.
-7. Create placeholder files from templates in `assets/`. Write `_state.yaml`
-   with `phase: plan`, each doc `status: placeholder`, `confidence: low`.
-8. Append log entry. Report bundle summary to user and suggest next step
-   (`$design-docs flesh`).
+6. **Identify runtime assumptions** — scan signals and task description for
+   assumptions that cannot be verified by reading code/docs alone (external
+   platform behavior, API semantics, runtime timing, etc.). For each, emit
+   a `[SPIKE][required]` tag with a concrete test description (≤10 lines).
+7. Present the bundle + spike list to user with per-doc rationale. Accept
+   additions / removals. Freeze.
+8. Create placeholder files from templates in `assets/`. Write `_state.yaml`
+   with `phase: plan`, each doc `status: placeholder`, `confidence: low`,
+   and `spikes` list with `status: pending`.
+9. Append log entry.
+   - If spikes exist: suggest `$design-docs spike` as next step.
+   - If no spikes: suggest `$design-docs flesh` as next step.
+
+### spike mode
+
+Validate runtime-only assumptions before committing to full document
+production. design-docs is read-only, so it **generates** test scripts and
+**asks the user to execute** them (or runs them via Bash if permitted).
+
+1. Read `_state.yaml`. Verify `phase == plan` and `spikes` list is non-empty.
+   If no spikes, skip to flesh.
+2. For each spike with `status: pending`:
+   a. Present the spike description and test script to the user.
+   b. Execute the test via Bash (a simple echo/log script, ≤10 lines).
+      If Bash is not available or the test requires interactive use
+      (e.g. "open a Claude session and check behavior"), ask the user to
+      run it manually and report the result.
+   c. Record the result in `_state.yaml`: `status: passed | failed`,
+      `result: "<observation>"`.
+3. After all spikes are resolved:
+   - **All passed**: set `phase: spike`, append log, suggest
+     `$design-docs flesh`.
+   - **Any failed**: present the failure to the user with options:
+     a. **Revise plan** — go back to plan mode to adjust the approach
+        (remove the failing assumption, pick a different mechanism).
+     b. **Accept risk** — proceed to flesh despite the failure, recording
+        it as `[ASSUMPTION][candidate]` with `spike_failed: true`.
+     c. **Abort** — stop design-docs entirely.
+4. If the user chose "revise plan", return to plan mode. Remove or adjust
+   the affected signals, bundle docs, and spikes. Log the revision reason.
+
+**Spike test guidelines:**
+- Maximum 10 lines of executable code.
+- Must produce observable output (file creation, log line, exit code).
+- Must complete in under 60 seconds.
+- Test the **smallest possible claim** — not the full feature, just the
+  assumption (e.g. "does Stop fire per-turn or per-session?").
 
 ### flesh mode
 
-1. Read `_state.yaml`. Verify `phase == plan` or user forced flesh.
+1. Read `_state.yaml`. Verify `phase ∈ {plan, spike}` or user forced flesh.
+   If spikes exist and any has `status: pending`, warn and suggest spike first.
 2. Load `interview-axes.md`. Run abstract interview: 6-8 axes, one question
    per turn. Update interview_answers map in `_state.yaml` after each answer.
 3. Once interview is complete, dispatch one Agent call **per doc in bundle**
@@ -208,11 +254,18 @@ Every Agent dispatch includes these fields in the prompt:
 ```yaml
 slug: <kebab-case>
 work_mode: architecture | bugfix | refactor | feature
-phase: plan | flesh | refine | done | blocked
+phase: plan | spike | flesh | refine | done | blocked
 signals:
   has_user_problem: true | false | unknown
   has_ui: true | false | unknown
-  # ... all 8 axes
+  # ... all 9 axes (including feasibility)
+spikes:
+  - id: spike-1
+    assumption: "<what must be true>"
+    test: "<≤10 line executable test>"
+    status: pending | passed | failed
+    result: "<observation or null>"
+  # empty list if no runtime assumptions identified
 interview_answers:
   users_and_jobs: "..."
   success_criteria: "..."
@@ -245,6 +298,7 @@ A bundle is **implementation-ready** when all of the following hold:
 - `phase == done` in `_state.yaml`
 - For every doc in bundle: `status == refined` OR `status == skipped`
 - Total `must_answer` across bundle == 0
+- All spikes: `status == passed` OR `status == failed` with user-accepted risk
 - `design-evaluator` returned `proceed` or `proceed-with-advisory`
 - Every `DECISION-CANDIDATE` has been either resolved (in an ADR) or
   explicitly deferred with an Open Question reason

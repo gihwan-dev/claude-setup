@@ -12,12 +12,15 @@ Refine mode scans for these tags, classifies them, and rewrites them in-place.
 [ASSUMPTION][candidate] <text>
 [ASSUMPTION][confirmed] <text>
 [DECISION-CANDIDATE] <option A> | <option B> | <option C>
+[SPIKE][required] <assumption> — <test description>
+[SPIKE][passed] <assumption> — <observed result>
+[SPIKE][failed] <assumption> — <observed result>
 ```
 
 ### Regex
 
 ```
-^\[(QUESTION|ASSUMPTION|DECISION-CANDIDATE)\](\[[a-z-]+\])?\s+(.+)$
+^\[(QUESTION|ASSUMPTION|DECISION-CANDIDATE|SPIKE)\](\[[a-z-]+\])?\s+(.+)$
 ```
 
 The main agent uses this regex in refine mode to enumerate all tags across
@@ -104,6 +107,44 @@ that needs to be made and recorded.
 Example:
 ```
 [DECISION-CANDIDATE] store tokens in httpOnly cookie | localStorage | in-memory only
+```
+
+### `[SPIKE][required]`
+
+A runtime-only assumption that **must be validated by executing code** before
+full design production. Cannot be resolved by reading files or asking the user.
+
+- Plan mode emits when: the assumption depends on external platform behavior,
+  API semantics, runtime timing, or other properties that are only observable
+  through execution.
+- Spike mode resolves: execute the test, record result as `[SPIKE][passed]`
+  or `[SPIKE][failed]`.
+- **Blocks flesh mode** until resolved. This is the key difference from
+  `[ASSUMPTION][candidate]` — candidates can be validated later, spikes
+  cannot.
+- On pass: replaced with `[SPIKE][passed]` + observation.
+- On fail: design must be revised (return to plan) or risk explicitly accepted.
+
+Example:
+```
+[SPIKE][required] Stop hook fires once per session exit, not per-turn —
+Test: add Stop hook that appends timestamp to /tmp/spike-stop.log,
+run 1 session with 3 turns, count lines in log file.
+Expected: 1 line. If 3 lines → assumption false.
+```
+
+### `[SPIKE][passed]` / `[SPIKE][failed]`
+
+Resolved spike. Carries the observed result as evidence.
+
+Example:
+```
+[SPIKE][passed] sessions-index.json updates before Stop hook fires —
+Observed: messageCount=6 at Stop time matches final session count.
+```
+```
+[SPIKE][failed] Stop hook fires once per session — Observed: 3 lines
+in log for 3-turn session. Stop fires per-turn, not per-session.
 ```
 
 ## Refine Triage Rules

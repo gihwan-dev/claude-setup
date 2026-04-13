@@ -2,7 +2,7 @@
 
 design-docs has two orthogonal mode dimensions:
 
-- **Phase mode** (the state machine): `plan → flesh → refine → done`
+- **Phase mode** (the state machine): `plan → spike → flesh → refine → done`
 - **Work mode** (the task category): `architecture | bugfix | refactor | feature`
 
 This file describes what matters in each **phase × work-mode** cell. Load
@@ -12,15 +12,27 @@ the relevant row at each phase entry.
 
 ### Phase: plan
 
-Common to all work modes: infer 8-axis signals, freeze the bundle, create
-placeholders.
+Common to all work modes: infer 9-axis signals (including feasibility),
+freeze the bundle, identify runtime assumptions as spikes, create placeholders.
 
 | Work mode | Plan-phase emphasis |
 |-----------|---------------------|
-| architecture | Lean heavily on `architecture-context` and `adr`. Likely signals: `touches_multiple_services`, `new_service`, `data_flow_changes`, `scale_sensitive`. Ask about quality attributes and operational boundaries. |
-| bugfix | Often a 1-doc bundle: `prd-lite` (as incident summary) + `adr` (fix strategy). Likely signals mostly `false`. Skip ux-flow, nfr-checklist unless regression area demands it. |
-| refactor | Signals: `changes_contract` (maybe), `data_flow_changes` (maybe). Bundle typically `prd-lite` + `architecture-context` (before/after) + `adr` (migration strategy). |
-| feature | The "full bundle" case. Most axes probable. Use the app-prototype default seed if prompt matches, then trim via signal evaluation. |
+| architecture | Lean heavily on `architecture-context` and `adr`. Likely signals: `touches_multiple_services`, `new_service`, `data_flow_changes`, `scale_sensitive`. Ask about quality attributes and operational boundaries. **Feasibility axis is critical** — architecture work often depends on external platform behavior (APIs, hooks, event models). Always ask Axis 9 (Technical Risk). |
+| bugfix | Often a 1-doc bundle: `prd-lite` (as incident summary) + `adr` (fix strategy). Likely signals mostly `false`. Skip ux-flow, nfr-checklist unless regression area demands it. Spikes are rare but check: does the reproduction depend on unverified runtime behavior? |
+| refactor | Signals: `changes_contract` (maybe), `data_flow_changes` (maybe). Bundle typically `prd-lite` + `architecture-context` (before/after) + `adr` (migration strategy). Spike if the refactor assumes callers behave a certain way that can only be verified by running their code. |
+| feature | The "full bundle" case. Most axes probable. Use the app-prototype default seed if prompt matches, then trim via signal evaluation. **Check feasibility** when the feature depends on third-party platform capabilities. |
+
+### Phase: spike
+
+Common to all work modes: execute minimal tests to validate runtime-only
+assumptions before committing to full document production.
+
+| Work mode | Spike-phase emphasis |
+|-----------|---------------------|
+| architecture | Most likely to have spikes. External platform hooks, API behavior, event timing, concurrency semantics — these are often only verifiable by execution. Prioritize the spike that, if it fails, would invalidate the most documents in the bundle. |
+| bugfix | Spikes are rare. If present, they typically test "can we reproduce the bug with this mechanism?" Run the reproduction spike before designing the fix. |
+| refactor | Spike when the refactor assumes behavioral equivalence between old and new implementations. Write a spike that exercises the exact code path being changed. |
+| feature | Spike when the feature depends on capabilities of an external system (third-party API, CLI tool flags, platform hook events). The spike should be the smallest possible executable that proves the capability exists. |
 
 ### Phase: flesh
 
@@ -91,9 +103,14 @@ these question shapes for the current work mode.
 
 ## Mode Handoff Notes
 
-- **plan → flesh**: Verify every signal is resolved (no `unknown`). If any
-  remain, either ask one more question or mark the affected doc `skipped`
-  with rationale.
+- **plan → spike**: If any `[SPIKE][required]` tags exist, spike phase is
+  mandatory. Do not skip to flesh.
+- **plan → flesh** (no spikes): Verify every signal is resolved (no `unknown`).
+  If any remain, either ask one more question or mark the affected doc
+  `skipped` with rationale.
+- **spike → flesh**: All spikes must be `passed` or `failed` with user-accepted
+  risk. No `pending` spikes allowed. If a spike failed and the user chose
+  "revise plan", return to plan instead.
 - **flesh → refine**: Verify every doc in bundle has `status == drafted`.
   A doc stuck at placeholder means flesh failed for it — investigate before
   refining.

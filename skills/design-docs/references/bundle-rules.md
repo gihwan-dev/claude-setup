@@ -30,6 +30,8 @@ questions to the user.
 | Scale | `perf_sensitive` | Latency or throughput budgets exist |
 | Scale | `scale_sensitive` | Load pattern may change 10× |
 | Scale | `new_deployable` | A new production surface appears |
+| Feasibility | `has_platform_dependency` | Work depends on external platform/API behavior not controlled by this codebase |
+| Feasibility | `requires_runtime_validation` | A core assumption can only be verified by executing code, not by reading it |
 | Work mode | `work_mode` | `architecture \| bugfix \| refactor \| feature` (enum, not bool) |
 
 ## Work Mode Classification
@@ -92,6 +94,11 @@ docs:
   ops-runbook:
     when: "new_deployable"
     rationale: "On-call needs diagnostic paths and escalation."
+
+  spike-tests:
+    when: "has_platform_dependency OR requires_runtime_validation"
+    rationale: "Runtime-only assumptions must be validated with executable tests before committing to full design. Produces [SPIKE] entries in _state.yaml, not a document file."
+    note: "Not a document — produces spike entries in _state.yaml. Triggers spike phase between plan and flesh."
 ```
 
 ## Evaluation Procedure

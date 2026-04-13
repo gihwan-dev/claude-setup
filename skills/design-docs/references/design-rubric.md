@@ -56,29 +56,42 @@ to `done`.
 - **fail**: No failure mode analysis.
 - Return to: `flesh`, doc=`nfr-checklist` or `security-privacy`
 
+### 7. Feasibility verified
+
+- **pass**: All `[SPIKE][required]` tags have been resolved — either
+  `[SPIKE][passed]` with observed evidence, or `[SPIKE][failed]` with
+  the design adjusted accordingly. No pending spikes remain.
+- **weak**: Spikes exist but some were skipped with user-accepted risk
+  (`spike_failed: true` + explicit acknowledgment).
+- **fail**: `[SPIKE][required]` tags remain unresolved, OR the design
+  relies on assumptions that were identified as needing runtime validation
+  but were never tested. (Only enforced when `has_platform_dependency` or
+  `requires_runtime_validation` signals are true.)
+- Return to: `spike`
+
 ## Important Criteria (should pass, weak is acceptable)
 
-### 7. Assumption ledger completeness
+### 8. Assumption ledger completeness
 
 - **pass**: All `[ASSUMPTION][confirmed]` entries have a source. No
   `[ASSUMPTION][candidate]` remains unresolved.
 - **weak**: Assumptions tracked but sources missing or stale.
 - **fail**: Candidates still present, no refine pass done.
 
-### 8. Rollback strategy
+### 9. Rollback strategy
 
 - **pass**: A concrete rollback/undo plan exists for each deployed change.
 - **weak**: Rollback mentioned but not detailed.
 - **fail**: No rollback consideration.
 
-### 9. Validation plan
+### 10. Validation plan
 
 - **pass**: PRD or ops-runbook names what to test, how, and what signals
   success/failure.
 - **weak**: Validation plan exists but incomplete.
 - **fail**: No validation plan.
 
-### 10. Open questions accountability
+### 11. Open questions accountability
 
 - **pass**: Remaining open questions listed per doc with reason (external
   dependency, not thinking gap) and owner or next step.
@@ -88,9 +101,9 @@ to `done`.
 
 ## Scoring
 
-- **Proceed to done**: All 6 critical criteria pass. No important criterion
+- **Proceed to done**: All 7 critical criteria pass. No important criterion
   is fail.
-- **Proceed with advisory**: All 6 critical criteria pass. 1-2 important
+- **Proceed with advisory**: All 7 critical criteria pass. 1-2 important
   criteria are weak.
 - **Return and fix**: Any critical criterion is fail, OR 2+ important
   criteria are fail.
