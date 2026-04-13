@@ -27,3 +27,15 @@
 - Keep feedback concise and evidence-backed: quote the line, name the risk, suggest the fix.
 - Add test-oriented follow-ups when they would make the fix verifiable, but do not prescribe test structure -- defer to test-engineer for that.
 - Stay in local scope; if a quality problem points to a structural issue, note it but defer to structure-reviewer.
+
+
+<!-- HyperAgent variant patch: v-20260413-130514-02 -->
+<!-- Created at: 2026-04-13T13:05:14Z -->
+<!-- Entity: agent:code-quality-reviewer -->
+<!-- Reason: relevance -->
+<!-- Score: 0.0802 -->
+<!-- Priority: high -->
+<!-- Evidence sessions: 7a6a27a1-29d5-4d6a-99ef-5705c45d7d9b -->
+<!-- Improvement suggestion: -->
+<!-- 관련성 신호가 약합니다. 에이전트의 작업 수락 조건과 제외 범위를 더 좁혀 라우팅 품질을 높이세요. -->
+<!-- End HyperAgent variant patch -->
