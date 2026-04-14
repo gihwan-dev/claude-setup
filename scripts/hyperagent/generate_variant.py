@@ -11,17 +11,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-try:
-    import anthropic
-except ImportError:  # pragma: no cover - depends on local environment
-    anthropic = None  # type: ignore[assignment]
-
-
 SCHEMA_VERSION = "1"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "scripts" / "hyperagent" / "variants"
 DEFAULT_PROPOSALS_DIR = REPO_ROOT / "scripts" / "hyperagent" / "proposals"
-CLAUDE_MODEL = "claude-sonnet-4-6"
 
 
 @dataclass(frozen=True)
@@ -271,101 +264,10 @@ def build_variant_plans(
     return plans
 
 
-def patch_comment_prefix(filename: str) -> tuple[str, str]:
-    if filename.endswith((".md", ".markdown")):
-        return "<!--", "-->"
-    return "#", ""
-
-
-def build_patch_text(original: str, improvement: Improvement, variant_id: str, created_at: str, filename: str) -> str:
-    start_comment, end_comment = patch_comment_prefix(filename)
-    end = f" {end_comment}" if end_comment else ""
-    lines = [
-        "",
-        f"{start_comment} HyperAgent variant patch: {variant_id}{end}",
-        f"{start_comment} Created at: {created_at}{end}",
-        f"{start_comment} Entity: {improvement.entity_type}:{improvement.entity_id}{end}",
-        f"{start_comment} Reason: {improvement.reason}{end}",
-        f"{start_comment} Score: {improvement.score if improvement.score is not None else 'unknown'}{end}",
-    ]
-    if improvement.priority:
-        lines.append(f"{start_comment} Priority: {improvement.priority}{end}")
-    if improvement.evidence_sessions:
-        evidence = ", ".join(improvement.evidence_sessions[:5])
-        lines.append(f"{start_comment} Evidence sessions: {evidence}{end}")
-    lines.extend(
-        [
-            f"{start_comment} Improvement suggestion:{end}",
-            *[f"{start_comment} {line}{end}" for line in improvement.suggestion.splitlines()],
-            f"{start_comment} End HyperAgent variant patch{end}",
-            "",
-        ]
-    )
-    separator = "\n" if original.endswith("\n") else "\n\n"
-    return original + separator + "\n".join(lines)
-
-
-def strip_code_fence(text: str) -> str:
-    stripped = text.strip()
-    if not stripped.startswith("```"):
-        return text
-    lines = stripped.splitlines()
-    if len(lines) >= 2 and lines[-1].strip() == "```":
-        return "\n".join(lines[1:-1]).rstrip() + "\n"
-    return text
-
-
-def llm_prompt_for_profile(original: str, improvement: Improvement) -> str:
-    payload = {
-        "entity_type": improvement.entity_type,
-        "entity_id": improvement.entity_id,
-        "score": improvement.score,
-        "priority": improvement.priority,
-        "reason": improvement.reason,
-        "suggestion": improvement.suggestion,
-        "target": improvement.target,
-        "trend": improvement.trend,
-        "baseline_delta": improvement.baseline_delta,
-        "evidence_sessions": improvement.evidence_sessions,
-    }
-    return (
-        "Rewrite the complete HyperAgent profile below.\n"
-        "Return only the full revised profile text. Do not wrap it in Markdown fences. "
-        "Do not append comments about the change. Preserve the profile's format and intent, "
-        "but concretely incorporate the improvement signals.\n\n"
-        f"Improvement signals:\n{json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True)}\n\n"
-        f"Current profile:\n{original}"
-    )
-
-
-def generate_profile_with_llm(original: str, improvement: Improvement, client: Any) -> str:
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_tokens=12000,
-        temperature=0.2,
-        system=(
-            "You edit agent and skill instruction profiles. Your output must be the complete "
-            "replacement file content, with no commentary and no Markdown code fence."
-        ),
-        messages=[{"role": "user", "content": llm_prompt_for_profile(original, improvement)}],
-    )
-    chunks: list[str] = []
-    for block in response.content:
-        text = getattr(block, "text", None)
-        if isinstance(text, str):
-            chunks.append(text)
-    revised = strip_code_fence("".join(chunks))
-    if not revised.strip():
-        raise RuntimeError("Claude returned an empty profile")
-    return revised if revised.endswith("\n") else revised + "\n"
-
-
 def meta_for_plan(
     plan: VariantPlan,
     created_at: str,
     score_source: str,
-    llm_requested: bool,
-    llm_status: str,
 ) -> dict[str, Any]:
     improvement = plan.improvement
     return {
@@ -374,9 +276,7 @@ def meta_for_plan(
         "entity_type": improvement.entity_type,
         "entity_id": improvement.entity_id,
         "strategy": "refine",
-        "generation_mode": "llm" if llm_status == "success" else "rule_based",
-        "llm_requested": llm_requested,
-        "llm_status": llm_status,
+        "generation_mode": "skill",
         "parent_variant": None,
         "created_at": created_at,
         "score_report_source": score_source,
@@ -391,7 +291,7 @@ def meta_for_plan(
         "trend": improvement.trend,
         "evidence_sessions": improvement.evidence_sessions,
         "files_modified": [plan.modified_filename],
-        "status": "staged",
+        "status": "planned",
     }
 
 
@@ -399,23 +299,11 @@ def execute_plan(
     plan: VariantPlan,
     created_at: str,
     score_source: str,
-    use_llm: bool,
-    client: Any | None = None,
 ) -> dict[str, Any]:
-    original = plan.source_path.read_text(encoding="utf-8")
-    if use_llm:
-        if client is None:
-            raise RuntimeError("LLM generation requested but no Anthropic client is available")
-        patched = generate_profile_with_llm(original, plan.improvement, client)
-        llm_status = "success"
-    else:
-        patched = build_patch_text(original, plan.improvement, plan.variant_id, created_at, plan.modified_filename)
-        llm_status = "not_requested"
-    meta = meta_for_plan(plan, created_at, score_source, use_llm, llm_status)
+    meta = meta_for_plan(plan, created_at, score_source)
     plan.variant_dir.mkdir(parents=True, exist_ok=False)
-    plan.output_path.write_text(patched, encoding="utf-8")
     plan.meta_path.write_text(json.dumps(meta, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    return variant_result(plan, written=True)
+    return variant_result(plan, written=False)
 
 
 def variant_result(plan: VariantPlan, written: bool) -> dict[str, Any]:
@@ -586,8 +474,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--registry", default=str(REPO_ROOT / "agent-registry"), help="Agent registry root.")
     parser.add_argument("--skills", default=str(REPO_ROOT / "skills"), help="Skills directory root.")
     parser.add_argument("--dry-run", action="store_true", help="Print the generation plan without writing files.")
-    parser.add_argument("--no-llm", action="store_true", help="Use local rule-based variants instead of Claude API generation.")
-    parser.add_argument("--llm", action="store_true", help="Compatibility alias; LLM generation is the default.")
     parser.add_argument("--json", action="store_true", help="Print structured JSON to stdout.")
     args = parser.parse_args(argv)
     if args.input and args.scores:
@@ -599,17 +485,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def run(argv: list[str]) -> int:
     args = parse_args(argv)
-    use_llm = not args.no_llm
-    llm_status = "requested"
-    client: Any | None = None
-    if use_llm:
-        if anthropic is None:
-            warn("anthropic SDK is not installed; falling back to --no-llm mode")
-            use_llm = False
-            llm_status = "sdk_missing_fallback"
-        elif not args.dry_run:
-            client = anthropic.Anthropic()
-
     report, score_source = load_score_report(args.input or args.scores)
     validate_score_report(report)
     improvements = load_improvements(report)
@@ -626,7 +501,7 @@ def run(argv: list[str]) -> int:
     variants = (
         [variant_result(plan, written=False) for plan in plans]
         if args.dry_run
-        else [execute_plan(plan, created_at, score_source, use_llm, client) for plan in plans]
+        else [execute_plan(plan, created_at, score_source) for plan in plans]
     )
     proposals = generate_gap_proposals(
         gap_analysis,
@@ -642,9 +517,7 @@ def run(argv: list[str]) -> int:
         "proposals_dir": repo_relative(proposals_dir),
         "dry_run": args.dry_run,
         "strategy": "refine" if args.strategy == "auto" else args.strategy,
-        "generation_mode": "llm" if use_llm else "rule_based",
-        "llm_requested": not args.no_llm,
-        "llm_status": llm_status if not use_llm else ("dry_run" if args.dry_run else "success"),
+        "generation_mode": "skill",
         "candidate_count": len(variants),
         "variants": variants,
         "proposal_count": len(proposals),

@@ -33,40 +33,58 @@ KNOWN_AGENTS = {
     "web-researcher",
 }
 
+# Step 1: 제외 패턴 — 매칭되면 해당 메시지의 교정/거부 판정을 건너뛴다.
+NEGATION_EXEMPTIONS = [
+    r"아니\s*근데",                          # 화제 전환
+    r"아니\s*진짜",                          # 감탄사
+    r"아무튼|어쨌든|어차피",                   # 전환어
+    r"다시\s*말하면|다시\s*말해\s*(?:서|보면)",  # 바꿔 말하면
+    r"다시\s*한\s*번\s*(?:설명|말씀)",         # 설명 재요청
+    r"근데\s*(?:좋|잘|괜찮)",                  # 부분 칭찬
+    r"맞긴\s*한데",                          # 부분 동의
+    r"계속\s*(?:진행|해\s*봐|해\s*봅시다)",     # 진행 지시
+]
+
+# Step 2: 교정 패턴 — 사용자가 어시스턴트의 출력을 교정하는 신호.
 CORRECTION_PATTERNS = [
-    r"아니[요]?\s",
-    r"아닌데",
-    r"그게\s*아니[라고]",
-    r"아니야",
+    # 직접 오류 지적 (high confidence)
+    r"(?:이|저)\s*부분[이가]?\s*(?:틀렸|잘못|에러|오류)",
+    r"여기[서가]?\s*(?:에러|오류|문제|안\s*됨)",
+    r"에러\s*(?:나|발생|뜨)",
+    r"(?:결과|출력)[이가]?\s*(?:다른데|이상한데|틀린데)",
+    r"생각한\s*거랑\s*다른데",
+    r"기대한\s*(?:것|거)[과이]?\s*다른데",
+    # 수정 요구 (medium confidence)
     r"틀렸[어는]",
-    r"다시\s*(해|하|만들|작성|생성|수정)",
-    r"다시\s*해\s*봐",
-    r"그거\s*말고",
-    r"[이그]렇게\s*말고",
-    r"왜\s*(이렇게|그렇게|자꾸|계속|또)",
-    r"제대로\s*(해|안|좀)",
-    r"똑바로",
-    r"잘못\s*(했|된|되)",
-    r"빠[졌뜨트]",
+    r"잘못\s*(?:했|된|되)",
+    r"빠[졌뜨트]|누락",
     r"빠져\s*있",
-    r"안\s*(했|됐|빠)",
-    r"누락",
     r"빠[뜨트]렸",
-    r"(?i)\b(no|not what i|wrong|incorrect|try again|i already said|again)\b",
+    r"제대로\s*(?:안|좀)",
+    r"그거\s*말고\s*(?:다른|이)",
+    r"[이그]렇게\s*말고",
+    # 불만/반복 (context-dependent)
+    r"왜\s*(?:자꾸|계속|또)\s",
+    r"아까\s*(?:말했|얘기했)",
+    r"방금\s*(?:말한|얘기한)\s*거",
+    # English
+    r"(?i)\b(?:wrong|incorrect|not what i (?:want|mean|said))\b",
+    r"(?i)\b(?:doesn't|does not|didn't)\s*work\b",
+    r"(?i)\btry again\b",
 ]
 
+# Step 2b: 거부 패턴 — 사용자가 작업 자체를 거부/취소하는 신호.
 REJECTION_PATTERNS = [
-    r"다시\s*해\s*줘",
+    r"다시\s*해\s*(?:줘|줄래|봐|주세요)",
     r"처음부터\s*다시",
-    r"리셋",
-    r"취소",
-    r"됐[어고].*말[어고]",
+    r"됐[어고].*(?:말[어고]|됐)",
     r"하지\s*마",
-    r"그만",
-    r"필요\s*없",
-    r"(?i)\b(cancel|stop|never mind|nevermind|do not|don't|reset)\b",
+    r"그만|필요\s*없",
+    r"취소|리셋",
+    r"(?i)\b(?:cancel|stop|never\s*mind|undo|reset)\b",
 ]
 
+# Step 3: 칭찬 패턴 — 사용자가 만족을 표현하는 신호.
 PRAISE_PATTERNS = [
     r"좋[아았]",
     r"완벽",
@@ -80,8 +98,13 @@ PRAISE_PATTERNS = [
     r"딱\s*(이거|좋|맞)",
     r"훌륭",
     r"대박",
-    r"ㅇㅇ",
-    r"(?i)\b(good|great|perfect|thanks|thank you|exactly|nice|works)\b",
+    r"ㅇㅇ(?![가-힣])",
+    r"ㄱㄱ(?![가-힣])",
+    r"ㅇㅋ(?![가-힣])",
+    r"ㅇㅈ(?![가-힣])",
+    r"굿|나이스",
+    r"오\s*(?:이거|이게)\s*(?:되네|된다)",
+    r"(?i)\b(?:good|great|perfect|thanks|thank you|exactly|nice|works|lgtm|looks good)\b",
 ]
 
 TOOL_ERROR_PATTERNS = [
@@ -534,8 +557,9 @@ def analyze_session(path: Path, messages: list[StructuredMessage]) -> SessionAna
         if message not in direct_user_messages:
             continue
         text = message.content_text
-        if matches_any(CORRECTION_PATTERNS, text) or matches_any(REJECTION_PATTERNS, text):
-            user_corrections += 1
+        if not matches_any(NEGATION_EXEMPTIONS, text):
+            if matches_any(CORRECTION_PATTERNS, text) or matches_any(REJECTION_PATTERNS, text):
+                user_corrections += 1
         if matches_any(PRAISE_PATTERNS, text):
             positive_feedback += 1
         if previous_user_text and (

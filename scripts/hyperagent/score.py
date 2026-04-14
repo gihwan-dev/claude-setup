@@ -16,7 +16,7 @@ from typing import Any
 
 
 SCHEMA_VERSION = "1"
-DEFAULT_BASELINE_MIN_SESSIONS = 5
+DEFAULT_BASELINE_MIN_SESSIONS = 10
 DEFAULT_DECAY_HALF_LIFE_DAYS = 7
 DEFAULT_TREND_THRESHOLD = 0.15
 DEFAULT_BASELINE_PATH = "~/.claude/hyperagent/baseline.json"
@@ -427,7 +427,8 @@ def aggregate_entity_scores(
         score = rounded(composite)
         baseline = baseline_for_entity(baselines, key)
         trend = trend_for_entity(baseline, [sample.composite for sample in entity_samples], trend_threshold)
-        suggestions = suggestions_for_entity(entity_type, entity_id, score, dimension_values, trend)
+        unique_sessions = len({sample.session_id for sample in entity_samples})
+        suggestions = suggestions_for_entity(entity_type, entity_id, score, dimension_values, trend, unique_sessions)
         evidence_sessions = evidence_for_entity(entity_samples)
         touched = set().union(*(sample.touched_files for sample in entity_samples)) if entity_samples else set()
         adoption_rate = compute_commit_adoption_rate(entity_id, touched, REPO_ROOT)
@@ -543,7 +544,19 @@ def suggestions_for_entity(
     score: float,
     dimensions: dict[str, float],
     trend: dict[str, Any],
+    sessions_count: int = 0,
 ) -> list[dict[str, Any]]:
+    confidence = min(1.0, sessions_count / 5) if sessions_count > 0 else 0.0
+
+    # 데이터 부족 + 점수가 극단적이지 않으면 판단 보류
+    if confidence < 0.4 and score > 0.3:
+        return []
+
+    # 모든 dimension 값이 동일하면 차별화 불가 → 판단 보류
+    values = [round(v, 2) for v in dimensions.values()]
+    if len(set(values)) <= 1 and confidence < 0.6:
+        return []
+
     suggestions: list[dict[str, Any]] = []
     issue, description = weakest_dimension(entity_type, dimensions)
     priority = priority_for(score, trend.get("direction"))

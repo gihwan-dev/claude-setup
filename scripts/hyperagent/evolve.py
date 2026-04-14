@@ -134,7 +134,9 @@ def summarize_output(name: str, output: dict[str, Any]) -> dict[str, Any]:
     if name == "generate":
         return {
             "candidate_count": output.get("candidate_count"),
+            "proposal_count": output.get("proposal_count"),
             "dry_run": output.get("dry_run"),
+            "generation_mode": output.get("generation_mode"),
             "output_dir": output.get("output_dir"),
         }
     if name == "archive":

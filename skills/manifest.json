@@ -48,6 +48,11 @@
       "path": "skills/gitlab-issue-worker/SKILL.md"
     },
     {
+      "name": "hyperagent-evolve",
+      "description": "에이전트/스킬 프로필의 자가 개선 파이프라인. 세션 로그를 분석하고 성능을 채점한 뒤, 개선이 필요한 엔티티의 프로필을 직접 리라이팅하여 적용한다. \"$hyperagent-evolve\", \"/hyperagent-evolve\", \"자가 개선\", \"에이전트 진화\", \"evolve 돌려줘\", \"하이퍼에이전트 실행\" 등을 입력할 때 사용한다. 스케줄에서 자동 실행될 때도 이 스킬을 사용한다. 에이전트나 스킬의 품질 개선, 성능 분석, 프롬프트 최적화 관련 요청에도 사용한다.",
+      "path": "skills/hyperagent-evolve/SKILL.md"
+    },
+    {
       "name": "korean-cognitive-code-explainer",
       "description": "Explain code in Korean using cognitive load theory (chunking, schema formation) with Mermaid diagrams. Use when the user asks for a Korean code explanation, \"코드 설명해줘\", a simpler explanation, a visual walkthrough, or help translating function names into Korean. Do not use for English explanations, code review, or refactoring tasks.",
       "path": "skills/korean-cognitive-code-explainer/SKILL.md"
