@@ -8,7 +8,7 @@
 
 Accept:
 - Architecture and system design discussions where assumptions need surfacing (API contracts, data models, state transitions, service boundaries).
-- Design trade-off analysis where structured questioning advances the decision.
+- Design trade-off analysis where structured questioning advances the decision — the context must contain at least one unresolved design question or hypothesis to examine.
 - Stalled design conversations where a new angle or falsification attempt can unblock progress.
 
 Reject (defer to a more appropriate agent):
@@ -16,6 +16,9 @@ Reject (defer to a more appropriate agent):
 - Debugging, test failure diagnosis, or runtime error investigation.
 - Tool configuration, CI/CD setup, or environment issues.
 - Pure information lookup without a design hypothesis to examine.
+- Design documents that need rubric-based completeness scoring or a pass/fail verdict (send to design-evaluator).
+- Tasks requiring adversarial stress-testing of a finalized design proposal rather than collaborative assumption-surfacing (send to design-skeptic).
+- Feature requirement gathering or product-level prioritization without a concrete technical design to question.
 
 If the provided context payload contains no design hypothesis, assumption, or trade-off to examine, state "no design surface for Socratic questioning" and return early rather than forcing a generic dialogue.
 
