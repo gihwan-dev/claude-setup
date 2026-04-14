@@ -3,20 +3,20 @@ name: figma-spec-build
 description: >
   Extract spec text from Figma frame "Description" side panels via the installed
   Figma MCP, propose codebase component mappings for each spec row, and produce
-  a BRIEF.md that $build can execute. Use when the user provides one or more
-  Figma frame URLs containing a "Description" panel and asks to turn them into
-  an implementation plan (e.g. "Figma Description으로 구현해줘", "이 기획서
-  링크들 스펙 뽑아서 작업해줘", "$figma-spec-build", "figma-spec-build").
-  Do not use for pure design-to-code translation (that is
+  structured spec files with component mappings. Use when the user provides one
+  or more Figma frame URLs containing a "Description" panel and asks to turn
+  them into an implementation plan (e.g. "Figma Description으로 구현해줘",
+  "이 기획서 링크들 스펙 뽑아서 작업해줘", "$figma-spec-build",
+  "figma-spec-build"). Do not use for pure design-to-code translation (that is
   figma:figma-implement-design) or for writing back to Figma.
 allowed-tools: Read, Grep, Glob, Bash, Write, Edit, Skill, AskUserQuestion
 ---
 
 # Figma Spec Build
 
-Turn Figma "Description" side panels into machine-readable spec files, map each
-numbered section to candidate codebase components, and hand off a
-`tasks/<slug>/BRIEF.md` to `$build`.
+Turn Figma "Description" side panels into machine-readable spec files and map
+each numbered section to candidate codebase components. The user decides how to
+proceed with the output (create issues, feed to Codex, etc.).
 
 ## When this skill fires
 
@@ -47,8 +47,8 @@ numbered section to candidate codebase components, and hand off a
    implementation without user approval.
 5. **No FIGMA_TOKEN needed.** Reuse the installed Figma MCP.
 6. **"Description" frame name is hardcoded.** `x=1920` is the fallback hint.
-7. **Implementation goes through Codex via $build**, never through Claude.
-   This skill produces the artifacts that `$build` consumes.
+7. **This skill produces specs and mappings, not code.** Implementation is
+   the user's decision (Codex, manual, etc.).
 
 ## Workflow Phases
 
@@ -57,7 +57,7 @@ Phase 0: Bootstrap  — verify MCP, collect URLs, create slug
 Phase 1: Extract    — per URL: find Description nodes, get JSX+screenshot, convert to markdown
 Phase 2: Map        — per section: suggest candidates via grep, user confirms
 Phase 3: Brief      — synthesize tasks/<slug>/BRIEF.md from specs + mappings
-Phase 4: Handoff    — recommend $build or invoke Skill: build
+Phase 4: Handoff    — present artifacts and suggest next steps
 ```
 
 Each phase ends with a checkpoint. User replies with one of:
@@ -168,9 +168,9 @@ Ask to synthesize BRIEF.
 
 ### Phase 3: Brief
 
-Draft `tasks/<slug>/BRIEF.md` following the `plan` skill's format
-(`Goal / Context / Scope / Success Criteria / Phases / Decisions / Risks /
-References / Status / Log`).
+Draft `tasks/<slug>/BRIEF.md` with sections:
+`Goal / Context / Scope / Success Criteria / Phases / Decisions / Risks /
+References / Status / Log`.
 
 **Phase decomposition rules**:
 - Group mappings by target file. One BRIEF phase per target file, or per new
@@ -186,7 +186,7 @@ References / Status / Log`).
 **References** section includes the Figma URLs (source of truth).
 
 **Checkpoint**: present the BRIEF phase list. Ask: "N phases drafted. Approve
-for $build, or modify?"
+or modify?"
 
 ### Phase 4: Handoff
 
@@ -198,16 +198,14 @@ for $build, or modify?"
      specs/        (N files)
      figma/screenshots/ (N images)
    ```
-2. Recommend: `$build` (reads BRIEF.md, drives Codex).
-3. If user confirms immediate execution, invoke `Skill: build`.
+2. Suggest next steps: create issues, feed to Codex, or proceed manually.
 
 ## Cooperation With Existing Skills
 
 | Skill | Relation |
 |-------|----------|
-| `figma:figma-implement-design` | Complementary. That skill does pixel-fidelity code-gen for whole designs. This skill extracts **textual spec** and delegates implementation to Codex via $build. |
-| `plan` | Same BRIEF.md format. This skill IS `$plan` specialized for Figma input. After this skill, jump straight to `$build`. |
-| `build` | Direct downstream consumer. Reads `tasks/<slug>/BRIEF.md` + specs + screenshots + mappings.json. |
+| `figma:figma-implement-design` | Complementary. That skill does pixel-fidelity code-gen for whole designs. This skill extracts **textual spec** for structured implementation planning. |
+| `architect` | Use before this skill to explore design trade-offs. This skill handles Figma-specific extraction; architect handles design reasoning. |
 | `figma:figma-use` | Not used. We only read from Figma. |
 
 ## Session Resumption
@@ -240,4 +238,4 @@ Claude responses (phase by phase):
    tasks/sql-detail-spec/specs/. Proceed to mapping?" → "[1]"
 4. [presents candidates per section] → user confirms each
 5. [drafts BRIEF.md] → "N phases drafted. Approve?" → "[1]"
-6. "Ready. Run $build now?"
+6. "Ready. Create issues or feed to Codex?"

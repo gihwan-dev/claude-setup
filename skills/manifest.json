@@ -3,9 +3,9 @@
   "canonical_source_root": "skills",
   "skills": [
     {
-      "name": "build",
-      "description": "Execute all phases from BRIEF.md sequentially by orchestrating Codex. Invoke when the user writes \"build\" or \"$build\". Claude designs prompts and orchestrates; Codex implements, reviews, and fixes code. No approval gates — all phases run automatically. Claude never writes code directly.",
-      "path": "skills/build/SKILL.md"
+      "name": "architect",
+      "description": "Interactive design partner that helps crystallize a software design through structured Q&A, codebase exploration, web research, and feasibility analysis. Does NOT produce design documents — the user creates their own artifacts (issues, docs, specs) from the refined understanding. Invoke when the user writes \"architect\", \"$architect\", \"설계 도와줘\", or asks for help thinking through a design before implementation.",
+      "path": "skills/architect/SKILL.md"
     },
     {
       "name": "commit",
@@ -18,13 +18,8 @@
       "path": "skills/create-mr/SKILL.md"
     },
     {
-      "name": "design-docs",
-      "description": "Document bundle orchestrator that selects a minimum-sufficient set of design docs (PRD, UX flow, architecture, ADR, etc.) based on task risk signals, drafts them with inline question tags, and refines them to implementation-ready through subagent dispatch. Invoke only when the user explicitly writes \"design-docs\", \"$design-docs\", or asks to plan/flesh-out/refine a design bundle for a task before implementation. Do not use for single-decision discussions, code generation, or direct implementation.",
-      "path": "skills/design-docs/SKILL.md"
-    },
-    {
       "name": "figma-spec-build",
-      "description": "Extract spec text from Figma frame \"Description\" side panels via the installed Figma MCP, propose codebase component mappings for each spec row, and produce a BRIEF.md that $build can execute. Use when the user provides one or more Figma frame URLs containing a \"Description\" panel and asks to turn them into an implementation plan (e.g. \"Figma Description으로 구현해줘\", \"이 기획서 링크들 스펙 뽑아서 작업해줘\", \"$figma-spec-build\", \"figma-spec-build\"). Do not use for pure design-to-code translation (that is figma:figma-implement-design) or for writing back to Figma.",
+      "description": "Extract spec text from Figma frame \"Description\" side panels via the installed Figma MCP, propose codebase component mappings for each spec row, and produce structured spec files with component mappings. Use when the user provides one or more Figma frame URLs containing a \"Description\" panel and asks to turn them into an implementation plan (e.g. \"Figma Description으로 구현해줘\", \"이 기획서 링크들 스펙 뽑아서 작업해줘\", \"$figma-spec-build\", \"figma-spec-build\"). Do not use for pure design-to-code translation (that is figma:figma-implement-design) or for writing back to Figma.",
       "path": "skills/figma-spec-build/SKILL.md"
     },
     {
@@ -61,11 +56,6 @@
       "name": "parallel-codex",
       "description": "DAG 기반 그룹 순차 + 그룹 내 병렬 파이프라인 디스패처. 작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고, 각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다. 그룹 간 전이는 임시 브랜치(temp/verify-*)로 호환성 검증 + 상태 요약. 모든 그룹 실행·검증 완료 후 task별 Stacked MR 생성 (각 MR은 해당 변경분만 표시). \"$parallel-codex\" 명시 호출 시 실행한다. 사용자가 \"병렬 작업\", \"여러 작업 동시에\", \"기능 여러 개 동시 개발\", \"동시에 돌려줘\" 등을 언급하면 `$parallel-codex` 사용을 제안하라. 단일 task나 순차 1개 작업에는 사용하지 않는다 — 일반 Codex 호출이 적합하다.",
       "path": "skills/parallel-codex/SKILL.md"
-    },
-    {
-      "name": "plan",
-      "description": "Read-only planning skill. Invoke when the user writes \"plan\" or \"$plan\". Explores the codebase, clarifies requirements with the user, and produces a single abstract BRIEF.md under tasks/<slug>/. The brief focuses on what and why — not how. Implementation details are left to Codex during build.",
-      "path": "skills/plan/SKILL.md"
     },
     {
       "name": "pm-spec-from-code",

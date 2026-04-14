@@ -1,9 +1,0 @@
-interface:
-  display_name: "Plan"
-  short_description: "Read-only abstract design — produces BRIEF.md with goals, phases, and success criteria"
-  default_prompt: >-
-    $plan explores the codebase read-only, clarifies requirements, and writes
-    `tasks/<slug>/BRIEF.md`. The BRIEF is an abstract design doc focused on
-    what and why, with high-level phases. No implementation details.
-policy:
-  allow_implicit_invocation: false
