@@ -178,6 +178,10 @@ def count_tool_failures(session: dict[str, Any]) -> int:
     return total
 
 
+def session_id_for(session: dict[str, Any]) -> str:
+    return str(session.get("session_id") or "unknown-session")
+
+
 def entity_rows(session: dict[str, Any], key_name: str, count_name: str) -> list[tuple[str, int]]:
     rows = session.get(key_name)
     if not isinstance(rows, list):
@@ -210,6 +214,14 @@ def touched_files(session: dict[str, Any]) -> set[str]:
     if not isinstance(raw, list):
         return set()
     return {str(item) for item in raw if isinstance(item, str) and item}
+
+
+def negative_signal_total(session: dict[str, Any]) -> int:
+    return (
+        int(session.get("user_corrections") or 0)
+        + int(session.get("repeated_instructions") or 0)
+        + count_tool_failures(session)
+    )
 
 
 def skill_dimensions(session: dict[str, Any], count: int) -> tuple[dict[str, float], float, float]:
@@ -774,6 +786,8 @@ def establish_missing_baselines(
 def improvements_from_scores(scores: list[EntityScore]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for score in scores:
+        if score.invocations <= 0:
+            continue
         if not score.suggestions:
             continue
         baseline_delta = None
@@ -799,6 +813,140 @@ def improvements_from_scores(scores: list[EntityScore]) -> list[dict[str, Any]]:
     for index, row in enumerate(rows, 1):
         row["rank"] = index
     return rows
+
+
+def tool_failure_labels(session: dict[str, Any]) -> list[str]:
+    labels: list[str] = []
+    failures = session.get("tool_failures")
+    if not isinstance(failures, list):
+        return labels
+    for failure in failures:
+        if not isinstance(failure, dict):
+            continue
+        tool = failure.get("tool")
+        pattern = failure.get("error_pattern")
+        if isinstance(tool, str) and tool:
+            labels.append(tool)
+        if isinstance(pattern, str) and pattern:
+            labels.append(pattern)
+    return labels
+
+
+def coverage_pattern_for(session: dict[str, Any]) -> str:
+    labels = " ".join(tool_failure_labels(session)).lower()
+    if "docker compose" in labels or "docker-compose" in labels or "compose" in labels:
+        return "Docker Compose 관련 작업"
+    if "gitlab" in labels or "glab" in labels:
+        return "GitLab 관련 작업"
+    if "github" in labels or "gh " in labels:
+        return "GitHub 관련 작업"
+    if "figma" in labels:
+        return "Figma 관련 작업"
+    if "test" in labels or "pytest" in labels or "unittest" in labels:
+        return "테스트 실패 조사 작업"
+    if int(session.get("repeated_instructions") or 0) > 0:
+        return "반복 지시가 있었지만 에이전트 없이 수행된 작업"
+    complexity = session.get("complexity")
+    if isinstance(complexity, dict) and isinstance(complexity.get("grade"), str):
+        return f"{complexity['grade']} 복잡도 작업"
+    return "에이전트 없이 수행된 작업"
+
+
+def add_grouped_gap(
+    grouped: dict[str, dict[str, Any]],
+    pattern: str,
+    session_id: str,
+    frequency: int,
+    suggestion_type: str,
+) -> None:
+    row = grouped.setdefault(
+        pattern,
+        {
+            "pattern": pattern,
+            "sessions": [],
+            "frequency": 0,
+            "suggestion_type": suggestion_type,
+        },
+    )
+    if session_id not in row["sessions"]:
+        row["sessions"].append(session_id)
+    row["frequency"] += max(frequency, 1)
+
+
+def gap_analysis_for_report(report: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    sessions = report.get("signals", {}).get("by_session", [])
+    if not isinstance(sessions, list):
+        sessions = []
+
+    missing_coverage: dict[str, dict[str, Any]] = {}
+    repeated_patterns: dict[str, dict[str, Any]] = {}
+    agent_totals: defaultdict[str, set[str]] = defaultdict(set)
+    agent_negative: defaultdict[str, set[str]] = defaultdict(set)
+
+    for session in sessions:
+        if not isinstance(session, dict):
+            continue
+        session_id = session_id_for(session)
+        agent_counts = entity_rows(session, "agent_dispatches", "count")
+        negative_total = negative_signal_total(session)
+        repeated_count = int(session.get("repeated_instructions") or 0)
+        turn_count = int(session.get("turn_count") or 0)
+
+        if not agent_counts and (negative_total > 0 or turn_count >= 3):
+            add_grouped_gap(
+                missing_coverage,
+                coverage_pattern_for(session),
+                session_id,
+                max(negative_total, turn_count, 1),
+                "new_agent",
+            )
+
+        if repeated_count > 0:
+            repeated_pattern = "반복 지시가 재발한 작업"
+            if not session.get("skill_invocations"):
+                repeated_pattern = "반복 지시가 있었지만 스킬 없이 수행된 작업"
+            add_grouped_gap(
+                repeated_patterns,
+                repeated_pattern,
+                session_id,
+                repeated_count,
+                "new_skill_or_hook",
+            )
+
+        for agent, _ in agent_counts:
+            agent_totals[agent].add(session_id)
+            if negative_total > 0:
+                agent_negative[agent].add(session_id)
+
+    misfit_agents: list[dict[str, Any]] = []
+    for agent, total_sessions in sorted(agent_totals.items()):
+        negative_sessions = sorted(agent_negative.get(agent, set()))
+        if not total_sessions or not negative_sessions:
+            continue
+        negative_rate = round(len(negative_sessions) / len(total_sessions), 4)
+        if negative_rate < 0.5:
+            continue
+        misfit_agents.append(
+            {
+                "agent": agent,
+                "negative_rate": negative_rate,
+                "sessions": negative_sessions[:5],
+                "suggestion_type": "new_specialized_agent",
+            }
+        )
+    misfit_agents.sort(key=lambda row: (-row["negative_rate"], row["agent"]))
+
+    return {
+        "missing_coverage": sorted(
+            missing_coverage.values(),
+            key=lambda row: (-row["frequency"], row["pattern"]),
+        )[:10],
+        "repeated_patterns": sorted(
+            repeated_patterns.values(),
+            key=lambda row: (-row["frequency"], row["pattern"]),
+        )[:10],
+        "misfit_agents": misfit_agents[:10],
+    }
 
 
 def entity_to_json(score: EntityScore) -> dict[str, Any]:
@@ -835,6 +983,7 @@ def build_output(
     skills = [entity_to_json(score) for score in scores if score.entity_type == "skill"]
     orchestration = [entity_to_json(score) for score in scores if score.entity_type == "orchestration"]
     improvements = improvements_from_scores(scores)
+    gap_analysis = gap_analysis_for_report(report)
     return {
         "schema_version": SCHEMA_VERSION,
         "generated_at": utc_now_iso(),
@@ -857,6 +1006,7 @@ def build_output(
             "orchestration": orchestration,
         },
         "improvements": improvements,
+        "gap_analysis": gap_analysis,
         "global_suggestions": [
             {
                 "type": "improvement_candidate",
