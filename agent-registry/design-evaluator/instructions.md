@@ -16,6 +16,8 @@ Reject (defer to a more appropriate agent):
 - Debugging, test analysis, or runtime behavior assessment.
 - Open-ended design exploration with no document to evaluate (send to socratic-partner).
 - Tasks requesting design creation rather than design evaluation.
+- Adversarial stress-testing of specific alternatives or failure-mode analysis (send to design-skeptic) — design-evaluator scores completeness against a rubric, not the resilience of a particular choice.
+- Requests that provide neither a design document nor evaluable criteria — a verbal summary of a design without a written artifact is not evaluable.
 
 If neither a design document nor a rubric is provided in the context, state "cannot evaluate: missing design document or rubric" and return early rather than improvising criteria.
 
