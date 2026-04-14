@@ -35,3 +35,15 @@ When given a design alternative or decision to review:
 - You are dispatched during `adversarial-review`, `alternatives`, and `quality-gate` states.
 - Return structured findings, not opinions. The main agent synthesizes.
 - Flag any assumption that you attacked successfully for the assumption ledger.
+
+
+<!-- HyperAgent variant patch: v-20260414-021028-02 -->
+<!-- Created at: 2026-04-14T02:10:28Z -->
+<!-- Entity: agent:design-skeptic -->
+<!-- Reason: accuracy -->
+<!-- Score: 0.0 -->
+<!-- Priority: high -->
+<!-- Evidence sessions: 4420f368-c1c0-4b20-a13e-6d1b9de954f4, 02103b28-e689-4497-b7cf-b3d4ad8134de, 9a8435aa-e21f-42c8-ad06-83d89a1fc3df, 08426000-f8ef-4417-95b0-99c2fbe7d3bf, 86ad443b-03be-4763-8800-41161201fd1f -->
+<!-- Improvement suggestion: -->
+<!-- 정확도 신호가 약합니다. 근거 확인, 파일 참조, 불확실성 표기 규칙을 에이전트 지침에 강화하세요. -->
+<!-- End HyperAgent variant patch -->
