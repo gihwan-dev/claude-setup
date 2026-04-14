@@ -53,11 +53,6 @@
       "path": "skills/korean-cognitive-code-explainer/SKILL.md"
     },
     {
-      "name": "parallel-codex",
-      "description": "DAG 기반 그룹 순차 + 그룹 내 병렬 파이프라인 디스패처. 작업 리스트를 의존성 분석하여 위상 정렬된 그룹으로 배치하고, 각 그룹 내 작업을 git worktree + Codex로 병렬 실행한다. 그룹 간 전이는 임시 브랜치(temp/verify-*)로 호환성 검증 + 상태 요약. 모든 그룹 실행·검증 완료 후 task별 Stacked MR 생성 (각 MR은 해당 변경분만 표시). \"$parallel-codex\" 명시 호출 시 실행한다. 사용자가 \"병렬 작업\", \"여러 작업 동시에\", \"기능 여러 개 동시 개발\", \"동시에 돌려줘\" 등을 언급하면 `$parallel-codex` 사용을 제안하라. 단일 task나 순차 1개 작업에는 사용하지 않는다 — 일반 Codex 호출이 적합하다.",
-      "path": "skills/parallel-codex/SKILL.md"
-    },
-    {
       "name": "pm-spec-from-code",
       "description": "Convert implemented code into a PM-style spec focused on user-visible behavior and rules. Use when the user wants a feature spec derived from code, with behaviors, rules, constraints, exceptions, and non-goals in product language. Do not use for API documentation, code comments, or architecture documentation.",
       "path": "skills/pm-spec-from-code/SKILL.md"
