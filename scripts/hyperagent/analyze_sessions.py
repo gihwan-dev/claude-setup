@@ -8,7 +8,7 @@ import re
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -145,6 +145,28 @@ TOOL_NAME_ALIASES = {
     "Skill": "Skill",
 }
 
+CODEX_TOOL_NAME_MAP = {
+    "exec_command": "Bash",
+    "shell_command": "Bash",
+    "apply_patch": "Edit",
+    "read_thread_terminal": "Bash",
+    "write_stdin": "Bash",
+    "spawn_agent": "Agent",
+    "resume_agent": "Agent",
+    "close_agent": "Agent",
+    "wait_agent": "Agent",
+    "view_image": "Read",
+}
+
+CODEX_META_PREFIXES = (
+    "<permissions",
+    "<environment_context",
+    "<INSTRUCTIONS",
+    "<collaboration_mode",
+    "# AGENTS.md",
+    "Response MUST end with",
+)
+
 
 def load_known_skills() -> set[str]:
     skills_dir = REPO_ROOT / "skills"
@@ -242,6 +264,26 @@ def claude_home() -> Path:
     if configured:
         return Path(configured).expanduser()
     return Path("~/.claude").expanduser()
+
+
+def codex_home() -> Path:
+    configured = os.environ.get("CODEX_HOME")
+    if configured:
+        return Path(configured).expanduser()
+    return Path("~/.codex").expanduser()
+
+
+def project_from_cwd(cwd: str | None) -> str:
+    if not cwd:
+        return "unknown"
+    parts = Path(cwd).parts
+    try:
+        idx = parts.index("worktrees")
+        if idx + 2 < len(parts):
+            return parts[idx + 2]
+    except ValueError:
+        pass
+    return Path(cwd).name or "unknown"
 
 
 def expand_input_path(raw_path: str) -> Path:
@@ -379,6 +421,234 @@ def parse_jsonl(path: Path) -> tuple[list[StructuredMessage], int]:
     return messages, skipped_rows
 
 
+# ---------------------------------------------------------------------------
+# Codex JSONL parsing
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class CodexMeta:
+    session_id: str
+    cwd: str | None
+    agent_role: str | None
+    is_subagent: bool
+
+
+def _codex_extract_text(content: Any, content_type: str) -> str:
+    """Extract text from Codex response_item content list."""
+    if not isinstance(content, list):
+        return ""
+    chunks: list[str] = []
+    for item in content:
+        if isinstance(item, dict) and item.get("type") == content_type:
+            text = item.get("text")
+            if isinstance(text, str) and text:
+                chunks.append(text)
+    return "\n".join(chunks)
+
+
+def _codex_is_meta_text(text: str) -> bool:
+    """Check if user message text is system-injected content."""
+    stripped = text.lstrip()
+    return any(stripped.startswith(prefix) for prefix in CODEX_META_PREFIXES)
+
+
+def _codex_parse_arguments(arguments: Any) -> dict[str, Any]:
+    """Parse Codex function_call arguments (JSON string or dict)."""
+    if isinstance(arguments, dict):
+        return arguments
+    if isinstance(arguments, str):
+        try:
+            parsed = json.loads(arguments)
+            if isinstance(parsed, dict):
+                return parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
+    return {}
+
+
+def _codex_tool_name(raw_name: str) -> str:
+    """Normalize a Codex tool name to Claude equivalent."""
+    mapped = CODEX_TOOL_NAME_MAP.get(raw_name)
+    if mapped:
+        return mapped
+    return TOOL_NAME_ALIASES.get(raw_name, raw_name)
+
+
+def _codex_check_output_error(output: str) -> bool:
+    """Check if a Codex tool output indicates an error."""
+    if matches_any(TOOL_ERROR_PATTERNS, output):
+        return True
+    try:
+        parsed = json.loads(output)
+        if isinstance(parsed, dict):
+            meta = parsed.get("metadata")
+            if isinstance(meta, dict) and meta.get("exit_code", 0) != 0:
+                return True
+    except (json.JSONDecodeError, ValueError):
+        pass
+    return False
+
+
+def normalize_codex_message(
+    raw: dict[str, Any],
+    session_id: str,
+    session_cwd: str | None,
+) -> StructuredMessage | None:
+    entry_type = raw.get("type")
+    if entry_type != "response_item":
+        return None
+
+    payload = raw.get("payload")
+    if not isinstance(payload, dict):
+        return None
+
+    timestamp = parse_timestamp(raw.get("timestamp"))
+    payload_type = payload.get("type")
+
+    # message entries
+    if payload_type == "message":
+        role = payload.get("role")
+        if role == "developer":
+            return None
+
+        content = payload.get("content")
+
+        if role == "user":
+            text = _codex_extract_text(content, "input_text")
+            is_meta = bool(text) and _codex_is_meta_text(text)
+            return StructuredMessage(
+                uuid=f"codex-{session_id}-{id(raw)}",
+                parent_uuid=None,
+                timestamp=timestamp,
+                session_id=session_id,
+                msg_type="user",
+                content_text=text,
+                is_meta=is_meta,
+                cwd=session_cwd,
+            )
+
+        if role == "assistant":
+            text = _codex_extract_text(content, "output_text")
+            return StructuredMessage(
+                uuid=f"codex-{session_id}-{id(raw)}",
+                parent_uuid=None,
+                timestamp=timestamp,
+                session_id=session_id,
+                msg_type="assistant",
+                content_text=text,
+                cwd=session_cwd,
+            )
+
+        return None
+
+    # function_call / custom_tool_call → tool call
+    if payload_type in ("function_call", "custom_tool_call"):
+        raw_name = str(payload.get("name") or "unknown")
+        tool_name = _codex_tool_name(raw_name)
+        call_id = str(payload.get("call_id") or "")
+
+        if payload_type == "function_call":
+            input_data = _codex_parse_arguments(payload.get("arguments"))
+        else:
+            raw_input = payload.get("input")
+            input_data = {"raw": raw_input} if raw_input else {}
+
+        return StructuredMessage(
+            uuid=call_id or f"codex-{session_id}-{id(raw)}",
+            parent_uuid=None,
+            timestamp=timestamp,
+            session_id=session_id,
+            msg_type="assistant",
+            content_text="",
+            tool_calls=[
+                ToolCall(
+                    tool_id=call_id,
+                    tool_name=tool_name,
+                    input_data=input_data,
+                    caller_type="direct",
+                )
+            ],
+            cwd=session_cwd,
+        )
+
+    # function_call_output / custom_tool_call_output → tool result
+    if payload_type in ("function_call_output", "custom_tool_call_output"):
+        call_id = str(payload.get("call_id") or "")
+        output = str(payload.get("output") or "")
+        is_error = _codex_check_output_error(output)
+
+        return StructuredMessage(
+            uuid=f"codex-result-{call_id or id(raw)}",
+            parent_uuid=None,
+            timestamp=timestamp,
+            session_id=session_id,
+            msg_type="user",
+            content_text="",
+            tool_results=[
+                ToolResult(
+                    tool_use_id=call_id,
+                    content=output,
+                    is_error=is_error,
+                )
+            ],
+            is_meta=True,
+            cwd=session_cwd,
+        )
+
+    # reasoning, compacted, etc. → skip
+    return None
+
+
+def parse_codex_jsonl(path: Path) -> tuple[list[StructuredMessage], int, CodexMeta]:
+    messages: list[StructuredMessage] = []
+    skipped_rows = 0
+    session_id = path.stem
+    session_cwd: str | None = None
+    agent_role: str | None = None
+    is_subagent = False
+
+    with path.open("r", encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, 1):
+            stripped = line.strip()
+            if not stripped:
+                continue
+            try:
+                raw = json.loads(stripped)
+            except json.JSONDecodeError:
+                skipped_rows += 1
+                continue
+            if not isinstance(raw, dict):
+                skipped_rows += 1
+                continue
+
+            entry_type = raw.get("type")
+
+            if entry_type == "session_meta":
+                payload = raw.get("payload")
+                if isinstance(payload, dict):
+                    if not session_cwd:
+                        session_id = str(payload.get("id") or session_id)
+                        session_cwd = payload.get("cwd") if isinstance(payload.get("cwd"), str) else None
+                        agent_role = payload.get("agent_role") if isinstance(payload.get("agent_role"), str) else None
+                        source = payload.get("source")
+                        is_subagent = isinstance(source, dict) and "subagent" in source
+                continue
+
+            msg = normalize_codex_message(raw, session_id, session_cwd)
+            if msg is not None:
+                messages.append(msg)
+
+    messages.sort(key=lambda m: m.timestamp or datetime.min.replace(tzinfo=timezone.utc))
+    meta = CodexMeta(
+        session_id=session_id,
+        cwd=session_cwd,
+        agent_role=agent_role,
+        is_subagent=is_subagent,
+    )
+    return messages, skipped_rows, meta
+
+
 def matches_any(patterns: list[str], text: str) -> bool:
     return matched_pattern(patterns, text) is not None
 
@@ -413,11 +683,11 @@ def detect_agent_dispatches(message: StructuredMessage) -> list[str]:
     for call in message.tool_calls:
         if call.tool_name not in {"Agent", "Task", "spawn_agent"}:
             continue
-        for key in ("subagent_type", "agent_type", "name"):
+        for key in ("subagent_type", "agent_type", "agent_role", "agent_nickname", "name"):
             value = call.input_data.get(key)
             if isinstance(value, str) and value:
                 normalized = value.strip()
-                if normalized in KNOWN_AGENTS or key != "name":
+                if normalized in KNOWN_AGENTS or key not in ("name", "agent_nickname"):
                     agents.append(normalized)
                 break
     return agents
@@ -497,7 +767,11 @@ def compute_complexity(
     }
 
 
-def analyze_session(path: Path, messages: list[StructuredMessage]) -> SessionAnalysis | None:
+def analyze_session(
+    path: Path,
+    messages: list[StructuredMessage],
+    project_override: str | None = None,
+) -> SessionAnalysis | None:
     if not messages:
         return None
 
@@ -580,7 +854,7 @@ def analyze_session(path: Path, messages: list[StructuredMessage]) -> SessionAna
 
     return SessionAnalysis(
         session_id=session_id,
-        project=path.parent.name,
+        project=project_override or path.parent.name,
         timestamp=first_ts,
         turn_count=turn_count,
         session_duration_seconds=duration,
@@ -625,6 +899,78 @@ def find_session_files(args: argparse.Namespace) -> tuple[list[Path], list[str]]
         return sorted(project_dir.glob("*.jsonl")), []
 
     return sorted(projects_root.glob("*/*.jsonl")), []
+
+
+def _codex_active_paths_for_range(start: date, end: date) -> list[Path]:
+    base = codex_home() / "sessions"
+    if not base.is_dir():
+        return []
+    paths: list[Path] = []
+    current = start
+    while current <= end:
+        day_dir = base / str(current.year) / f"{current.month:02d}" / f"{current.day:02d}"
+        if day_dir.is_dir():
+            paths.extend(sorted(day_dir.glob("rollout-*.jsonl")))
+        current += timedelta(days=1)
+    return paths
+
+
+def _codex_archived_paths_for_range(start: date, end: date) -> list[Path]:
+    base = codex_home() / "archived_sessions"
+    if not base.is_dir():
+        return []
+    paths: list[Path] = []
+    for child in sorted(base.iterdir()):
+        if not child.is_dir():
+            continue
+        for f in sorted(child.glob("*.jsonl")):
+            date_str = f.stem.removeprefix("rollout-")[:10]
+            try:
+                file_date = date.fromisoformat(date_str)
+            except ValueError:
+                continue
+            if start <= file_date <= end:
+                paths.append(f)
+    return paths
+
+
+def _codex_match_project(path: Path, project: str) -> bool:
+    """Check if a Codex session file's cwd matches the project filter."""
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                raw = json.loads(stripped)
+                if not isinstance(raw, dict) or raw.get("type") != "session_meta":
+                    break
+                payload = raw.get("payload")
+                if isinstance(payload, dict):
+                    cwd = payload.get("cwd")
+                    if isinstance(cwd, str):
+                        return project_from_cwd(cwd) == project or project in cwd
+                break
+    except (json.JSONDecodeError, OSError):
+        pass
+    return False
+
+
+def find_codex_session_files(args: argparse.Namespace) -> tuple[list[Path], list[str]]:
+    if args.sessions:
+        return [], []
+
+    if not args.date_range_dates:
+        return [], []
+
+    start, end = args.date_range_dates
+    paths = _codex_active_paths_for_range(start, end)
+    paths.extend(_codex_archived_paths_for_range(start, end))
+
+    if args.project:
+        paths = [p for p in paths if _codex_match_project(p, args.project)]
+
+    return paths, []
 
 
 def counter_items(counter: Counter[str], key_name: str, value_name: str) -> list[dict[str, Any]]:
@@ -809,6 +1155,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
 
 def run(argv: list[str]) -> int:
     args = parse_args(argv)
+
+    # Claude sessions
     session_files, invalid_paths = find_session_files(args)
     if invalid_paths:
         print("invalid session path(s):", file=sys.stderr)
@@ -816,8 +1164,16 @@ def run(argv: list[str]) -> int:
             print(f"  {path}", file=sys.stderr)
         return 1
 
+    # Codex sessions
+    codex_files, codex_invalid = find_codex_session_files(args)
+    if codex_invalid:
+        for path in codex_invalid:
+            warn(f"invalid codex session path: {path}")
+
     analyses: list[SessionAnalysis] = []
     sessions_skipped = 0
+
+    # Parse Claude sessions
     for path in session_files:
         messages, skipped_rows = parse_jsonl(path)
         sessions_skipped += skipped_rows
@@ -825,6 +1181,27 @@ def run(argv: list[str]) -> int:
         if analysis is None:
             sessions_skipped += 1
             continue
+        if args.date_range_dates and not in_date_range(analysis, *args.date_range_dates):
+            continue
+        if analysis.turn_count < args.min_turns:
+            sessions_skipped += 1
+            continue
+        analyses.append(analysis)
+
+    # Parse Codex sessions
+    for path in codex_files:
+        messages, skipped_rows, meta = parse_codex_jsonl(path)
+        sessions_skipped += skipped_rows
+        if not messages:
+            sessions_skipped += 1
+            continue
+        project = project_from_cwd(meta.cwd)
+        analysis = analyze_session(path, messages, project_override=project)
+        if analysis is None:
+            sessions_skipped += 1
+            continue
+        if meta.is_subagent and meta.agent_role:
+            analysis.agent_dispatches[meta.agent_role] += 1
         if args.date_range_dates and not in_date_range(analysis, *args.date_range_dates):
             continue
         if analysis.turn_count < args.min_turns:

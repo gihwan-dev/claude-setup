@@ -207,12 +207,13 @@ def source_path_for(improvement: Improvement, registry_root: Path, skills_root: 
     raise SystemExit(f"unsupported entity type: {improvement.entity_type}")
 
 
-def ensure_source_exists(improvement: Improvement, source_path: Path) -> None:
+def source_exists(improvement: Improvement, source_path: Path) -> bool:
     if source_path.exists() and source_path.is_file():
-        return
-    raise SystemExit(
+        return True
+    warn(
         f"source profile not found for {improvement.entity_type}:{improvement.entity_id}: {source_path}"
     )
+    return False
 
 
 def next_variant_id(base_id: str, variant_root: Path, entity_segment: str) -> tuple[str, Path]:
@@ -237,7 +238,8 @@ def build_variant_plans(
     plans: list[VariantPlan] = []
     for index, improvement in enumerate(improvements):
         source_path = source_path_for(improvement, registry_root, skills_root)
-        ensure_source_exists(improvement, source_path)
+        if not source_exists(improvement, source_path):
+            continue
         entity_segment = sanitize_segment(improvement.entity_id)
         variant_id, variant_dir = next_variant_id(
             base_id if index == 0 else f"{base_id}-{index + 1:02d}",

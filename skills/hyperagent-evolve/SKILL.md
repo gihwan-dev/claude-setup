@@ -15,6 +15,8 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 에이전트와 스킬 프로필의 자가 개선 파이프라인을 실행한다.
 데이터 처리는 Python 스크립트가, 프로필 리라이팅은 이 스킬을 실행하는 Claude가 직접 수행한다.
 
+**데이터 소스**: Claude Code 세션(`~/.claude/projects/`)과 Codex 세션(`~/.codex/sessions/`, `~/.codex/archived_sessions/`)을 모두 자동으로 분석한다. Codex 서브에이전트 세션도 포함하여 에이전트별 성능 데이터를 수집한다.
+
 ## 파이프라인
 
 ```
@@ -26,6 +28,7 @@ analyze_sessions.py → score.py → generate_variant.py → 프로필 리라이
 ### Step 1: 세션 분석
 
 사용자가 날짜를 지정하지 않으면 전날(어제) 기준으로 실행한다.
+Claude와 Codex 세션을 모두 자동으로 탐색한다.
 
 ```bash
 python3 scripts/hyperagent/analyze_sessions.py \
