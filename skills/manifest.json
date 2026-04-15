@@ -38,9 +38,9 @@
       "path": "skills/gitlab-issue-creator/SKILL.md"
     },
     {
-      "name": "gitlab-issue-worker",
-      "description": "GitLab 이슈 기반 코드 작업 워크플로우. glab CLI로 이슈를 조회·분석하고 코드 변경을 수행한다. 이슈 번호가 없으면 목록을 보여주고 선택받는다. 모호한 이슈는 사용자에게 구체적 질문으로 범위를 좁힌다. Use when the user says \"이슈 작업해줘\", \"이슈 처리해줘\", \"#123 작업\", \"gitlab issue\", or mentions a GitLab issue number. Do not use when the project has no GitLab remote or glab is not installed.",
-      "path": "skills/gitlab-issue-worker/SKILL.md"
+      "name": "gitlab-issue-picker",
+      "description": "GitLab 이슈 우선순위 추천. glab CLI로 할당/미할당 이슈를 수집하고 우선순위 라벨, 마감일, 가중치를 분석하여 작업할 이슈 Top 5를 추천한다. Use when the user says \"이슈 추천해줘\", \"뭐 작업할까\", \"이슈 골라줘\", \"gitlab-issue-picker\", \"$pick\", or wants help deciding which issue to work on. Do not use when glab is not installed or not authenticated.",
+      "path": "skills/gitlab-issue-picker/SKILL.md"
     },
     {
       "name": "hyperagent-evolve",
