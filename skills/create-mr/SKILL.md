@@ -104,7 +104,48 @@ If any files match, this step is **mandatory**.
 > Adjust `--wait-for-timeout` or add `--full-page` as needed for the target pages.
 > Capture each distinct UI change (multiple pages/states) as separate screenshot pairs.
 
-### 5. Create the MR
+### 5. Find Related Issue (MANDATORY)
+
+**반드시 관련 이슈를 검색해서 찾는다.** 브랜치명 추측에 의존하지 않는다.
+
+#### 5-1. 이슈 번호 힌트 수집
+
+```bash
+# 브랜치명에서 힌트 추출
+git branch --show-current
+# 커밋 메시지에서 힌트 추출
+git log <base>...HEAD --oneline
+```
+
+#### 5-2. 이슈 검색
+
+플랫폼에 맞는 CLI로 이슈를 직접 검색한다.
+
+**GitLab:**
+```bash
+# 키워드로 검색 (MR의 핵심 주제/기능명 사용)
+glab issue list --search "<키워드>" --per-page 10
+# 브랜치명에서 번호가 추출되면 해당 이슈 확인
+glab issue view <번호>
+# 본인에게 할당된 열린 이슈도 확인
+glab issue list --assignee=@me --per-page 10
+```
+
+**GitHub:**
+```bash
+gh issue list --search "<키워드>" --limit 10
+gh issue view <번호>
+gh issue list --assignee=@me --limit 10
+```
+
+#### 5-3. 이슈 매칭 및 삽입
+
+1. 검색 결과에서 MR 변경 내용과 가장 관련 있는 이슈를 선택한다.
+2. 매칭된 이슈가 있으면 MR 본문의 Related Issues 섹션에 `Closes #번호`를 삽입한다.
+3. 후보가 여러 개이면 사용자에게 어떤 이슈를 연결할지 확인한다.
+4. 관련 이슈를 찾지 못하면 사용자에게 이슈 번호를 직접 물어본다.
+
+### 6. Create the MR
 
 1. Push the branch if needed: `git push -u origin <branch>`.
 2. Detect platform:
@@ -142,7 +183,7 @@ Use when no project template is found:
 | ![before]() | ![after]() |
 
 ## Related Issues
-<!-- links or "None" -->
+<!-- Closes #이슈번호 형식 필수. 여러 이슈면 각각 Closes 붙인다. 관련 이슈 없으면 "None" -->
 
 ## Test Plan
 <!-- how these changes were tested -->
@@ -164,3 +205,4 @@ Use when no project template is found:
 5. **MR titles in Korean** (except the type prefix).
 6. **No emoji** in titles.
 7. **UI 변경 시 Before/After 스크린샷 필수** — UI 관련 파일이 diff에 포함되면 반드시 Playwright로 Before/After 스크린샷을 찍어 MR 본문에 첨부한다. 스크린샷 없이 UI MR을 생성하지 않는다.
+8. **이슈 클로징 어노테이션 필수** — `glab issue list --search` 또는 `gh issue list --search`로 관련 이슈를 직접 검색하고, MR 본문에 반드시 `Closes #이슈번호`를 포함한다. 브랜치명 추측에만 의존하지 않는다. 검색해도 못 찾으면 사용자에게 직접 물어본다. 이슈 연결 없이 MR을 생성하지 않는다.
