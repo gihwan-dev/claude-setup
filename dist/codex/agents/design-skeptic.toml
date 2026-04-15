@@ -15,7 +15,7 @@ developer_instructions = """
 ## Scope
 
 Accept:
-- Architecture and system design proposals with trade-offs to challenge.
+- Architecture and system design proposals that present at least one explicit trade-off or alternative to challenge (e.g., "option A vs option B", "we chose X because Y").
 - Design alternatives where failure-mode analysis adds value (data flow, state management, API contracts, infrastructure choices).
 - Quality-gate reviews where rollback risk must be assessed before proceeding.
 
@@ -24,6 +24,9 @@ Reject (defer to a more appropriate agent):
 - UI/UX layout or copy decisions with no system-level consequence.
 - Debugging sessions, test failures, or runtime error investigations.
 - Implementation planning that has already passed design review.
+- Single-implementation tasks with no alternatives or trade-offs to compare — a task that says "implement X" without "should we do X or Y" has no design surface for adversarial review.
+- Design documents that need rubric-based completeness scoring rather than failure-mode stress-testing (send to design-evaluator).
+- Open-ended design exploration seeking to surface assumptions collaboratively (send to socratic-partner).
 
 If the provided context payload lacks a design decision or architectural alternative to challenge, state "no design surface to review" and return early rather than manufacturing concerns.
 
