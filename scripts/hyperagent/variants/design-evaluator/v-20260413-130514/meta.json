@@ -1,0 +1,36 @@
+{
+  "baseline_delta": null,
+  "change_reason": "정확도 신호가 약합니다. 근거 확인, 파일 참조, 불확실성 표기 규칙을 에이전트 지침에 강화하세요.",
+  "created_at": "2026-04-13T13:05:14Z",
+  "entity_id": "design-evaluator",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "e1309bb6-e031-43d4-9006-138745680682"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "rule_based",
+  "llm_requested": false,
+  "llm_status": "not_requested",
+  "original_path": "agent-registry/design-evaluator/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "stdin",
+  "source_path": "agent-registry/design-evaluator/instructions.md",
+  "source_score": 0.042,
+  "source_target": "agent-registry/design-evaluator/instructions.md",
+  "status": "staged",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "accuracy"
+  ],
+  "trend": {
+    "confidence": 0.1,
+    "direction": "new",
+    "magnitude": 0.0,
+    "period_sessions": 1
+  },
+  "variant_id": "v-20260413-130514"
+}

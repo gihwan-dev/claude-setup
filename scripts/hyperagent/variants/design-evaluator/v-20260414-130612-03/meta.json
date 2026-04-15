@@ -1,0 +1,38 @@
+{
+  "baseline_delta": 0.1245,
+  "change_reason": "관련성 신호가 약합니다. 에이전트의 작업 수락 조건과 제외 범위를 더 좁혀 라우팅 품질을 높이세요.",
+  "created_at": "2026-04-14T13:06:12Z",
+  "entity_id": "design-evaluator",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "08426000-f8ef-4417-95b0-99c2fbe7d3bf",
+    "4420f368-c1c0-4b20-a13e-6d1b9de954f4",
+    "02103b28-e689-4497-b7cf-b3d4ad8134de",
+    "3131c339-5b93-47e8-ac31-8b1ab70ccc3e",
+    "b7cca9c6-aa27-4023-b12f-1724f96f6cc3"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "skill",
+  "original_path": "agent-registry/design-evaluator/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/hyperagent-scores.json",
+  "source_path": "agent-registry/design-evaluator/instructions.md",
+  "source_score": 0.1245,
+  "source_target": "agent-registry/design-evaluator/instructions.md",
+  "status": "planned",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "relevance"
+  ],
+  "trend": {
+    "confidence": 0.6,
+    "direction": "improving",
+    "magnitude": 14.0833,
+    "period_sessions": 6
+  },
+  "variant_id": "v-20260414-130612-03"
+}
