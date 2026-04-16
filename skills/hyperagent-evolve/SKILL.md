@@ -121,7 +121,15 @@ python3 scripts/hyperagent/apply.py \
 
 한 variant의 apply가 실패하면 해당 variant만 skip하고 나머지를 계속 진행한다.
 
-### Step 6: 결과 보고
+### Step 6: 커밋 및 푸시
+
+파이프라인 산출물(프로젝션 sync, archive/improvement-log, variant/proposal 데이터)을 커밋하고 푸시한다.
+
+1. `git add`로 변경된 프로젝션(`agents/`, `dist/codex/agents/`), 로그(`archive.jsonl`, `improvement-log.jsonl`), variant/proposal 디렉토리를 스테이징한다.
+2. 커밋 메시지: `chore(hyperagent): 파이프라인 실행 데이터 및 variant 이력 추가`
+3. `git push`로 리모트에 반영한다.
+
+### Step 7: 결과 보고
 
 적용된 variant 목록을 정리한다. 각 항목에:
 - entity 이름과 타입
