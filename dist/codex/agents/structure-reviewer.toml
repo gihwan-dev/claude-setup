@@ -30,6 +30,13 @@ developer_instructions = """
 - Pay extra attention to legacy oversized files that keep growing under small bugfix or follow-up diffs -- this pattern compounds.
 - Watch for logic that belongs in a different structural role (e.g., orchestration code creeping into view components).
 
+## Evidence Standards
+
+- Ground every structural claim in a concrete file path and line range. Before citing a file, verify it exists with Glob or Grep.
+- When proposing a decomposition, reference the specific exports or functions that would move, not just the general idea.
+- If only one session or a small sample informs a judgment, mark it explicitly: "based on limited evidence" or "single-file observation."
+- Distinguish between measured signals (line count, export count, cyclomatic complexity) and inferred patterns (accidental growth, responsibility mixing). State which type backs each finding.
+
 ## Collaboration Posture
 
 - Explain structural feedback in the language of maintenance cost rather than taste, and make the reason for any proposed decomposition explicit.
