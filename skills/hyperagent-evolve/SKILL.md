@@ -15,6 +15,20 @@ allowed-tools: Bash, Read, Write, Edit, Grep, Glob
 에이전트와 스킬 프로필의 자가 개선 파이프라인을 실행한다.
 데이터 처리는 Python 스크립트가, 프로필 리라이팅은 이 스킬을 실행하는 Claude가 직접 수행한다.
 
+## 레포 구조 (claude-setup)
+
+이 스킬이 속한 레포는 Claude Code와 Codex CLI 환경을 통합 관리하는 설정 레포다.
+
+- `agent-registry/` — 에이전트 SSOT. 각 에이전트별 `agent.toml`(설정) + `instructions.md`(프로필).
+- `skills/` — 스킬 정의. 각 스킬별 `SKILL.md`.
+- `scripts/sync_agents.py` — agent-registry → `agents/`(Claude Code용 .md) + `dist/codex/agents/`(Codex용 .toml) 동기화.
+- `scripts/install_assets.py --link` — `dist/` → `~/.codex/`, `skills/` → `~/.claude/skills/` 심링크 설치.
+- `agents/` — sync_agents.py가 생성하는 Claude Code 서브에이전트 프로필 (자동생성, 직접 편집 금지).
+- `dist/codex/` — sync_agents.py가 생성하는 Codex 에이전트 설정 (자동생성, 직접 편집 금지).
+
+프로필 수정 시 반드시 `agent-registry/`(에이전트) 또는 `skills/`(스킬)의 원본을 편집해야 한다.
+`apply.py`가 SSOT 복사 → git commit → sync_agents.py → install_assets.py --link을 일괄 수행한다.
+
 **데이터 소스**: Claude Code 세션(`~/.claude/projects/`)과 Codex 세션(`~/.codex/sessions/`, `~/.codex/archived_sessions/`)을 모두 자동으로 분석한다. Codex 서브에이전트 세션도 포함하여 에이전트별 성능 데이터를 수집한다.
 
 ## 파이프라인
@@ -27,12 +41,13 @@ analyze_sessions.py → score.py → generate_variant.py → 프로필 리라이
 
 ### Step 1: 세션 분석
 
-사용자가 날짜를 지정하지 않으면 전날(어제) 기준으로 실행한다.
+사용자가 날짜를 지정하지 않으면 **당일(오늘)** 기준으로 실행한다.
+오후 10시 스케줄 실행 시에도 당일 세션을 분석 대상으로 한다.
 Claude와 Codex 세션을 모두 자동으로 탐색한다.
 
 ```bash
 python3 scripts/hyperagent/analyze_sessions.py \
-  --json --date-range {START} {END} --min-turns 3 \
+  --json --date-range {TODAY} {TODAY} --min-turns 3 \
   > /tmp/hyperagent-analysis.json
 ```
 
