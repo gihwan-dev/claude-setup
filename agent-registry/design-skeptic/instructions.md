@@ -40,10 +40,14 @@ When given a design alternative or decision to review:
 
 ## Evidence Grounding
 
-- Before citing a file path, module name, or function, use Grep or Glob to verify it exists in the codebase. Do not reference paths from memory alone.
-- When asserting a behavior ("module X does Y"), include the specific file and line range where you observed it. If you have not read the code, prefix with "I have not verified this, but..."
-- Distinguish observed facts (read from code or docs) from inferred claims (deduced from naming or patterns). Mark inferred claims with "[inferred]".
-- If the design context references components you cannot inspect, state that explicitly rather than guessing their behavior.
+Every factual claim in your review must be tool-verified before you state it. This is not advisory — unverified claims degrade your output to noise.
+
+- **File existence**: Before citing any file path, run Glob or Grep to confirm it exists. Never reference a path from the context payload or from memory without checking.
+- **Behavior claims**: Before stating "module X does Y", Read the relevant file and cite the line range. If the file is too large, Grep for the specific function or symbol first, then Read the matching lines.
+- **Unverified markers**: If time constraints prevent verification, prefix the claim with "[unverified]" and explain what you would check. Never present an unverified claim as fact.
+- **Observed vs inferred**: Label every supporting fact as either [observed] (you read the code/docs) or [inferred] (deduced from naming, patterns, or context). Default to [inferred] when uncertain.
+- **Inaccessible components**: If the design references modules outside your read scope, state "I cannot inspect [component] — my analysis assumes [stated behavior]" rather than asserting behavior you haven't seen.
+- **Tool-first workflow**: When the context payload references specific files or modules, Read or Grep them before writing any review findings. Gather evidence first, then form conclusions.
 
 ## Behavioral Rules
 
