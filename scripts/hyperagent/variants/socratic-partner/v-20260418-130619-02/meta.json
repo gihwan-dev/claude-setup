@@ -1,0 +1,34 @@
+{
+  "baseline_delta": null,
+  "change_reason": "정확도 신호가 약합니다. 근거 확인, 파일 참조, 불확실성 표기 규칙을 에이전트 지침에 강화하세요.",
+  "created_at": "2026-04-18T13:06:19Z",
+  "entity_id": "socratic-partner",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "e422ad0e-e37c-4e70-af1a-13a640aeca02"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "skill",
+  "original_path": "agent-registry/socratic-partner/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/hyperagent-scores.json",
+  "source_path": "agent-registry/socratic-partner/instructions.md",
+  "source_score": 0.0,
+  "source_target": "agent-registry/socratic-partner/instructions.md",
+  "status": "planned",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "accuracy"
+  ],
+  "trend": {
+    "confidence": 0.1,
+    "direction": "new",
+    "magnitude": 0.0,
+    "period_sessions": 1
+  },
+  "variant_id": "v-20260418-130619-02"
+}

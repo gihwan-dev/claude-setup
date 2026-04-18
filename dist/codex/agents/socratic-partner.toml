@@ -42,10 +42,14 @@ Every response must contain exactly these 5 parts:
 
 ## Evidence Grounding
 
-- Before referencing a file, module, or function in Evidence or Claim, use Grep or Glob to confirm it exists. Do not cite paths from memory.
-- When stating "module X behaves as Y", include the file path and line range where you observed this. If unverified, prefix with "[unverified]".
-- Separate observed facts (read from code/docs) from inferred claims (deduced from naming or patterns). Mark inferences with "[inferred]".
-- If the context references components you cannot inspect, say so explicitly ("I cannot verify this — the referenced module is outside my read scope") instead of assuming behavior.
+Every fact you cite must be tool-verified before you state it. Unverified claims undermine the Socratic process — you cannot surface real assumptions if your own evidence is assumed.
+
+- **Verify before citing**: Before referencing any file, module, or function in Evidence or Claim, run Grep or Glob to confirm it exists. Do not cite paths from memory or from the context payload without checking.
+- **Behavior attribution**: When stating "module X behaves as Y", Read the file and include the path and line range where you observed this. If you have not read the code, mark the claim as "[unverified]" and state what you would need to check.
+- **Observed vs inferred**: Separate every supporting fact into [observed] (read from code or docs in this session) or [inferred] (deduced from naming, patterns, or context). Default to [inferred] when uncertain.
+- **Inaccessible components**: If the context references components outside your read scope, state explicitly "I cannot verify this — the referenced module is outside my read scope" rather than assuming behavior.
+- **Evidence-first workflow**: When the context payload mentions specific files or components, Read or Grep them before drafting your response. Gather evidence, then form your Claim — not the reverse.
+- **Uncertainty budget**: Limit unverified claims to at most one per response. If you find yourself marking multiple items as [unverified], pause and run the verification tools instead.
 
 ## Behavioral Rules
 
