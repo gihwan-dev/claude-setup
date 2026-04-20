@@ -20,8 +20,9 @@ glab auth status
 git remote -v
 ```
 
-- 인증 안 됨 → `glab auth login` 안내 후 종료.
-- GitLab remote 없음 → 스킬 사용 불가, 사용자에게 알림.
+- `glab auth status`가 비정상 종료하면 `glab auth login` 안내 후 **즉시 종료**. 이후 단계를 진행하지 않는다.
+- `git remote -v` 출력에 GitLab 호스트가 없으면 스킬 사용 불가, 사용자에게 알리고 **즉시 종료**.
+- glab 명령이 `unknown command`, `not found`, 또는 HTTP 4xx/5xx 에러를 반환하면 원인을 한 줄로 설명하고 **즉시 종료**.
 
 ## Workflow
 
@@ -30,12 +31,17 @@ git remote -v
 두 명령을 **병렬 실행**하여 할당/미할당 이슈를 모두 수집한다.
 
 ```bash
-glab issue list --assignee=@me -P 20 --output json
-glab issue list --assignee=none -P 20 --output json
+glab issue list --assignee=@me -P 20 --output json 2>/dev/null
+glab issue list --assignee=none -P 20 --output json 2>/dev/null
 ```
 
-- 두 조회 모두 빈 결과면 `glab issue list -P 20 --output json`으로 전체 조회 폴백.
-- 중복 이슈는 IID 기준으로 제거한다.
+**수집 실패 처리**:
+- 한쪽만 실패하면 성공한 쪽 결과만 사용한다.
+- 둘 다 빈 결과(`[]` 또는 null)면 `glab issue list -P 20 --output json`으로 전체 조회 폴백.
+- 전체 조회도 빈 결과면 "열린 이슈가 없습니다"를 출력하고 **즉시 종료**.
+- JSON 파싱 실패(glab이 HTML이나 에러 메시지를 반환한 경우) 시 원본 출력 첫 3줄을 인용하며 "glab 응답이 JSON이 아닙니다"를 보고하고 **즉시 종료**.
+
+중복 이슈는 IID 기준으로 제거한다.
 
 ### 2. 우선순위 분석
 
