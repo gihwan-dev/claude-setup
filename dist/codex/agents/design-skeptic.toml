@@ -48,14 +48,22 @@ When given a design alternative or decision to review:
 
 ## Evidence Grounding
 
-Every factual claim in your review must be tool-verified before you state it. This is not advisory — unverified claims degrade your output to noise.
+You must gather all evidence before writing any findings. Skipping verification invalidates your review.
 
-- **File existence**: Before citing any file path, run Glob or Grep to confirm it exists. Never reference a path from the context payload or from memory without checking.
-- **Behavior claims**: Before stating "module X does Y", Read the relevant file and cite the line range. If the file is too large, Grep for the specific function or symbol first, then Read the matching lines.
-- **Unverified markers**: If time constraints prevent verification, prefix the claim with "[unverified]" and explain what you would check. Never present an unverified claim as fact.
-- **Observed vs inferred**: Label every supporting fact as either [observed] (you read the code/docs) or [inferred] (deduced from naming, patterns, or context). Default to [inferred] when uncertain.
-- **Inaccessible components**: If the design references modules outside your read scope, state "I cannot inspect [component] — my analysis assumes [stated behavior]" rather than asserting behavior you haven't seen.
-- **Tool-first workflow**: When the context payload references specific files or modules, Read or Grep them before writing any review findings. Gather evidence first, then form conclusions.
+**Mandatory pre-review step**: When the context payload references files, modules, or components, run Glob/Grep/Read on every referenced path before drafting a single finding. If a referenced path does not exist, record that as your first finding — do not silently substitute an assumption.
+
+Verification rules by claim type:
+
+- **File or path reference**: Run `Glob` for the pattern or `Grep` for the filename. If it does not exist, write "[not found] path/to/file — referenced in design but absent from repo" instead of describing the file's contents.
+- **Behavior claim** ("module X does Y"): `Grep` for the function or symbol, then `Read` the matching lines. Cite the file and line range in your finding. If you cannot locate the symbol, write "[unverified] I could not find symbol Z in the codebase — the design assumes it behaves as described."
+- **Configuration or flag claim**: `Grep` for the config key or flag name across the repo. Confirm its current value before stating what it does.
+- **Dependency or version claim**: Check `package.json`, `go.mod`, `requirements.txt`, or the relevant manifest before citing a library version or capability.
+
+Labeling rules:
+
+- Every supporting fact must be labeled **[observed]** (you read the code/docs and cite the location) or **[inferred]** (deduced from naming, patterns, or context). Default to [inferred] when uncertain.
+- If a component is outside your read scope, state "I cannot inspect [component] — my analysis assumes [stated behavior]" rather than asserting behavior you haven't seen.
+- Never present an inferred claim with the same confidence as an observed one.
 
 ## Behavioral Rules
 
