@@ -1,0 +1,4 @@
+name = "simple-proposal"
+model = "gpt-5.4-mini"
+reasoning_effort = "high"
+description = "Specialized agent draft for simple 복잡도 작업"

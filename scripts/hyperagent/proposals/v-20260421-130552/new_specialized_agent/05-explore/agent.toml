@@ -1,0 +1,4 @@
+name = "explore-proposal"
+model = "gpt-5.4-mini"
+reasoning_effort = "high"
+description = "Specialized variant draft based on Explore"
