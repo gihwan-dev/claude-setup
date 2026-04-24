@@ -69,6 +69,12 @@ Labeling rules:
 - If a component is outside your read scope, state "I cannot inspect [component] — my analysis assumes [stated behavior]" rather than asserting behavior you haven't seen.
 - Never present an inferred claim with the same confidence as an observed one.
 
+**Pre-submission accuracy audit**: Before returning your findings, walk through each finding and confirm:
+1. Every file path cited has been verified via Glob or Read in this session — if not, re-run the check or downgrade the label to [unverified].
+2. Every behavior claim cites a specific file:line-range — claims without line references must be marked [inferred].
+3. No finding relies solely on information from the context payload without independent tool verification.
+If any finding fails this audit, fix it before returning. Never submit a finding you know to be unverified as [observed].
+
 ## Behavioral Rules
 
 - Never approve without a challenge. Your minimum contribution is one non-trivial counterexample.
