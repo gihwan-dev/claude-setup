@@ -34,6 +34,17 @@ proceed with the output (create issues, feed to Codex, etc.).
   → stop and report.
 - URL is `figma.com/board/...` (FigJam) → not supported.
 
+## Input Validation
+
+스킬 시작 시 아래 입력 조건을 검증한다. 하나라도 불충분하면 즉시 사용자에게 부족한 항목을 안내하고 보완을 요청한다.
+
+| 조건 | 검증 방법 | 실패 시 |
+|------|----------|---------|
+| Figma URL이 최소 1개 | URL 파싱으로 `figma.com/design/` 패턴 확인 | "figma.com/design/ 형식의 URL을 하나 이상 제공해 주세요" |
+| URL에 `node-id` 파라미터 존재 | URL 쿼리스트링 파싱 | "URL에 node-id 파라미터가 없습니다. Figma에서 프레임을 선택한 상태의 URL을 복사해 주세요" |
+| Figma MCP 도구 사용 가능 | `get_metadata` 호출 시도 | "Figma MCP가 연결되지 않았습니다. 설정을 확인해 주세요" |
+| 대상 프레임에 "Description" 자식 노드 존재 | Phase 1의 `find_description_nodes.py` 결과 | "이 프레임에 Description 패널이 없습니다. URL을 확인해 주세요" |
+
 ## Hard Rules
 
 1. **Read-only toward Figma**: only `get_metadata`, `get_design_context`,
@@ -49,6 +60,7 @@ proceed with the output (create issues, feed to Codex, etc.).
 6. **"Description" frame name is hardcoded.** `x=1920` is the fallback hint.
 7. **This skill produces specs and mappings, not code.** Implementation is
    the user's decision (Codex, manual, etc.).
+8. **스크립트 실패 시 raw 데이터로 대체한다.** Python 스크립트가 ImportError 또는 FileNotFoundError로 실패하면, MCP에서 받은 raw 텍스트를 직접 파싱하여 마크다운으로 변환한다. 스크립트 부재가 전체 워크플로를 중단시키지 않는다.
 
 ## Workflow Phases
 
@@ -89,7 +101,8 @@ For each URL in `tasks/<slug>/figma/urls.txt`, sequentially:
    ```bash
    python3 ${SKILL_DIR}/scripts/parse_url.py "<url>"
    ```
-   Captures `fileKey`, `nodeId`, `fileName`.
+   스크립트가 없으면 URL에서 직접 fileKey와 nodeId를 정규식으로 추출한다:
+   `fileKey` = URL path의 `/design/` 다음 세그먼트, `nodeId` = `node-id` 쿼리 파라미터.
 
 2. Fetch metadata (lightweight XML, text content NOT included):
    ```
@@ -102,6 +115,7 @@ For each URL in `tasks/<slug>/figma/urls.txt`, sequentially:
    python3 ${SKILL_DIR}/scripts/find_description_nodes.py \
      --metadata tasks/<slug>/figma/raw/metadata_<nodeId>.xml
    ```
+   스크립트가 없으면 metadata에서 name이 "Description"인 노드를 직접 grep으로 찾는다.
    Returns JSON: `[{node_id, parent_node_id, parent_name, x, y, ...}]`.
 
 4. For each Description node:
@@ -113,6 +127,7 @@ For each URL in `tasks/<slug>/figma/urls.txt`, sequentially:
        tasks/<slug>/figma/raw/dc_<desc_node_id>.jsx \
        > tasks/<slug>/specs/<parent_node_id>__<desc_node_id>.md
      ```
+     스크립트가 없으면 JSX 텍스트 노드의 내용을 추출하여 마크다운 섹션으로 직접 정리한다.
 
 5. Capture screenshot of the PARENT frame (not Description):
    ```
@@ -139,6 +154,7 @@ For each spec file under `tasks/<slug>/specs/`:
      --repo <repo_path> \
      --top-n 5
    ```
+   스크립트가 없으면 spec 파일의 키워드를 추출하고 `grep -rl`로 코드베이스에서 관련 파일을 직접 검색한다.
 
 3. For each section with candidates, present via `AskUserQuestion`:
    - Label each option: `<path> (score X.XX, <reason>)`
@@ -199,6 +215,17 @@ or modify?"
      figma/screenshots/ (N images)
    ```
 2. Suggest next steps: create issues, feed to Codex, or proceed manually.
+
+## Success Criteria
+
+스킬 실행이 성공한 것으로 간주하는 조건:
+
+- `tasks/<slug>/specs/` 에 최소 1개의 마크다운 spec 파일이 생성됨
+- 각 spec 파일에 번호가 매겨진 섹션이 1개 이상 존재
+- `tasks/<slug>/mappings.json` 이 존재하고, 최소 1개 섹션에 매핑이 할당됨
+- `tasks/<slug>/BRIEF.md` 가 생성됨 (Phase 3까지 진행한 경우)
+
+Phase 4까지 완료되지 않더라도 사용자가 `[4] Stop here`로 중단한 단계까지의 산출물이 올바르게 생성되어 있으면 정상 종료이다.
 
 ## Cooperation With Existing Skills
 
