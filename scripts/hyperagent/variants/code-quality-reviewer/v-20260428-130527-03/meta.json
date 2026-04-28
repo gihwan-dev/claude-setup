@@ -1,0 +1,36 @@
+{
+  "baseline_delta": -0.3917,
+  "change_reason": "관련성 신호가 약합니다. 에이전트의 작업 수락 조건과 제외 범위를 더 좁혀 라우팅 품질을 높이세요.",
+  "created_at": "2026-04-28T13:05:27Z",
+  "entity_id": "code-quality-reviewer",
+  "entity_type": "agent",
+  "evidence_sessions": [
+    "019dd329-a43e-79c3-b35b-dfa70d242bdb",
+    "019dd165-e1f2-7103-8ffb-c74c588f8b5c",
+    "019dd32a-bb55-7200-a247-94fb45233459"
+  ],
+  "files_modified": [
+    "instructions.md"
+  ],
+  "generation_mode": "skill",
+  "original_path": "agent-registry/code-quality-reviewer/instructions.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/hyperagent-scores.json",
+  "source_path": "agent-registry/code-quality-reviewer/instructions.md",
+  "source_score": 0.2083,
+  "source_target": "agent-registry/code-quality-reviewer/instructions.md",
+  "status": "planned",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "relevance"
+  ],
+  "trend": {
+    "confidence": 0.3,
+    "direction": "degrading",
+    "magnitude": -0.5897,
+    "period_sessions": 3
+  },
+  "variant_id": "v-20260428-130527-03"
+}

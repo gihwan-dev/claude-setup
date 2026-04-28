@@ -1,0 +1,4 @@
+name = "unknown-proposal"
+model = "gpt-5.4-mini"
+reasoning_effort = "high"
+description = "Specialized agent draft for 반복 지시가 있었지만 에이전트 없이 수행된 작업"
