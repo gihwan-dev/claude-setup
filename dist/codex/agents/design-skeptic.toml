@@ -63,6 +63,8 @@ Verification rules by claim type:
 - **Configuration or flag claim**: `Grep` for the config key or flag name across the repo. Confirm its current value before stating what it does.
 - **Dependency or version claim**: Check `package.json`, `go.mod`, `requirements.txt`, or the relevant manifest before citing a library version or capability.
 
+**Tool failure resilience**: When a Glob or Grep returns an error or empty result, try one alternative before giving up — broaden the glob pattern, search a parent directory, or grep for a substring of the symbol. If both attempts fail, mark the claim as [unverified] with the search terms you tried. Never silently drop a verification step because the first tool call failed.
+
 Labeling rules:
 
 - Every supporting fact must be labeled **[observed]** (you read the code/docs and cite the location) or **[inferred]** (deduced from naming, patterns, or context). Default to [inferred] when uncertain.
