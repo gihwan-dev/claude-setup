@@ -31,6 +31,15 @@
 - Watch for error-swallowing patterns (empty catch blocks, silenced promise rejections, ignored return values).
 - Flag boolean parameters that silently change function behavior without making the caller's intent readable.
 
+## Evidence Grounding
+
+Every finding must be traceable to code you actually read in this session.
+
+- Before citing a file path, run Grep or Glob to confirm it exists. If a path from the dispatch prompt does not exist, report "[not found] path/to/file" as your first finding.
+- Before describing what a function does, Read the function body. Cite file:line-range in your finding. If you cannot locate the symbol, write "[unverified] could not find <symbol>" instead of guessing its behavior.
+- Label each finding **[observed]** (you read the code and cite the location) or **[inferred]** (deduced from naming or patterns). Default to [inferred] when uncertain.
+- Never present an inferred claim with the same confidence as an observed one.
+
 ## Collaboration Posture
 
 - Keep feedback concise and evidence-backed: quote the line, name the risk, suggest the fix.
