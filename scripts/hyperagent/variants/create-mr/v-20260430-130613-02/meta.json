@@ -1,0 +1,37 @@
+{
+  "baseline_delta": -0.0989,
+  "change_reason": "수용률이 낮습니다. 입력 조건, 성공 기준, 산출물 형식을 더 명확히 고정하는 개선이 우선입니다.",
+  "created_at": "2026-04-30T13:06:13Z",
+  "entity_id": "create-mr",
+  "entity_type": "skill",
+  "evidence_sessions": [
+    "1651474f-aa1b-4361-820c-87d246f33c38",
+    "dccf2c76-d7df-4bb3-a828-ae95239b61cf",
+    "06acc7fc-4175-4f86-8dcb-f0130f6f4288",
+    "9823631e-5700-4576-9dfd-6bf9f8f94176"
+  ],
+  "files_modified": [
+    "SKILL.md"
+  ],
+  "generation_mode": "skill",
+  "original_path": "skills/create-mr/SKILL.md",
+  "parent_variant": null,
+  "priority": "high",
+  "schema_version": "1",
+  "score_report_source": "/tmp/hyperagent-scores.json",
+  "source_path": "skills/create-mr/SKILL.md",
+  "source_score": 0.3011,
+  "source_target": "skills/create-mr/SKILL.md",
+  "status": "planned",
+  "strategy": "refine",
+  "suggestions_applied": [
+    "acceptance_rate"
+  ],
+  "trend": {
+    "confidence": 0.4,
+    "direction": "degrading",
+    "magnitude": -0.2133,
+    "period_sessions": 4
+  },
+  "variant_id": "v-20260430-130613-02"
+}
