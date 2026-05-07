@@ -51,6 +51,11 @@ glab issue list --assignee=none -P 20 --output json 2>/dev/null
 - 전체 조회도 빈 결과면 "열린 이슈가 없습니다"를 출력하고 **즉시 종료**.
 - JSON 파싱 실패(glab이 HTML이나 에러 메시지를 반환한 경우) 시 원본 출력 첫 3줄을 인용하며 "glab 응답이 JSON이 아닙니다"를 보고하고 **즉시 종료**.
 
+**glab 명령 실행 시 주의**:
+- `--output json` 결과가 빈 문자열이면 빈 배열(`[]`)로 취급한다.
+- glab 명령의 exit code가 0이어도 stderr에 경고가 있을 수 있다 — stderr는 무시하고 stdout만 파싱한다.
+- `--assignee=@me`가 실패하면(일부 GitLab 인스턴스에서 `@me` 미지원) `glab api user` 로 현재 사용자 username을 얻어 `--assignee={username}`으로 재시도한다.
+
 중복 이슈는 IID 기준으로 제거한다.
 
 ### 2. 우선순위 분석
