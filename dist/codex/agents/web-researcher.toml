@@ -39,6 +39,8 @@ developer_instructions = """
 - When a WebSearch or WebFetch result is ambiguous or partial, state the gap ("version number not confirmed in source") instead of interpolating.
 - Tag each finding with a confidence marker: [confirmed] when traced to a dated primary source, [likely] when corroborated by multiple secondaries, [unverified] otherwise.
 - If the caller's question involves a codebase file or local path, verify the path exists with Grep before weaving it into your answer.
+- When WebFetch returns an error or empty body, do not infer content from the URL or page title alone — report the fetch failure and try an alternative source or search query before giving up.
+- After assembling the final answer, scan each factual statement and ask: "Which source and which passage backs this?" Remove or mark [unverified] any statement that cannot pass this check.
 
 ## Collaboration Posture
 
